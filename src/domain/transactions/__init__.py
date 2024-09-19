@@ -11,6 +11,7 @@ represents shared parameters for all types of operations.
 
 __all__ = (
     "Cost",
+    "CostCateogoryFlat",
     "CostFlat",
     "Exchange",
     "ExchangeFlat",
@@ -25,6 +26,7 @@ __all__ = (
 from .entities import (
     Cost,
     CostFlat,
+    CostCateogoryFlat,
     Exchange,
     ExchangeFlat,
     Income,

@@ -29,7 +29,7 @@ class TransactionRepository:
     usd = Currency(id=1, name="USD", sign="$")
     uah = Currency(id=2, name="UAH", sign="#")
 
-    _mock: dict[OperationType, list] = {
+    _mock_transactions: dict[OperationType, list] = {
         "cost": [
             Cost(
                 id=1,
@@ -90,6 +90,13 @@ class TransactionRepository:
             ),
         ],
     }
+    _mock_cost_categories = [
+        CostCateogoryFlat(id=1, name="Food"),
+        CostCateogoryFlat(id=2, name="Services"),
+        CostCateogoryFlat(id=3, name="House"),
+        CostCateogoryFlat(id=4, name="Sport"),
+        CostCateogoryFlat(id=5, name="Education"),
+    ]
 
     async def filter(
         self,
@@ -113,9 +120,9 @@ class TransactionRepository:
         ORDER BY ``timestamp``
         """
 
-        costs: list[Cost] = self._mock["cost"]
-        incomes: list[Income] = self._mock["income"]
-        exchanges: list[Exchange] = self._mock["exchange"]
+        costs: list[Cost] = self._mock_transactions["cost"]
+        incomes: list[Income] = self._mock_transactions["income"]
+        exchanges: list[Exchange] = self._mock_transactions["exchange"]
 
         # TODO: Remove after SQL LIMIT is added
         items_count = 0
@@ -164,3 +171,21 @@ class TransactionRepository:
                 ),
                 operation=_operation,
             )
+
+    async def cost_categories(self) -> AsyncGenerator[CostCateogoryFlat, None]:
+        for item in self._mock_cost_categories:
+            yield item
+
+    async def add_cost_category(self, name: str) -> CostCateogoryFlat:
+        # TODO: move this validation to the DB level
+        for item in TransactionRepository._mock_cost_categories:
+            if item.name == name:
+                raise Exception("This Cost category already exist")
+
+        item = CostCateogoryFlat(
+            id=TransactionRepository._mock_cost_categories[-1].id + 1,
+            name=name,
+        )
+        TransactionRepository._mock_cost_categories.append(item)
+
+        return item

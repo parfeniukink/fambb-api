@@ -1,9 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import field_validator
-
-from src.domain.finances import Currency, CurrencyWithEquity
+from src.domain.finances import Currency
 from src.infrastructure import InternalData
 
 # ------------------------------------------------------------------

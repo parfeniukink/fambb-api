@@ -1,4 +1,8 @@
-__all__ = ("analytics_router",)
+__all__ = (
+    "analytics_router",
+    "transactions_router",
+)
 
 
-from .analytics import router as analytics_router  # noqa: F401
+from .analytics import router as analytics_router
+from .transactions import router as transactions_router

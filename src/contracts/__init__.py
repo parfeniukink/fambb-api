@@ -1,6 +1,9 @@
 __all__ = (
     "Equity",
     "Transaction",
+    "CostCategory",
+    "CostCategoryCreateBody",
 )
 
-from .analytics import Equity, Transaction  # noqa: F401
+from .analytics import Equity
+from .transactions import CostCategory, CostCategoryCreateBody, Transaction

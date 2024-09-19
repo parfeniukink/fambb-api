@@ -9,6 +9,11 @@ Each component in this layer defines specific operations that are
 allowed to be performed by the user of this system in general.
 """
 
-__all__ = ("get_last_transactions", "get_transactions")
+__all__ = (
+    "cost_category_create",
+    "get_last_transactions",
+    "get_transactions",
+)
 
 from .analytics import get_last_transactions, get_transactions
+from .transactions import cost_category_create
