@@ -7,10 +7,5 @@ __all__ = (
 )
 
 
-from .entities import (  # noqa: F401
-    InternalData,
-    PublicData,
-    Response,
-    ResponseMulti,
-)
-from .factories import web_application as web_application_factory  # noqa: F401
+from .entities import InternalData, PublicData, Response, ResponseMulti
+from .factories import web_application as web_application_factory

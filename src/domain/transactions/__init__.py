@@ -1,8 +1,8 @@
 """
 This package encapsulates all the available transactions:
 * COST - because of 'costs'
-* INCOME - because there are many income sources
-* EXCHANGE - because of 'currency exchange
+* INCOME - because there are many 'income sources'
+* EXCHANGE - because of 'currency exchange'
 
 
 The 'Transaction' itself stands for a shared instance that
@@ -25,8 +25,9 @@ __all__ = (
 
 from .entities import (
     Cost,
-    CostFlat,
     CostCateogoryFlat,
+    CostDBCandidate,
+    CostFlat,
     Exchange,
     ExchangeFlat,
     Income,

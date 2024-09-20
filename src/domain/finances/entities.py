@@ -1,7 +1,12 @@
 from src.infrastructure import InternalData
 
 
-class Currency(InternalData):
+class CurrencyDBCandidate(InternalData):
+    name: str
+    sign: str
+
+
+class Currency(CurrencyDBCandidate):
     """The currency representation which includes the equity information.
 
     Probably if you merge the equity concept with the currency it becomes
@@ -14,8 +19,6 @@ class Currency(InternalData):
     """
 
     id: int
-    name: str
-    sign: str
 
 
 class CurrencyWithEquity(Currency):

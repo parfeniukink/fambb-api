@@ -37,16 +37,20 @@ class Transaction(InternalData):
 # ------------------------------------------------------------------
 # income section
 # ------------------------------------------------------------------
-class IncomeFlat(InternalData):
+class IncomeDBCandidate(InternalData):
+    name: str
+    value: int
+    timestamp: datetime
+    source: IncomeSource
+
+    user_id: int
+    currency_id: int
+
+
+class IncomeFlat(IncomeDBCandidate):
     """The 'income' database record representation."""
 
     id: int
-    value: int
-    timestamp: datetime
-    name: str
-    source: IncomeSource
-    user_id: int
-    currency_id: int
 
 
 class Income(InternalData):
@@ -58,8 +62,8 @@ class Income(InternalData):
     name: str
     source: IncomeSource
 
-    currency: Currency
     user_id: int
+    currency: Currency
 
 
 # ------------------------------------------------------------------
@@ -72,15 +76,19 @@ class CostCateogoryFlat(InternalData):
     name: str
 
 
-class CostFlat(InternalData):
+class CostDBCandidate(InternalData):
+    name: str
+    value: int
+    timestamp: datetime
+    user_id: int
+    currency_id: int
+    category_id: int
+
+
+class CostFlat(CostDBCandidate):
     """The 'cost' database record representation."""
 
     id: int
-    value: int
-    timestamp: datetime
-    name: str
-    currency_id: int
-    category_id: int
 
 
 class Cost(InternalData):
@@ -99,14 +107,19 @@ class Cost(InternalData):
 # ------------------------------------------------------------------
 # currency exchange section
 # ------------------------------------------------------------------
-class ExchangeFlat(InternalData):
+class ExchangeDBCandidate(InternalData):
+    value: int
+    timestamp: datetime
+
+    user_id: int
+    from_currency_id: int
+    to_currency_id: int
+
+
+class ExchangeFlat(ExchangeDBCandidate):
     """The 'exchange_rate' database record representation."""
 
     id: int
-    value: int
-    timestamp: datetime
-    from_currency_id: int
-    to_currency_id: int
 
 
 class Exchange(InternalData):

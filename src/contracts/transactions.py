@@ -1,10 +1,55 @@
 import functools
+from datetime import datetime
+
+from pydantic import Field
 
 from src import domain
 from src.infrastructure import PublicData
 
 
+# ------------------------------------------------------------------
+# currency
+# ------------------------------------------------------------------
+class CurrencyCreateBody(PublicData):
+    """The request body to create a new currency."""
+
+    name: str
+    sign: str
+
+
+class Currency(CurrencyCreateBody):
+    """The public representation of a currency."""
+
+    id: int
+
+    @functools.singledispatchmethod
+    @classmethod
+    def from_instance(cls, instance) -> "Currency":
+        raise NotImplementedError(
+            f"Can not convert {type(instance)} into the Equity contract"
+        )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: domain.finances.Currency):
+        return cls(
+            id=instance.id,
+            name=instance.name,
+            sign=instance.sign,
+        )
+
+
+# ------------------------------------------------------------------
+# transaction
+# ------------------------------------------------------------------
 class Transaction(PublicData):
+    """A public representation of any sort of a transaction in
+    the system: cost, income, exchange.
+
+    Notes:
+        This class is mostly for the analytics.
+    """
+
     operation: domain.transactions.OperationType
     name: str
     value: int
@@ -32,10 +77,50 @@ class Transaction(PublicData):
         )
 
 
+# ------------------------------------------------------------------
+# cost category
+# ------------------------------------------------------------------
 class CostCategoryCreateBody(PublicData):
+    """The request body to create a new cost category."""
+
     name: str
 
 
-class CostCategory(PublicData):
+class CostCategory(CostCategoryCreateBody):
+    """The public representation of a cost category."""
+
+    id: int
+
+
+# ------------------------------------------------------------------
+# cost
+# ------------------------------------------------------------------
+class CostCreateBody(PublicData):
+    """The request body to create a new cost."""
+
+    name: str = Field(description="The name of the currency")
+    value: int = Field(description="The value in cents")
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description=(
+            "Define the timestamp for the cost. The default value is 'now'"
+        ),
+    )
+    currency_id: int
+    category_id: int
+
+
+class Cost(PublicData):
+    """The public representation of a cost."""
+
     id: int
     name: str
+    value: int
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description=(
+            "Define the timestamp for the cost. The default value is 'now'"
+        ),
+    )
+    currency: Currency
+    category: CostCategory

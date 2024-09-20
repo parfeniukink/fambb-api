@@ -1,12 +1,14 @@
 import itertools
 from collections.abc import AsyncGenerator
 from datetime import datetime
+from operator import attrgetter
 
 from src.domain.finances import Currency
 
 from .entities import (
     Cost,
     CostCateogoryFlat,
+    CostDBCandidate,
     CostFlat,
     Currency,
     Exchange,
@@ -26,8 +28,18 @@ class TransactionRepository:
     It uses the 'Query Builder' to create SQL queries.
     """
 
-    usd = Currency(id=1, name="USD", sign="$")
-    uah = Currency(id=2, name="UAH", sign="#")
+    _mock_currencies = {
+        1: Currency(id=1, name="USD", sign="$"),
+        2: Currency(id=2, name="UAH", sign="#"),
+    }
+
+    _mock_cost_categories = {
+        1: CostCateogoryFlat(id=1, name="Food"),
+        2: CostCateogoryFlat(id=2, name="Services"),
+        3: CostCateogoryFlat(id=3, name="House"),
+        4: CostCateogoryFlat(id=4, name="Sport"),
+        5: CostCateogoryFlat(id=5, name="Education"),
+    }
 
     _mock_transactions: dict[OperationType, list] = {
         "cost": [
@@ -37,8 +49,8 @@ class TransactionRepository:
                 value=100_00,
                 timestamp=datetime.now(),
                 user_id=1,
-                currency=usd,
-                category=CostCateogoryFlat(id=1, name="Test category 1"),
+                currency=_mock_currencies[1],
+                category=_mock_cost_categories[1],
             ),
             Cost(
                 id=2,
@@ -46,8 +58,8 @@ class TransactionRepository:
                 value=100_00,
                 timestamp=datetime.now(),
                 user_id=1,
-                currency=uah,
-                category=CostCateogoryFlat(id=2, name="Test category 2"),
+                currency=_mock_currencies[2],
+                category=_mock_cost_categories[1],
             ),
             Cost(
                 id=3,
@@ -55,8 +67,8 @@ class TransactionRepository:
                 value=100_00,
                 timestamp=datetime.now(),
                 user_id=1,
-                currency=usd,
-                category=CostCateogoryFlat(id=1, name="Test category 1"),
+                currency=_mock_currencies[1],
+                category=_mock_cost_categories[3],
             ),
         ],
         "income": [
@@ -67,7 +79,7 @@ class TransactionRepository:
                 source="revenue",
                 timestamp=datetime.now(),
                 user_id=1,
-                currency=uah,
+                currency=_mock_currencies[2],
             ),
             Income(
                 id=2,
@@ -76,7 +88,7 @@ class TransactionRepository:
                 source="other",
                 timestamp=datetime.now(),
                 user_id=1,
-                currency=usd,
+                currency=_mock_currencies[1],
             ),
         ],
         "exchange": [
@@ -85,18 +97,11 @@ class TransactionRepository:
                 value=230000,
                 timestamp=datetime.now(),
                 user_id=1,
-                from_currency=uah,
-                to_currency=usd,
+                from_currency=_mock_currencies[2],
+                to_currency=_mock_currencies[1],
             ),
         ],
     }
-    _mock_cost_categories = [
-        CostCateogoryFlat(id=1, name="Food"),
-        CostCateogoryFlat(id=2, name="Services"),
-        CostCateogoryFlat(id=3, name="House"),
-        CostCateogoryFlat(id=4, name="Sport"),
-        CostCateogoryFlat(id=5, name="Education"),
-    ]
 
     async def filter(
         self,
@@ -173,12 +178,12 @@ class TransactionRepository:
             )
 
     async def cost_categories(self) -> AsyncGenerator[CostCateogoryFlat, None]:
-        for item in self._mock_cost_categories:
+        for item in self._mock_cost_categories.values():
             yield item
 
     async def add_cost_category(self, name: str) -> CostCateogoryFlat:
         # TODO: move this validation to the DB level
-        for item in TransactionRepository._mock_cost_categories:
+        for item in TransactionRepository._mock_cost_categories.values():
             if item.name == name:
                 raise Exception("This Cost category already exist")
 
@@ -186,6 +191,24 @@ class TransactionRepository:
             id=TransactionRepository._mock_cost_categories[-1].id + 1,
             name=name,
         )
-        TransactionRepository._mock_cost_categories.append(item)
+        TransactionRepository._mock_cost_categories[item.id] = item
 
         return item
+
+    async def add_cost(self, candidate: CostDBCandidate) -> Cost:
+        last_id = max(TransactionRepository._mock_cost_categories.keys())
+
+        instance = Cost(
+            id=last_id + 1,
+            name=candidate.name,
+            value=candidate.value,
+            timestamp=candidate.timestamp,
+            user_id=candidate.user_id,
+            currency=self._mock_currencies[candidate.currency_id],
+            category=self._mock_cost_categories[3],
+        )
+
+        TransactionRepository._mock_transactions["cost"].append(instance)
+        print(f"Cost is saved. {instance}")
+
+        return instance

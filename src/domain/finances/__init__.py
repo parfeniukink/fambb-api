@@ -7,9 +7,10 @@ for the whole application.
 
 __all__ = (
     "Currency",
-    "CurrencyRepository",
+    "CurrencyDBCandidate",
     "CurrencyWithEquity",
+    "FinancialRepository",
 )
 
-from .entities import Currency, CurrencyWithEquity
-from .repository import CurrencyRepository
+from .entities import Currency, CurrencyDBCandidate, CurrencyWithEquity
+from .repository import FinancialRepository
