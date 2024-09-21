@@ -15,7 +15,7 @@ router = APIRouter(prefix="/costs", tags=["Costs"])
 
 @router.get("/categories", status_code=status.HTTP_200_OK)
 async def cost_categories() -> ResponseMulti[CostCategory]:
-    """Return available cost categories."""
+    """Return available cost categories from the database."""
 
     return ResponseMulti[CostCategory](
         result=[
@@ -29,7 +29,7 @@ async def cost_categories() -> ResponseMulti[CostCategory]:
 async def cost_category_create(
     schema: CostCategoryCreateBody = Body(...),
 ) -> Response[CostCategory]:
-    """Create a new cost category"""
+    """Create a new cost category."""
 
     item: (
         domain.transactions.CostCateogoryFlat
@@ -40,9 +40,9 @@ async def cost_category_create(
     return Response[CostCategory](result=CostCategory.model_validate(item))
 
 
-@router.post("/costs", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def cost_create(body: CostCreateBody = Body(...)) -> Response[Cost]:
-    """Return available cost categories."""
+    """Create yet another cost."""
 
     # TODO: get from request after authorization
     user_id = 1

@@ -1,7 +1,6 @@
 import itertools
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from operator import attrgetter
 
 from src.domain.finances import Currency
 
@@ -9,11 +8,9 @@ from .entities import (
     Cost,
     CostCateogoryFlat,
     CostDBCandidate,
-    CostFlat,
     Currency,
     Exchange,
     Income,
-    IncomeFlat,
     OperationType,
     Transaction,
 )
@@ -196,7 +193,12 @@ class TransactionRepository:
         return item
 
     async def add_cost(self, candidate: CostDBCandidate) -> Cost:
-        last_id = max(TransactionRepository._mock_cost_categories.keys())
+        last_id = max(
+            [
+                item.id
+                for item in TransactionRepository._mock_transactions["cost"]
+            ]
+        )
 
         instance = Cost(
             id=last_id + 1,
