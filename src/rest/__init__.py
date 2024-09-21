@@ -1,10 +1,12 @@
 __all__ = (
-    "analytics_router",
-    "costs_router",
-    "currencies_router",
+    "analytics",
+    "costs",
+    "currencies",
+    "users",
 )
 
 
-from .analytics import router as analytics_router
-from .costs import router as costs_router
-from .currencies import router as currencies_router
+from .analytics import router
+from .costs import router
+from .currencies import router
+from .users import router

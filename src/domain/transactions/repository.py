@@ -1,6 +1,7 @@
 import itertools
 from collections.abc import AsyncGenerator
-from datetime import datetime
+
+from tests.mock_storage import Storage
 
 from src.domain.finances import Currency
 
@@ -8,7 +9,6 @@ from .entities import (
     Cost,
     CostCateogoryFlat,
     CostDBCandidate,
-    Currency,
     Exchange,
     Income,
     OperationType,
@@ -24,81 +24,6 @@ class TransactionRepository:
 
     It uses the 'Query Builder' to create SQL queries.
     """
-
-    _mock_currencies = {
-        1: Currency(id=1, name="USD", sign="$"),
-        2: Currency(id=2, name="UAH", sign="#"),
-    }
-
-    _mock_cost_categories = {
-        1: CostCateogoryFlat(id=1, name="Food"),
-        2: CostCateogoryFlat(id=2, name="Services"),
-        3: CostCateogoryFlat(id=3, name="House"),
-        4: CostCateogoryFlat(id=4, name="Sport"),
-        5: CostCateogoryFlat(id=5, name="Education"),
-    }
-
-    _mock_transactions: dict[OperationType, list] = {
-        "cost": [
-            Cost(
-                id=1,
-                name="Test cost 1",
-                value=100_00,
-                timestamp=datetime.now(),
-                user_id=1,
-                currency=_mock_currencies[1],
-                category=_mock_cost_categories[1],
-            ),
-            Cost(
-                id=2,
-                name="Test cost 2",
-                value=100_00,
-                timestamp=datetime.now(),
-                user_id=1,
-                currency=_mock_currencies[2],
-                category=_mock_cost_categories[1],
-            ),
-            Cost(
-                id=3,
-                name="Test cost 3",
-                value=100_00,
-                timestamp=datetime.now(),
-                user_id=1,
-                currency=_mock_currencies[1],
-                category=_mock_cost_categories[3],
-            ),
-        ],
-        "income": [
-            Income(
-                id=1,
-                value=20000,
-                name="Test Income 1",
-                source="revenue",
-                timestamp=datetime.now(),
-                user_id=1,
-                currency=_mock_currencies[2],
-            ),
-            Income(
-                id=2,
-                value=22000,
-                name="Test Income 2",
-                source="other",
-                timestamp=datetime.now(),
-                user_id=1,
-                currency=_mock_currencies[1],
-            ),
-        ],
-        "exchange": [
-            Exchange(
-                id=1,
-                value=230000,
-                timestamp=datetime.now(),
-                user_id=1,
-                from_currency=_mock_currencies[2],
-                to_currency=_mock_currencies[1],
-            ),
-        ],
-    }
 
     async def filter(
         self,
@@ -122,9 +47,35 @@ class TransactionRepository:
         ORDER BY ``timestamp``
         """
 
-        costs: list[Cost] = self._mock_transactions["cost"]
-        incomes: list[Income] = self._mock_transactions["income"]
-        exchanges: list[Exchange] = self._mock_transactions["exchange"]
+        costs: list[Cost] = [
+            Cost(
+                **item,
+                currency=Currency(**Storage.currencies[item["currency_id"]]),
+                category=CostCateogoryFlat(
+                    **Storage.cost_categories[item["category_id"]]
+                ),
+            )
+            for item in Storage.costs.values()
+        ]
+        incomes: list[Income] = [
+            Income(
+                **item,
+                currency=Currency(**Storage.currencies[item["currency_id"]]),
+            )
+            for item in Storage.incomes.values()
+        ]
+        exchanges: list[Exchange] = [
+            Exchange(
+                **item,
+                to_currency=Currency(
+                    **Storage.currencies[item["to_currency_id"]]
+                ),
+                from_currency=Currency(
+                    **Storage.currencies[item["from_currency_id"]]
+                ),
+            )
+            for item in Storage.exchange.values()
+        ]
 
         # TODO: Remove after SQL LIMIT is added
         items_count = 0
@@ -175,42 +126,40 @@ class TransactionRepository:
             )
 
     async def cost_categories(self) -> AsyncGenerator[CostCateogoryFlat, None]:
-        for item in self._mock_cost_categories.values():
+        for item in Storage.cost_categories.values():
             yield item
 
     async def add_cost_category(self, name: str) -> CostCateogoryFlat:
         # TODO: move this validation to the DB level
-        for item in TransactionRepository._mock_cost_categories.values():
+        for item in Storage.cost_categories.values():
             if item.name == name:
                 raise Exception("This Cost category already exist")
 
-        item = CostCateogoryFlat(
-            id=TransactionRepository._mock_cost_categories[-1].id + 1,
-            name=name,
-        )
-        TransactionRepository._mock_cost_categories[item.id] = item
+        new_id = max(Storage.cost_categories.keys())
+        item = CostCateogoryFlat(id=new_id, name=name)
+
+        Storage.cost_categories[new_id] = item
 
         return item
 
     async def add_cost(self, candidate: CostDBCandidate) -> Cost:
-        last_id = max(
-            [
-                item.id
-                for item in TransactionRepository._mock_transactions["cost"]
-            ]
-        )
-
-        instance = Cost(
-            id=last_id + 1,
+        new_id = max(Storage.costs.keys()) + 1
+        instance: dict = dict(
+            id=new_id,
             name=candidate.name,
             value=candidate.value,
             timestamp=candidate.timestamp,
             user_id=candidate.user_id,
-            currency=self._mock_currencies[candidate.currency_id],
-            category=self._mock_cost_categories[3],
+            currency_id=candidate.currency_id,
+            category_id=candidate.category_id,
         )
 
-        TransactionRepository._mock_transactions["cost"].append(instance)
-        print(f"Cost is saved. {instance}")
+        Storage.costs[new_id] = instance
 
-        return instance
+        return Cost(
+            **instance,
+            currency=Currency(**Storage.currencies[instance["currency_id"]]),
+            category=CostCateogoryFlat(
+                **Storage.cost_categories[instance["category_id"]]
+            ),
+        )

@@ -6,42 +6,9 @@ from pydantic import Field
 from src import domain
 from src.infrastructure import PublicData
 
-
-# ------------------------------------------------------------------
-# currency
-# ------------------------------------------------------------------
-class CurrencyCreateBody(PublicData):
-    """The request body to create a new currency."""
-
-    name: str
-    sign: str
+from .currency import Currency
 
 
-class Currency(CurrencyCreateBody):
-    """The public representation of a currency."""
-
-    id: int
-
-    @functools.singledispatchmethod
-    @classmethod
-    def from_instance(cls, instance) -> "Currency":
-        raise NotImplementedError(
-            f"Can not convert {type(instance)} into the Equity contract"
-        )
-
-    @from_instance.register
-    @classmethod
-    def _(cls, instance: domain.finances.Currency):
-        return cls(
-            id=instance.id,
-            name=instance.name,
-            sign=instance.sign,
-        )
-
-
-# ------------------------------------------------------------------
-# transaction
-# ------------------------------------------------------------------
 class Transaction(PublicData):
     """A public representation of any sort of a transaction in
     the system: cost, income, exchange.
@@ -77,9 +44,6 @@ class Transaction(PublicData):
         )
 
 
-# ------------------------------------------------------------------
-# cost category
-# ------------------------------------------------------------------
 class CostCategoryCreateBody(PublicData):
     """The request body to create a new cost category."""
 
@@ -92,9 +56,6 @@ class CostCategory(CostCategoryCreateBody):
     id: int
 
 
-# ------------------------------------------------------------------
-# cost
-# ------------------------------------------------------------------
 class CostCreateBody(PublicData):
     """The request body to create a new cost."""
 

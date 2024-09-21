@@ -26,6 +26,3 @@ class Equity(PublicData):
             ),
             amount=instance.equity,
         )
-
-
-

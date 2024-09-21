@@ -1,30 +1,16 @@
-import random
 from typing import AsyncGenerator
+
+from tests.mock_storage import Storage
 
 from .entities import CurrencyDBCandidate, CurrencyWithEquity
 
 
 class FinancialRepository:
-    _default_currencies = [
-        CurrencyWithEquity(
-            id=1,
-            name="USD",
-            sign="$",
-            equity=random.randint(10000, 100000),
-        ),
-        CurrencyWithEquity(
-            id=2,
-            name="UAH",
-            sign="#",
-            equity=random.randint(10000, 100000),
-        ),
-    ]
-
     async def currencies(self) -> AsyncGenerator[CurrencyWithEquity, None]:
         """Select everything from 'currencies' table."""
 
-        for item in self._default_currencies:
-            yield item
+        for item in Storage.currencies.values():
+            yield CurrencyWithEquity(**item)
 
     async def add_currency(
         self, candidate: CurrencyDBCandidate
@@ -36,13 +22,13 @@ class FinancialRepository:
             the error will be raised.
         """
 
-        item = CurrencyWithEquity(
-            id=FinancialRepository._default_currencies[-1].id + 1,
+        new_id: int = max(Storage.currencies.keys()) + 1
+        instance: dict = dict(
+            id=new_id,
             name=candidate.name,
             sign=candidate.sign,
             equity=0,
         )
+        Storage.currencies[new_id] = instance
 
-        FinancialRepository._default_currencies.append(item)
-
-        return item
+        return CurrencyWithEquity(**instance)

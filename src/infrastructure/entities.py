@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, alias_generators
 
 class InternalData(BaseModel):
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",
         use_enum_values=True,
         validate_assignment=True,
         arbitrary_types_allowed=True,

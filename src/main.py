@@ -21,8 +21,9 @@ logger.add(
 app: FastAPI = web_application_factory(
     debug=settings.debug,
     rest_routers=(
-        rest.analytics_router,
-        rest.costs_router,
-        rest.currencies_router,
+        rest.analytics.router,
+        rest.costs.router,
+        rest.currencies.router,
+        rest.users.router,
     ),
 )
