@@ -6,31 +6,36 @@ name = "family_budget_bot"
 version = "0.1.0"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [ { name = "Dmytro Parfeniuk" } ]
-requires-python = ">=3.11.0,<4.0"
+requires-python = ">=3.12.0,<4.0"
 dependencies = [
     "SQLAlchemy[asyncio,mypy]>=2.0.21",  # async ORM (includes mypy extension)
     "aioredis>=2.0",  # async Redis client
     "aiosqlite>=0.19",  # async SQLite client
-    "alembic>=1.12",  # migrations tool
+    "alembic>=1.13",  # migrations tool
+    "arq>=0.25",  # async job queues in python on redis
+    "asyncpg>=0.28.0",  # async PostgreSQL driver
     "fastapi>=0.112",  # web framework
     "gunicorn>=21.2",  # application web server (better workers experience)
+    "httpx>=0.27.2",  # http client
     "loguru>=0.7.2",  # better logging experience
     "pydantic-settings>=2.0.0",  # better settings experience
     "pydantic>=2.0.0",  # data validation
     "uvicorn[standard]>=0.23.2",  # async application web server
-
 ]
 
 [project.optional-dependencies]
 dev = [
+    "asyncpg-stubs>=0.29.1",  # additional stubs
     "black>=24.8.0",  # formatting
-    "isort>=5.13.2",  # another formatting (imports sort)
     "flake8>=7.1.1",  # linter
+    "isort>=5.13.2",  # another formatting (imports sort)
     "mypy>=1.10.1",  # type checking
-    "pytest-mock>=3.14.0",  # better mocking experience
-    "pytest>=8.2.2",  # testing framework
-    "pytest-asyncio>=0.21",  # async testing better experience
+    "polyfactory>=2.17",  # mock data generation
     "polyfactory>=2.9",  # fake data models
+    "pytest-asyncio>=0.24",  # async testing better experience
+    "pytest-mock>=3.14.0",  # better mocking experience
+    "pytest-xdist[psutil]>=3.6.1",  # run tests in separate processes
+    "pytest>=8.2.2",  # testing framework
 ]
 
 
@@ -39,7 +44,7 @@ dev = [
 # ************************************************
 
 [tool.black]
-target-version = ['py311']
+target-version = ['py312']
 line-length = 79
 exclude = '''
 (
@@ -64,7 +69,7 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 skip = 'venv'
-src_paths = ["src"]
+src_paths = ["src", "tests"]
 
 
 [tool.mypy]
@@ -73,7 +78,7 @@ plugins = [
     "sqlalchemy.ext.mypy.plugin"
 ]
 files = ["src", "tests"]
-python_version = '3.11'
+python_version = '3.12'
 warn_redundant_casts = true
 warn_unused_ignores = true
 show_error_codes = true
@@ -84,16 +89,23 @@ exclude = ["venv"]
 # Check: https://mypy.readthedocs.io/en/latest/config_file.html#import-discovery
 follow_imports = 'silent'
 
-[[tool.mypy.overrides]]
+# [[tool.mypy.overrides]]
 # ignore_missing_imports=true
 
 
 [tool.pytest.ini_options]
 addopts = '-s -vvv'
+cache_dir = '/tmp'
+asyncio_mode = 'auto'
+python_files = 'test_*.py'
+python_functions = 'test_*'
+filterwarnings = [
+    'ignore::RuntimeWarning',
+    'ignore::UserWarning',
+    "ignore::DeprecationWarning",
+]
 markers = [
-    "smoke: quick tests to check basic functionality",
-    "sanity: detailed tests to ensure major functions work correctly",
-    "regression: tests to ensure that new changes do not break existing functionality"
+    "use_db: recreate database tables for this test from the scratch"
 ]
 
 

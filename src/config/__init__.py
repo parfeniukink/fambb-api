@@ -1,10 +1,38 @@
 __all__ = ("settings",)
 
-from pathlib import Path
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
+from pydantic import AnyHttpUrl, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class DatabaseSettings(BaseModel):
+    driver: str = "postgresql+asyncpg"
+    host: str = "database"
+    port: int = 5432
+    user: str = "postgres"
+    password: str = "postgres"
+    name: str = "family_budget"
+
+    @property
+    def url(self) -> str:
+        return (
+            f"{self.driver}://"
+            f"{self.user}:{self.password}@"
+            f"{self.host}:{self.port}/"
+            f"{self.name}"
+        )
+
+    @property
+    def default_database_url(self) -> str:
+        """Returns the url to the default database."""
+
+        return (
+            f"{self.driver}://"
+            f"{self.user}:{self.password}@"
+            f"{self.host}:{self.port}/"
+            f"postgres"
+        )
 
 
 class CORSSettings(BaseModel):
@@ -31,15 +59,16 @@ class LoggingSettings(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
+        env_prefix="FBB__",
         env_nested_delimiter="__",
         env_file=".env",
         extra="ignore",
     )
 
     debug: bool = False
-
     cors: CORSSettings = CORSSettings()
     logging: LoggingSettings = LoggingSettings()
+    database: DatabaseSettings = DatabaseSettings()
 
 
 settings = Settings()

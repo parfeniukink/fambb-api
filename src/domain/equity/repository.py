@@ -5,7 +5,7 @@ from tests.mock_storage import Storage
 from .entities import CurrencyDBCandidate, CurrencyWithEquity
 
 
-class FinancialRepository:
+class EquityRepository:
     async def currencies(self) -> AsyncGenerator[CurrencyWithEquity, None]:
         """Select everything from 'currencies' table."""
 

@@ -8,6 +8,7 @@ __all__ = (
     "Equity",
     "Transaction",
     "User",
+    "UserCreateRequestBody",
 )
 
 from .currency import Currency, CurrencyCreateBody
@@ -20,4 +21,4 @@ from .transactions import (
     Currency,
     Transaction,
 )
-from .users import User
+from .users import User, UserCreateRequestBody

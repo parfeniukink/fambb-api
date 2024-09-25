@@ -1,4 +1,15 @@
-__pycache__/
-.env
+# editors
+.idea/
+.vscode/
+
+# operating specific files
 .DS_Store
-venv/
+
+
+# configuration files
+.env
+
+
+# python files
+__pycache__/
+*.egg-info/

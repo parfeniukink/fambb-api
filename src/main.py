@@ -1,11 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from src import rest
 from src.config import settings
-from src.infrastructure import web_application_factory
+from src.infrastructure import errors, factories, middleware
 
-# Adjust the logging
+# adjust the logging
 # -------------------------------
 logger.add(
     settings.logging.file,
@@ -16,9 +18,9 @@ logger.add(
 )
 
 
-# Adjust the application
+# adjust the application
 # -------------------------------
-app: FastAPI = web_application_factory(
+app: FastAPI = factories.web_application(
     debug=settings.debug,
     rest_routers=(
         rest.analytics.router,
@@ -26,4 +28,14 @@ app: FastAPI = web_application_factory(
         rest.currencies.router,
         rest.users.router,
     ),
+    middlewares=(
+        (CORSMiddleware, middleware.FASTAPI_CORS_MIDDLEWARE_OPTIONS),
+    ),
+    exception_handlers={
+        RequestValidationError: errors.unprocessable_entity_error_handler,
+        HTTPException: errors.fastapi_http_exception_handler,
+        errors.BaseError: errors.base_error_handler,
+        NotImplementedError: errors.not_implemented_error_handler,
+        Exception: errors.unhandled_error_handler,
+    },
 )

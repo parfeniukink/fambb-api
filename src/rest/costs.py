@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Body, status
 
 from src import domain
-from src import operations as op
 from src.contracts import (
     Cost,
     CostCategory,
@@ -32,7 +31,7 @@ async def cost_category_create(
     """Create a new cost category."""
 
     item: (
-        domain.transactions.CostCateogoryFlat
+        domain.transactions.CostCategory
     ) = await domain.transactions.TransactionRepository().add_cost_category(
         name=schema.name
     )

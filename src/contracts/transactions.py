@@ -20,7 +20,7 @@ class Transaction(PublicData):
     operation: domain.transactions.OperationType
     name: str
     value: int
-    currency: domain.finances.Currency
+    currency: domain.equity.Currency
 
     @functools.singledispatchmethod
     @classmethod
@@ -36,7 +36,7 @@ class Transaction(PublicData):
             operation=instance.operation,
             name=instance.name,
             value=instance.value,
-            currency=domain.finances.Currency(
+            currency=domain.equity.Currency(
                 id=instance.currency.id,
                 name=instance.currency.name,
                 sign=instance.currency.sign,

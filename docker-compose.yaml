@@ -1,0 +1,26 @@
+services:
+  database:
+    image: postgres:16
+    container_name: family-budget-database
+    env_file: ".env"
+    ports:
+      - "${DOCKER_DATABASE_PORT_EXPOSE:-5432}:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      target: dev
+    image: family-budget
+    container_name: family-budget-api
+    env_file: .env
+    depends_on:
+      - database
+    ports:
+      - "${DOCKER_APP_PORT_EXPOSE:-8000}:8000"
+    volumes:
+      - .:/app/
+
+volumes:
+  pg-data: {}

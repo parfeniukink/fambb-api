@@ -9,10 +9,8 @@ as 'configuration' fields.
 __all__ = (
     "User",
     "UserConfiguration",
-    "UserFlat",
     "UserRepository",
 )
 
-from .aggregates import User, UserConfiguration
-from .entities import UserConfiguration, UserFlat
+from .entities import User, UserConfiguration
 from .repository import UserRepository

@@ -1,1 +1,1 @@
-from . import finances, transactions, users
+from . import equity, transactions, users

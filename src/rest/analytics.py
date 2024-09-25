@@ -2,7 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, status
 
-from src import contracts, domain, operations
+from src import contracts, domain
+from src import operational as op
 from src.infrastructure import ResponseMulti
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
@@ -15,7 +16,7 @@ async def equity() -> ResponseMulti[contracts.Equity]:
     return ResponseMulti[contracts.Equity](
         result=[
             contracts.Equity.from_instance(item)
-            async for item in domain.finances.FinancialRepository().currencies()
+            async for item in domain.equity.EquityRepository().currencies()
         ]
     )
 
@@ -32,7 +33,7 @@ async def transactions(
     return ResponseMulti[contracts.Transaction](
         result=[
             contracts.Transaction.from_instance(item)
-            async for item in operations.get_transactions(currency_id=currency)
+            async for item in op.get_transactions(currency_id=currency)
         ]
     )
 
@@ -44,6 +45,6 @@ async def transactions_last() -> ResponseMulti[contracts.Transaction]:
     return ResponseMulti[contracts.Transaction](
         result=[
             contracts.Transaction.from_instance(item)
-            async for item in operations.get_last_transactions()
+            async for item in op.get_last_transactions()
         ]
     )

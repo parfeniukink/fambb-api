@@ -1,4 +1,6 @@
-from src.infrastructure import InternalData
+import functools
+
+from src.infrastructure import InternalData, database
 
 
 class CurrencyDBCandidate(InternalData):
@@ -19,6 +21,22 @@ class Currency(CurrencyDBCandidate):
     """
 
     id: int
+
+    @functools.singledispatchmethod
+    @classmethod
+    def from_instance(cls, instance) -> "Currency":
+        raise NotImplementedError(
+            f"Can not get {cls.__name__} from {type(instance)} type"
+        )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: database.Currency):
+        return cls(
+            id=instance.id,
+            name=instance.name,
+            sign=instance.sign,
+        )
 
 
 class CurrencyWithEquity(Currency):

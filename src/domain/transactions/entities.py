@@ -1,16 +1,14 @@
 from datetime import datetime
-from typing import Literal
 
-from src.domain.finances import Currency
+from src.domain.equity import Currency
 from src.infrastructure import InternalData
+
+from .constants import IncomeSource, OperationType
+
 
 # ------------------------------------------------------------------
 # transaction section
 # ------------------------------------------------------------------
-OperationType = Literal["cost", "income", "exchange"]
-IncomeSource = Literal["revenue", "other", "gift", "debt"]
-
-
 class Transaction(InternalData):
     """Represents the data structure across multiple database
     tables: 'incomes', 'costs', 'exchanges'
@@ -57,9 +55,9 @@ class Income(InternalData):
     """Aggregate."""
 
     id: int
+    name: str
     value: int
     timestamp: datetime
-    name: str
     source: IncomeSource
 
     user_id: int
@@ -69,9 +67,7 @@ class Income(InternalData):
 # ------------------------------------------------------------------
 # cost section
 # ------------------------------------------------------------------
-class CostCateogoryFlat(InternalData):
-    """The 'cost_category' database record representation."""
-
+class CostCategory(InternalData):
     id: int
     name: str
 
@@ -80,6 +76,7 @@ class CostDBCandidate(InternalData):
     name: str
     value: int
     timestamp: datetime
+
     user_id: int
     currency_id: int
     category_id: int
@@ -101,7 +98,7 @@ class Cost(InternalData):
 
     user_id: int
     currency: Currency
-    category: CostCateogoryFlat
+    category: CostCategory
 
 
 # ------------------------------------------------------------------

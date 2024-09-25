@@ -1,13 +1,13 @@
 import itertools
+import operator
 from collections.abc import AsyncGenerator
 
 from tests.mock_storage import Storage
 
-from src.domain.finances import Currency
-
+from ..equity import Currency
 from .entities import (
     Cost,
-    CostCateogoryFlat,
+    CostCategory,
     CostDBCandidate,
     Exchange,
     Income,
@@ -32,12 +32,19 @@ class TransactionRepository:
         limit: int | None = None,
     ) -> AsyncGenerator[Transaction, None]:
         """
-        Params:
+        params:
             ``operations`` - if set to ``None`` then all types of a transaction
                 will be returned.
 
             ``limit`` - limit output results
 
+        notes:
+            results are sorted by ``timestamp`` on the database level.
+
+        todo:
+            concurrently get all the transactions from the database in a single
+            query by building another data structure instead of doing this on
+            a Python level.
         """
 
         # TODO: build the SQL query base on ``operation``.
@@ -51,7 +58,7 @@ class TransactionRepository:
             Cost(
                 **item,
                 currency=Currency(**Storage.currencies[item["currency_id"]]),
-                category=CostCateogoryFlat(
+                category=CostCategory(
                     **Storage.cost_categories[item["category_id"]]
                 ),
             )
@@ -77,10 +84,15 @@ class TransactionRepository:
             for item in Storage.exchange.values()
         ]
 
-        # TODO: Remove after SQL LIMIT is added
         items_count = 0
 
-        for item in itertools.chain(costs, incomes, exchanges):
+        # sort all by timestamps
+        results: list[Cost | Income | Exchange] = sorted(
+            itertools.chain(costs, incomes, exchanges),
+            key=operator.attrgetter("timestamp"),
+        )
+
+        for item in results:
             name = (
                 item.name
                 if isinstance(item, (Income, Cost))
@@ -89,8 +101,10 @@ class TransactionRepository:
 
             if isinstance(item, (Income, Cost)):
                 item_currency_id = item.currency.id
-            else:
+            elif isinstance(item, Exchange):
                 item_currency_id = item.to_currency.id
+            else:
+                raise ValueError(f"Unexpected data type {type(item)}")
 
             if operation is not None:
                 _operation = operation
@@ -125,18 +139,18 @@ class TransactionRepository:
                 operation=_operation,
             )
 
-    async def cost_categories(self) -> AsyncGenerator[CostCateogoryFlat, None]:
+    async def cost_categories(self) -> AsyncGenerator[CostCategory, None]:
         for item in Storage.cost_categories.values():
             yield item
 
-    async def add_cost_category(self, name: str) -> CostCateogoryFlat:
+    async def add_cost_category(self, name: str) -> CostCategory:
         # TODO: move this validation to the DB level
         for item in Storage.cost_categories.values():
             if item.name == name:
                 raise Exception("This Cost category already exist")
 
         new_id = max(Storage.cost_categories.keys())
-        item = CostCateogoryFlat(id=new_id, name=name)
+        item = CostCategory(id=new_id, name=name)
 
         Storage.cost_categories[new_id] = item
 
@@ -159,7 +173,7 @@ class TransactionRepository:
         return Cost(
             **instance,
             currency=Currency(**Storage.currencies[instance["currency_id"]]),
-            category=CostCateogoryFlat(
+            category=CostCategory(
                 **Storage.cost_categories[instance["category_id"]]
             ),
         )

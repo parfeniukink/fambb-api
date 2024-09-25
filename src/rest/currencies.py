@@ -14,9 +14,9 @@ async def currency_create(
     """Create yet another currency."""
 
     instance: (
-        domain.finances.CurrencyWithEquity
-    ) = await domain.finances.FinancialRepository().add_currency(
-        candidate=domain.finances.CurrencyDBCandidate(
+        domain.equity.CurrencyWithEquity
+    ) = await domain.equity.EquityRepository().add_currency(
+        candidate=domain.equity.CurrencyDBCandidate(
             name=schema.name, sign=schema.sign
         )
     )
@@ -31,6 +31,6 @@ async def currencies() -> ResponseMulti[Currency]:
     return ResponseMulti[Currency](
         result=[
             Currency.from_instance(item)
-            async for item in domain.finances.FinancialRepository().currencies()
+            async for item in domain.equity.EquityRepository().currencies()
         ]
     )
