@@ -9,8 +9,6 @@
 ## Backlog
 
 - infrastructure
-  - database interaction via SQLAlchemy
-    - complete relational structure
   - migrate old data to a new relational structure
 - domain
   - operations
