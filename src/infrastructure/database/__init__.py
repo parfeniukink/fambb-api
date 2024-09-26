@@ -6,6 +6,7 @@ __all__ = (
     "Exchange",
     "Income",
     "Repository",
+    "Table",
     "User",
     "transaction",
 )
@@ -13,4 +14,13 @@ __all__ = (
 
 from .cqs import transaction
 from .repository import Repository
-from .tables import Base, Cost, CostCategory, Currency, Exchange, Income, User
+from .tables import (
+    Base,
+    Cost,
+    CostCategory,
+    Currency,
+    Exchange,
+    Income,
+    Table,
+    User,
+)

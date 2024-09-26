@@ -59,14 +59,16 @@ def app() -> FastAPI:
 async def john() -> domain.users.User:
     """create default user 'John' for tests."""
 
-    async with database.transaction():
-        db_instance = await domain.users.UserRepository().add_user(
+    async with database.transaction() as session:
+        user = await domain.users.UserRepository().add_user(
             candidate=database.User(
                 name="john",
                 token="41d917c7-464f-4056-b2de-1a6e2fbfd9e7",
             )
         )
-        return domain.users.User.from_instance(db_instance)
+        await session.flush()  # get user id
+
+    return domain.users.User.from_instance(user)
 
 
 @pytest.fixture
@@ -83,7 +85,7 @@ async def client(
 ) -> AsyncGenerator[AsyncClient, None]:
     """returns the authorized client."""
 
-    headers = {"Authorization": f"Token {john.token}"}
+    headers = {"Authorization": f"Bearer {john.token}"}
 
     async with httpx.AsyncClient(
         app=app, base_url="http://testserver", headers=headers

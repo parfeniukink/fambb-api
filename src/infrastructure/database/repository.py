@@ -1,3 +1,9 @@
+from typing import Any
+
+from sqlalchemy import Result, Select, func, select
+
+from src.infrastructure import errors
+
 from .cqs import Command, Query
 
 
@@ -49,3 +55,28 @@ class Repository:
 
     query = Query()
     command = Command()
+
+    async def count(self, table) -> int:
+        """get the number of items in a table"""
+
+        try:
+            query: Select = select(func.count(getattr(table, "id")))
+        except AttributeError as error:
+            raise errors.DatabaseError(
+                f"``id`` does not exist for {table} "
+            ) from error
+
+        async with self.query.session as session:
+            async with session.begin():
+                result: Result = await session.execute(query)
+                value: Any = result.scalar()
+
+                if not isinstance(value, int):
+                    raise errors.DatabaseError(
+                        message=(
+                            "Database count() function returned no-integer "
+                            f"({type(value)}) type of value"
+                        ),
+                    )
+                else:
+                    return value

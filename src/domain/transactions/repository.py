@@ -2,13 +2,13 @@ import itertools
 import operator
 from collections.abc import AsyncGenerator
 
+from src.infrastructure import database
 from tests.mock_storage import Storage
 
 from ..equity import Currency
 from .entities import (
     Cost,
     CostCategory,
-    CostDBCandidate,
     Exchange,
     Income,
     OperationType,
@@ -16,7 +16,7 @@ from .entities import (
 )
 
 
-class TransactionRepository:
+class TransactionRepository(database.Repository):
     """
     TransactionRepository is a data access entrypoint.
     It allows manage costs, incomes, exchanges.
@@ -140,40 +140,32 @@ class TransactionRepository:
             )
 
     async def cost_categories(self) -> AsyncGenerator[CostCategory, None]:
-        for item in Storage.cost_categories.values():
-            yield item
+        raise NotImplementedError
 
-    async def add_cost_category(self, name: str) -> CostCategory:
-        # TODO: move this validation to the DB level
-        for item in Storage.cost_categories.values():
-            if item.name == name:
-                raise Exception("This Cost category already exist")
+    async def add_cost_category(
+        self, candidate: database.CostCategory
+    ) -> database.CostCategory:
+        """Add item to the 'costs_categories' table."""
 
-        new_id = max(Storage.cost_categories.keys())
-        item = CostCategory(id=new_id, name=name)
+        self.command.session.add(candidate)
+        return candidate
 
-        Storage.cost_categories[new_id] = item
+    async def add_cost(self, candidate: database.Cost) -> database.Cost:
+        """Add item to the 'costs' table."""
 
-        return item
+        self.command.session.add(candidate)
+        return candidate
 
-    async def add_cost(self, candidate: CostDBCandidate) -> Cost:
-        new_id = max(Storage.costs.keys()) + 1
-        instance: dict = dict(
-            id=new_id,
-            name=candidate.name,
-            value=candidate.value,
-            timestamp=candidate.timestamp,
-            user_id=candidate.user_id,
-            currency_id=candidate.currency_id,
-            category_id=candidate.category_id,
-        )
+    async def add_income(self, candidate: database.Income) -> database.Income:
+        """Add item to the 'incomes' table."""
 
-        Storage.costs[new_id] = instance
+        self.command.session.add(candidate)
+        return candidate
 
-        return Cost(
-            **instance,
-            currency=Currency(**Storage.currencies[instance["currency_id"]]),
-            category=CostCategory(
-                **Storage.cost_categories[instance["category_id"]]
-            ),
-        )
+    async def add_exchange(
+        self, candidate: database.Exchange
+    ) -> database.Exchange:
+        """Add item to the 'exchanges' table."""
+
+        self.command.session.add(candidate)
+        return candidate

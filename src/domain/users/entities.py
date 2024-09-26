@@ -1,3 +1,9 @@
+"""
+notes:
+    ``src.domain.equity`` and ``src.domain.transactions`` are not used
+    from 'Bounded Context' due to the MVP simplicity.
+"""
+
 import functools
 
 from src.domain.equity import Currency

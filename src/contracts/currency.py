@@ -1,7 +1,6 @@
 import functools
 
-from src import domain
-from src.infrastructure import PublicData
+from src.infrastructure import PublicData, database
 
 
 class CurrencyCreateBody(PublicData):
@@ -25,7 +24,7 @@ class Currency(CurrencyCreateBody):
 
     @from_instance.register
     @classmethod
-    def _(cls, instance: domain.equity.Currency):
+    def _(cls, instance: database.Currency):
         return cls(
             id=instance.id,
             name=instance.name,

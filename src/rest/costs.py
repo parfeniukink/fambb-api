@@ -7,7 +7,7 @@ from src.contracts import (
     CostCategoryCreateBody,
     CostCreateBody,
 )
-from src.infrastructure import Response, ResponseMulti
+from src.infrastructure import Response, ResponseMulti, database
 
 router = APIRouter(prefix="/costs", tags=["Costs"])
 
@@ -31,9 +31,9 @@ async def cost_category_create(
     """Create a new cost category."""
 
     item: (
-        domain.transactions.CostCategory
+        database.CostCategory
     ) = await domain.transactions.TransactionRepository().add_cost_category(
-        name=schema.name
+        candidate=database.CostCategory(name=schema.name)
     )
 
     return Response[CostCategory](result=CostCategory.model_validate(item))

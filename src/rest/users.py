@@ -1,45 +1,17 @@
-import asyncio
+from fastapi import APIRouter, Depends
 
-from fastapi import APIRouter
-
-from src import contracts, domain
 from src import operational as op
-from src.infrastructure import Response, database
+from src.contracts import User
+from src.domain import users as domain
+from src.infrastructure import Response
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.get("")
-async def user_retrieve() -> Response[contracts.User]:
-    mock_id = 1
-    instance: domain.users.User = await op.user_retrieve(id_=mock_id)
+async def user_retrieve(
+    user: domain.User = Depends(op.authorize),
+) -> Response[User]:
+    """Retrieve user information information."""
 
-    return Response[contracts.User](
-        result=contracts.User.model_validate(instance)
-    )
-
-
-@router.get("/debug")
-async def user_debug() -> str:
-    async with database.transaction():
-        await domain.users.UserRepository().add_user(
-            candidate=database.User(name="john", token="secret")
-        )
-
-        await domain.users.UserRepository().add_user(
-            candidate=database.User(name="marry", token="secret")
-        )
-
-    async with database.transaction():
-        tasks = [
-            domain.users.UserRepository().add_user(
-                candidate=database.User(name="mark", token="secret")
-            ),
-            domain.users.UserRepository().add_user(
-                candidate=database.User(name="jack", token="secret")
-            ),
-        ]
-
-        await asyncio.gather(*tasks)
-
-    return "success"
+    return Response[User](result=User.model_validate(user))

@@ -3,12 +3,7 @@ import functools
 from src.infrastructure import InternalData, database
 
 
-class CurrencyDBCandidate(InternalData):
-    name: str
-    sign: str
-
-
-class Currency(CurrencyDBCandidate):
+class Currency(InternalData):
     """The currency representation which includes the equity information.
 
     Probably if you merge the equity concept with the currency it becomes
@@ -21,6 +16,8 @@ class Currency(CurrencyDBCandidate):
     """
 
     id: int
+    name: str
+    sign: str
 
     @functools.singledispatchmethod
     @classmethod
@@ -39,6 +36,6 @@ class Currency(CurrencyDBCandidate):
         )
 
 
-class CurrencyWithEquity(Currency):
+class Equity(Currency):
 
     equity: int

@@ -7,10 +7,9 @@ related to the family 'equity'.
 
 __all__ = (
     "Currency",
-    "CurrencyDBCandidate",
-    "CurrencyWithEquity",
+    "Equity",
     "EquityRepository",
 )
 
-from .entities import Currency, CurrencyDBCandidate, CurrencyWithEquity
+from .entities import Currency, Equity
 from .repository import EquityRepository

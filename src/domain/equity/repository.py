@@ -1,34 +1,37 @@
 from typing import AsyncGenerator
 
-from tests.mock_storage import Storage
+from sqlalchemy import Result, select
 
-from .entities import CurrencyDBCandidate, CurrencyWithEquity
+from src.infrastructure import database
+
+from .entities import Equity
 
 
-class EquityRepository:
-    async def currencies(self) -> AsyncGenerator[CurrencyWithEquity, None]:
-        """Select everything from 'currencies' table."""
+class EquityRepository(database.Repository):
+    async def currencies(self) -> tuple[database.Currency]:
+        """select everything from 'currencies' table."""
 
-        for item in Storage.currencies.values():
-            yield CurrencyWithEquity(**item)
+        async with self.query.session as session:
+            async with session.begin():
+                result: Result = await session.execute(
+                    select(database.Currency)
+                )
+                return tuple(result.scalars().all())
 
     async def add_currency(
-        self, candidate: CurrencyDBCandidate
-    ) -> CurrencyWithEquity:
-        """Add item to the 'currencies' table.
+        self, candidate: database.Currency
+    ) -> database.Currency:
+        """add item to the 'currencies' table."""
 
-        Notes:
-            If the ``name`` or the ``sign`` already exist in the table
-            the error will be raised.
-        """
+        self.command.session.add(candidate)
+        return candidate
 
-        new_id: int = max(Storage.currencies.keys()) + 1
-        instance: dict = dict(
-            id=new_id,
-            name=candidate.name,
-            sign=candidate.sign,
-            equity=0,
-        )
-        Storage.currencies[new_id] = instance
+    async def decrease_equity(self, currency_id: int, total: int) -> Equity:
+        """decrease the equity for a currency."""
 
-        return CurrencyWithEquity(**instance)
+        raise NotImplementedError
+
+    async def increase_equity(self, currency_id: int, total: int) -> Equity:
+        """increase the equity for a currency."""
+
+        raise NotImplementedError
