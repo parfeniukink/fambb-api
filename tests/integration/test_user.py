@@ -18,7 +18,6 @@ async def test_user_retrieve(john, client):
     assert users_total == 1
 
 
-@pytest.mark.use_db
 async def test_user_retrieve_anonymous(anonymous):
     response: httpx.Response = await anonymous.get("/users")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

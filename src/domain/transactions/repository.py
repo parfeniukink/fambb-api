@@ -2,6 +2,8 @@ import itertools
 import operator
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import Result, select
+
 from src.infrastructure import database
 from tests.mock_storage import Storage
 
@@ -25,127 +27,35 @@ class TransactionRepository(database.Repository):
     It uses the 'Query Builder' to create SQL queries.
     """
 
-    async def filter(
-        self,
-        operation: OperationType | None,
-        currency_id: int | None = None,
-        limit: int | None = None,
+    async def transactions(
+        self, batch_size: int | None = None
     ) -> AsyncGenerator[Transaction, None]:
-        """
+        """get all the items from 'costs', 'incomes', 'exchanges' tables
+        in the internal representation.
+
         params:
-            ``operations`` - if set to ``None`` then all types of a transaction
-                will be returned.
-
-            ``limit`` - limit output results
-
-        notes:
-            results are sorted by ``timestamp`` on the database level.
-
-        todo:
-            concurrently get all the transactions from the database in a single
-            query by building another data structure instead of doing this on
-            a Python level.
+            ``batch_size`` configures how the data is going to be fetched
+                           from the database. if `None` - regular fetch all
+                           items from the database.
         """
 
-        # TODO: build the SQL query base on ``operation``.
-        """sql
-        SELECT (transaction fields) FROM costs
-        WHERE (**filters)
-        ORDER BY ``timestamp``
-        """
-
-        costs: list[Cost] = [
-            Cost(
-                **item,
-                currency=Currency(**Storage.currencies[item["currency_id"]]),
-                category=CostCategory(
-                    **Storage.cost_categories[item["category_id"]]
-                ),
-            )
-            for item in Storage.costs.values()
-        ]
-        incomes: list[Income] = [
-            Income(
-                **item,
-                currency=Currency(**Storage.currencies[item["currency_id"]]),
-            )
-            for item in Storage.incomes.values()
-        ]
-        exchanges: list[Exchange] = [
-            Exchange(
-                **item,
-                to_currency=Currency(
-                    **Storage.currencies[item["to_currency_id"]]
-                ),
-                from_currency=Currency(
-                    **Storage.currencies[item["from_currency_id"]]
-                ),
-            )
-            for item in Storage.exchange.values()
-        ]
-
-        items_count = 0
-
-        # sort all by timestamps
-        results: list[Cost | Income | Exchange] = sorted(
-            itertools.chain(costs, incomes, exchanges),
-            key=operator.attrgetter("timestamp"),
-        )
-
-        for item in results:
-            name = (
-                item.name
-                if isinstance(item, (Income, Cost))
-                else "Currency Exchange"
-            )
-
-            if isinstance(item, (Income, Cost)):
-                item_currency_id = item.currency.id
-            elif isinstance(item, Exchange):
-                item_currency_id = item.to_currency.id
-            else:
-                raise ValueError(f"Unexpected data type {type(item)}")
-
-            if operation is not None:
-                _operation = operation
-            else:
-                if isinstance(item, Income):
-                    _operation = "income"
-                elif isinstance(item, Cost):
-                    _operation = "cost"
-                elif isinstance(item, Exchange):
-                    _operation = "exchange"
-                else:
-                    raise Exception(f"Operation {operation} is not available")
-
-            # NOTE: The code-level implementation of a filteration
-            # TODO: Removed after SQL LIMIT is added
-            if currency_id is not None and currency_id != item_currency_id:
-                # skip if a specified value is not in the results
-                continue
-
-            if limit is not None and items_count > limit:
-                # break if out of the limit
-                return
-
-            yield Transaction(
-                name=name,
-                value=item.value,
-                currency=(
-                    item.currency
-                    if isinstance(item, (Cost, Income))
-                    else item.to_currency
-                ),
-                operation=_operation,
-            )
+        raise NotImplementedError
 
     async def cost_categories(self) -> AsyncGenerator[CostCategory, None]:
-        raise NotImplementedError
+        """get all items from 'cost_categories' table"""
+
+        async with self.query.session as session:
+            async with session.begin():
+                results: Result = await session.execute(
+                    select(database.CostCategory)
+                )
+                for item in results.scalars():
+                    yield item
 
     async def add_cost_category(
         self, candidate: database.CostCategory
     ) -> database.CostCategory:
-        """Add item to the 'costs_categories' table."""
+        """add item to the 'cost_categories' table."""
 
         self.command.session.add(candidate)
         return candidate

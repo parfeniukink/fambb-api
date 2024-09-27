@@ -31,7 +31,7 @@ async def test_database_transactions_separate_success():
             )
         )
 
-    users_total: int = await domain.users.UserRepository().count_users()
+    users_total: int = await domain.users.UserRepository().count(database.User)
 
     assert users_total == 2, f"received {users_total} users. expected 2"
 
@@ -50,7 +50,7 @@ async def test_database_transactions_gathered_success():
         ]
         await asyncio.gather(*tasks)
 
-    users_total: int = await domain.users.UserRepository().count_users()
+    users_total: int = await domain.users.UserRepository().count(database.User)
 
     assert users_total == 2, f"received {users_total} users. expected 2"
 

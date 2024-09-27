@@ -2,7 +2,7 @@ from typing import Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, alias_generators, conlist
 
-ErrorType = Literal["internal", "external", "missing"]
+ErrorType = Literal["internal", "external", "missing", "bad-type"]
 
 
 class InternalData(BaseModel):

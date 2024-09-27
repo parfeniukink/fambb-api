@@ -13,11 +13,17 @@ Notes:
 """
 
 import functools
-from datetime import UTC, datetime
+from datetime import date
 from typing import TypeVar
 
-from sqlalchemy import ForeignKey, MetaData, String, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import DATE, ForeignKey, Integer, MetaData, String, func
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    relationship,
+    validates,
+)
 
 
 class Base(DeclarativeBase):
@@ -32,6 +38,12 @@ class Base(DeclarativeBase):
             "pk": "pk_%(table_name)s",
         }
     )
+
+    type_annotation_map = {
+        int: Integer,
+        date: DATE(),
+        str: String(255),
+    }
 
 
 Table = TypeVar("Table", bound=Base)
@@ -151,13 +163,25 @@ class Cost(Base, DefaultColumnsMixin):
 
     __tablename__ = "costs"
 
-    name: Mapped[str] = mapped_column(unique=True)
-    value: Mapped[int] = mapped_column()
-    timestamp: Mapped[datetime] = mapped_column(
-        default=functools.partial(datetime.now, UTC),
-        onupdate=functools.partial(datetime.now, UTC),
+    name: Mapped[str] = mapped_column(String(100))
+    value: Mapped[int]
+    timestamp: Mapped[date] = mapped_column(
+        default=functools.partial(date.today),
+        onupdate=functools.partial(date.today),
         server_default=func.CURRENT_TIMESTAMP(),
     )
+
+    @validates("value")
+    def validate_positive_value(self, key, address) -> int:
+        if not isinstance(address, int):
+            raise TypeError(
+                f"Received value is not valid integer. Type: {type(address)}"
+            )
+
+        if address < 0:
+            raise ValueError("Cost value must be >= 0")
+        else:
+            return address
 
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT")
@@ -203,20 +227,29 @@ class Income(Base, DefaultColumnsMixin):
 
     __tablename__ = "incomes"
 
-    name: Mapped[str] = mapped_column(unique=True)
+    name: Mapped[str] = mapped_column(String(100))
     value: Mapped[int]
-    timestamp: Mapped[datetime] = mapped_column(
-        default=functools.partial(datetime.now, UTC),
-        onupdate=functools.partial(datetime.now, UTC),
-        server_default=func.CURRENT_TIMESTAMP(),
+    timestamp: Mapped[date] = mapped_column(
+        default=functools.partial(date.today),
+        onupdate=functools.partial(date.today),
+        server_default=func.current_date(),
     )
-    source: Mapped[str] = mapped_column(unique=True, index=True)
+    source: Mapped[str] = mapped_column(index=True)
+
+    @validates("value")
+    def validate_positive_value(self, key, address) -> int:
+        if not isinstance(address, int):
+            raise TypeError(
+                f"Received value is not valid integer. Type: {type(address)}"
+            )
+
+        if address < 0:
+            raise ValueError("Cost value must be >= 0")
+        else:
+            return address
 
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT")
-    )
-    category_id: Mapped[int] = mapped_column(
-        ForeignKey("cost_categories.id", ondelete="RESTRICT")
     )
     currency_id: Mapped[int] = mapped_column(
         ForeignKey("currencies.id", ondelete="RESTRICT")
@@ -224,9 +257,6 @@ class Income(Base, DefaultColumnsMixin):
 
     user: Mapped[User] = relationship(
         viewonly=True, lazy="select", foreign_keys=[user_id]
-    )
-    category: Mapped[CostCategory] = relationship(
-        viewonly=True, lazy="select", foreign_keys=[category_id]
     )
     currency: Mapped[Currency] = relationship(
         viewonly=True, lazy="select", foreign_keys=[currency_id]
@@ -251,10 +281,10 @@ class Exchange(Base, DefaultColumnsMixin):
 
     from_value: Mapped[int]
     to_value: Mapped[int]
-    timestamp: Mapped[datetime] = mapped_column(
-        default=functools.partial(datetime.now, UTC),
-        onupdate=functools.partial(datetime.now, UTC),
-        server_default=func.CURRENT_TIMESTAMP(),
+    timestamp: Mapped[date] = mapped_column(
+        default=functools.partial(date.today),
+        onupdate=functools.partial(date.today),
+        server_default=func.current_date(),
     )
 
     user_id: Mapped[int] = mapped_column(
@@ -276,3 +306,27 @@ class Exchange(Base, DefaultColumnsMixin):
     to_currency: Mapped[Currency] = relationship(
         viewonly=True, lazy="select", foreign_keys=[to_currency_id]
     )
+
+    @validates("from_value")
+    def validate_positive_from_value(self, key, address) -> int:
+        if not isinstance(address, int):
+            raise TypeError(
+                f"Received value is not valid integer. Type: {type(address)}"
+            )
+
+        if address < 0:
+            raise ValueError("Cost value must be >= 0")
+        else:
+            return address
+
+    @validates("to_value")
+    def validate_positive_to_value(self, key, address) -> int:
+        if not isinstance(address, int):
+            raise TypeError(
+                f"Received value is not valid integer. Type: {type(address)}"
+            )
+
+        if address < 0:
+            raise ValueError("Cost value must be >= 0")
+        else:
+            return address

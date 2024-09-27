@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Body, status
+from fastapi import APIRouter, Body, Depends, status
 
 from src import domain
+from src import operational as op
 from src.contracts import (
     Cost,
     CostCategory,
@@ -13,8 +14,10 @@ router = APIRouter(prefix="/costs", tags=["Costs"])
 
 
 @router.get("/categories", status_code=status.HTTP_200_OK)
-async def cost_categories() -> ResponseMulti[CostCategory]:
-    """Return available cost categories from the database."""
+async def cost_categories(
+    _=Depends(op.authorize),
+) -> ResponseMulti[CostCategory]:
+    """return available cost categories from the database."""
 
     return ResponseMulti[CostCategory](
         result=[
@@ -26,15 +29,17 @@ async def cost_categories() -> ResponseMulti[CostCategory]:
 
 @router.post("/categories", status_code=status.HTTP_201_CREATED)
 async def cost_category_create(
+    _=Depends(op.authorize),
     schema: CostCategoryCreateBody = Body(...),
 ) -> Response[CostCategory]:
-    """Create a new cost category."""
+    """create a new cost category."""
 
-    item: (
-        database.CostCategory
-    ) = await domain.transactions.TransactionRepository().add_cost_category(
-        candidate=database.CostCategory(name=schema.name)
-    )
+    async with database.transaction():
+        item: (
+            database.CostCategory
+        ) = await domain.transactions.TransactionRepository().add_cost_category(
+            candidate=database.CostCategory(name=schema.name)
+        )
 
     return Response[CostCategory](result=CostCategory.model_validate(item))
 

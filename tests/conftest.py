@@ -20,16 +20,23 @@ from src.infrastructure import database, errors, factories
 
 
 def pytest_configure() -> None:
-    # Disable logs
-    logging.disable(
-        logging.CRITICAL
-    )  # This disables all logging below CRITICAL
+    """allows you to configure pytest for each runtime.
 
-    # logger.disable("src.rest")
-    # logger.disable("src.contracts")
-    # logger.disable("src.operational")
-    # logger.disable("src.domain")
-    # logger.disable("src.infrastructure")
+    examples:
+        ``PYTEST__LOGGING=off python -m pytest tests/`` - supresses
+            logging output and gives only clean pytest output.
+    """
+
+    if os.getenv("PYTEST__LOGGING", "") == "off":
+        # Disable logs
+        logging.disable(
+            logging.CRITICAL
+        )  # This disables all logging below CRITICAL
+
+        logger.disable("src.infrastructure")
+        logger.disable("src.presentation")
+        logger.disable("src.domain")
+        logger.disable("src.operational")
 
 
 # =====================================================================

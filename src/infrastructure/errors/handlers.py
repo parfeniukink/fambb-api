@@ -11,8 +11,32 @@ from loguru import logger
 from starlette import status
 from starlette.requests import Request
 
-from ..responses import ErrorDetail, ErrorResponse, ErrorResponseMulti
+from ..responses import (
+    ErrorDetail,
+    ErrorResponse,
+    ErrorResponseMulti,
+    ErrorType,
+)
 from .exceptions import BaseError
+
+
+def fastapi_to_internal_error_mapper(value: str) -> ErrorType:
+    """maps ValidationError, HTTPException, other exceptions occured
+    in the runtime to internal error types.
+
+    notes:
+        ``internal`` stand for overall internal error. aka Exception in Python
+        ``external`` stand for external API/Service issue
+        ``missing`` some data is missed
+        ``bad-type`` some fields has wrong data types
+    """
+
+    if value == "missing":
+        return "missing"
+    elif "_type" in value:
+        return "bad-type"
+    else:
+        return "internal"
 
 
 def unprocessable_entity_error_handler(
@@ -26,11 +50,15 @@ def unprocessable_entity_error_handler(
         result=[
             ErrorResponse(
                 message=err["msg"],
-                detail=ErrorDetail(path=err["loc"], type=err["type"]),
+                detail=ErrorDetail(
+                    path=err["loc"],
+                    type=fastapi_to_internal_error_mapper(err["type"]),
+                ),
             )
             for err in error.errors()
         ]
     )
+    logger.debug(error.errors()[0]["type"])
     logger.error(response.model_dump(by_alias=True))
 
     return JSONResponse(
