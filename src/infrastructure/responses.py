@@ -101,7 +101,7 @@ class OffsetPagination(PublicData):
     limit: int = Field(description="Limit results total items")
 
 
-def get_cursor_pagination_params(
+def get_offset_pagination_params(
     context: str | None = Query(
         default=None,
         description="The highest id of previously received item list",

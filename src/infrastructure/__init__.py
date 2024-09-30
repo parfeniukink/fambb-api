@@ -11,7 +11,7 @@ __all__ = (
     "database",
     "errors",
     "factories",
-    "get_cursor_pagination_params",
+    "get_offset_pagination_params",
     "middleware",
 )
 
@@ -27,5 +27,5 @@ from .responses import (
     Response,
     ResponseMulti,
     ResponseMultiPaginated,
-    get_cursor_pagination_params,
+    get_offset_pagination_params,
 )
