@@ -16,7 +16,7 @@ async def equity() -> ResponseMulti[contracts.Equity]:
     return ResponseMulti[contracts.Equity](
         result=[
             contracts.Equity.from_instance(item)
-            async for item in domain.equity.EquityRepository().currencies()
+            for item in await domain.equity.EquityRepository().currencies()
         ]
     )
 

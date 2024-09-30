@@ -80,3 +80,30 @@ class Repository:
                     )
                 else:
                     return value
+
+    def _add_pagination_filters(
+        self,
+        query: Select,
+        /,
+        offset: int = 0,
+        limit: int = 10,
+        **_,
+    ) -> Select:
+        """update the query if pagination filters are specified.
+
+        params:
+            ``last_id: int | None`` to apply filter `WHERE id > {last_id}`
+            ``limit: int | None`` to apply filter `LIMIT {limit}`
+        """
+
+        if offset < 0:
+            raise ValueError("Wrong ``offset`` on pagination")
+        elif offset > 0:
+            query = query.offset(offset)
+
+        if limit < 0:
+            raise ValueError("Wrong ``limit`` on pagination")
+        elif limit > 0:
+            query = query.limit(limit)
+
+        return query

@@ -24,13 +24,13 @@ async def currencies(_=Depends(op.authorize)) -> ResponseMulti[Currency]:
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def currency_create(
     _=Depends(op.authorize),
-    schema: CurrencyCreateBody = Body(...),
+    body: CurrencyCreateBody = Body(...),
 ) -> Response[Currency]:
     """Create yet another equity."""
 
     async with database.transaction():
         instance = await domain.EquityRepository().add_currency(
-            candidate=database.Currency(name=schema.name, sign=schema.sign)
+            candidate=database.Currency(name=body.name, sign=body.sign)
         )
 
     return Response[Currency](result=Currency.from_instance(instance))

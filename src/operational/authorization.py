@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -22,7 +20,7 @@ async def authorize(
         user: database.User = await domain.UserRepository().user_by_token(
             token
         )
-    except errors.NotFoundError:
-        raise errors.AuthenticationError("Invalid Token")
+    except errors.NotFoundError as error:
+        raise errors.AuthenticationError("Invalid Token") from error
     else:
         return user

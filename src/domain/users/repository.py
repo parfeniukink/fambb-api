@@ -1,7 +1,8 @@
 from sqlalchemy import Result, select
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 
-from src.infrastructure import database
+from src.infrastructure import database, errors
 
 
 class UserRepository(database.Repository):
@@ -34,7 +35,10 @@ class UserRepository(database.Repository):
                         joinedload(database.User.default_cost_category),
                     )
                 )
-                user: database.User = results.scalars().one()
+                try:
+                    user: database.User = results.scalars().one()
+                except NoResultFound as error:
+                    raise errors.NotFoundError("Can't find user") from error
                 return user
 
     async def add_user(self, candidate: database.User) -> database.User:

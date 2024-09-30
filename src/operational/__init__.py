@@ -10,7 +10,9 @@ allowed to be performed by the user of this system in general.
 """
 
 __all__ = (
+    "add_cost",
     "authorize",
+    "get_costs",
     "get_last_transactions",
     "get_transactions",
     "user_retrieve",
@@ -18,5 +20,10 @@ __all__ = (
 
 
 from .authorization import authorize
-from .transactions import get_last_transactions, get_transactions
+from .transactions import (
+    add_cost,
+    get_costs,
+    get_last_transactions,
+    get_transactions,
+)
 from .users import user_retrieve

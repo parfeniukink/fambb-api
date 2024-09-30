@@ -73,10 +73,7 @@ async def test_database_transactions_rollback():
                 )
             )
 
-            def raise_exception():
-                raise Exception("Some exception")
-
-            raise_exception()
+            raise Exception("Some exception")
 
     async with database.transaction():
         await domain.users.UserRepository().add_user(

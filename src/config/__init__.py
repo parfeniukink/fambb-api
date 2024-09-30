@@ -25,7 +25,7 @@ class DatabaseSettings(BaseModel):
 
     @property
     def default_database_url(self) -> str:
-        """Returns the url to the default database."""
+        """returns the url to the default database."""
 
         return (
             f"{self.driver}://"

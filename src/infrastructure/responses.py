@@ -1,5 +1,6 @@
 from typing import Generic, Literal, TypeVar
 
+from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, alias_generators, conlist
 
 ErrorType = Literal["internal", "external", "missing", "bad-type"]
@@ -32,6 +33,21 @@ class PublicData(BaseModel):
 
 
 _TPublicData = TypeVar("_TPublicData", bound=PublicData)
+
+
+class ResponseMultiPaginated(PublicData, Generic[_TPublicData]):
+    """Generic response model that consist multiple results,
+    paginated with cursor pagination.
+    """
+
+    result: list[_TPublicData]
+    context: int = Field(
+        description=(
+            "The user ID that should be used for the "
+            "next request to get proper pagination"
+        )
+    )
+    left: int = Field(description="How many items is left")
 
 
 class ResponseMulti(PublicData, Generic[_TPublicData]):
@@ -73,3 +89,55 @@ class ErrorResponseMulti(PublicData):
     """The public error respnse model that includes multiple objects."""
 
     result: conlist(ErrorResponse, min_length=1)  # type: ignore
+
+
+# =====================================================================
+# pagination
+# =====================================================================
+class OffsetPagination(PublicData):
+    """cursor pagination data class."""
+
+    context: int = Field(description="The ID to start limiting")
+    limit: int = Field(description="Limit results total items")
+
+
+def get_cursor_pagination_params(
+    context: str | None = Query(
+        default=None,
+        description="The highest id of previously received item list",
+    ),
+    limit: str | None = Query(
+        default=None,
+        description="Limit results total items",
+    ),
+) -> OffsetPagination:
+    """FastAPI HTTP GET query params.
+
+    usage:
+        ```py
+        @router.get("")
+        async def controller(
+            pagination: CursorPagination = fastapi.Depends(
+                get_cursor_pagination_params
+            )
+        ):
+            ...
+    """
+
+    if not context:
+        _context = 0
+    else:
+        try:
+            _context = int(context)
+        except ValueError as error:
+            raise error
+
+    if not limit:
+        _limit = 10  # default value
+    else:
+        try:
+            _limit = int(limit)
+        except ValueError as error:
+            raise error
+
+    return OffsetPagination(context=_context, limit=_limit)

@@ -14,12 +14,12 @@ from src.infrastructure import database
 # tests for not authorized
 # ==================================================
 async def test_cost_categories_fetch_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.get("costs/categories")
+    response = await anonymous.get("/costs/categories")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 async def test_cost_categories_create_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.post("costs/categories", json={"name": "..."})
+    response = await anonymous.post("/costs/categories", json={"name": "..."})
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -30,7 +30,7 @@ async def test_cost_categories_create_anonymous(anonymous: httpx.AsyncClient):
 async def test_cost_categories_fetch(
     client: httpx.AsyncClient, cost_categories
 ):
-    response = await client.get("costs/categories")
+    response = await client.get("/costs/categories")
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["result"]) == len(cost_categories)
@@ -41,7 +41,7 @@ async def test_cost_category_creation(
     client: httpx.AsyncClient, cost_categories
 ):
     response = await client.post(
-        "costs/categories", json={"name": "Another yet category"}
+        "/costs/categories", json={"name": "Another yet category"}
     )
 
     total = await domain.transactions.TransactionRepository().count(
@@ -50,6 +50,56 @@ async def test_cost_category_creation(
 
     assert response.status_code == status.HTTP_201_CREATED
     assert total == len(cost_categories) + 1
+
+
+@pytest.mark.use_db
+async def test_costs_fetch(client: httpx.AsyncClient, cost_factory):
+    """test response paginated by default."""
+
+    costs: list[database.Cost] = await cost_factory(n=15)
+
+    response1: httpx.Response = await client.get("/costs")
+    response1_data = response1.json()
+    response2: httpx.Response = await client.get(
+        "/costs", params={"context": response1_data["context"]}
+    )
+    response2_data = response2.json()
+
+    total = await domain.transactions.TransactionRepository().count(
+        database.Cost
+    )
+
+    assert total == len(costs)
+    assert response1.status_code == status.HTTP_200_OK
+    assert len(response1_data["result"]) == 10
+    assert response1_data["context"] == 10
+    assert response1_data["left"] == 5
+    assert len(response2_data["result"]) == 5
+    assert response2_data["context"] == 15
+    assert response2_data["left"] == 0
+
+
+@pytest.mark.use_db
+async def test_cost_creation(
+    client: httpx.AsyncClient, cost_categories, currencies
+):
+    response = await client.post(
+        "/costs",
+        json={
+            "name": "PS5",
+            "value": 10000,
+            "timestamp": "2024-09-28",
+            "currency_id": 1,
+            "category_id": 1,
+        },
+    )
+
+    total = await domain.transactions.TransactionRepository().count(
+        database.Cost
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    assert total == 1
 
 
 # ==================================================
