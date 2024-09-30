@@ -1,16 +1,14 @@
 """
 migration details:
-    - create users manually. Dmytro - 1, Ivanka - 2
+    - create users manually. John - 1, Marry - 2
     - create currencies manually - USD - 1, UAH - 2
-    - run script to populate cost categories and currencies.
-        all ids must be the same
-    - run script to populate transactions 
+    - run script
 
 sql queries:
     insert into users (name,token) values ('John', 'secret');
     insert into users (name,token) values ('Marry', 'secret');
     insert into currencies (name,sign,equity) values ('USD', '$', xxx);
-    insert into currencies (name,sign,equity) values ('UAH', '$', xxx);
+    insert into currencies (name,sign,equity) values ('UAH', '#', xxx);
 """
 
 import asyncio
@@ -134,7 +132,10 @@ async def migrate():
     await migrate_incomes()
     await migrate_exchanges()
 
+    return 0
+
 
 if __name__ == "__main__":
-    asyncio.run(migrate())
-    print("✅ Complete")
+    raise SystemExit(asyncio.run(migrate()))
+else:
+    raise SystemExit("Sorry, this module can not be imported")
