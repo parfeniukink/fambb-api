@@ -36,6 +36,9 @@ async def transaction():
     try:
         async with session.begin():
             yield session
+    except errors.NotFoundError as error:
+        logger.error(error)
+        raise error
     except Exception as error:
         logger.error(error)
         raise errors.DatabaseError(str(error)) from error
@@ -77,6 +80,9 @@ class Query:
             yield session
         except AttributeError:
             raise ValueError("There is no _session object for the Query")
+        except errors.NotFoundError as error:
+            logger.error(error)
+            raise error
         except Exception as error:
             logger.error(error)
             raise errors.DatabaseError(str(error)) from error
