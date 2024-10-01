@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from src.infrastructure import database, errors
 
-from .entities import Cost, CostCategory, Exchange, Income, Transaction
+from .entities import CostCategory, Exchange, Transaction
 
 
 class TransactionRepository(database.Repository):
@@ -99,18 +99,47 @@ class TransactionRepository(database.Repository):
         self.command.session.add(candidate)
         return candidate
 
-    async def incomes(self) -> AsyncGenerator[Income, None]:
-        """get all incomes from 'incomes' table"""
+    async def incomes(
+        self, /, **kwargs
+    ) -> AsyncGenerator[database.Income, None]:
+        """get all incomes from 'incomes' table
+
+        notes:
+            kwargs are passed to the self._add_pagination_filters()
+        """
+
+        query: Select = (
+            select(database.Income)
+            .options(
+                joinedload(database.Income.currency),
+            )
+            .order_by(database.Income.timestamp)
+        )
+
+        query = self._add_pagination_filters(query, **kwargs)
+
+        async with self.query.session as session:
+            async with session.begin():
+                results: Result = await session.execute(query)
+                for item in results.scalars():
+                    yield item
+
+    async def income(self, id_: int) -> database.Income:
+        """get specific item from 'incomes' table"""
 
         async with self.query.session as session:
             async with session.begin():
                 results: Result = await session.execute(
-                    select(database.Income).options(
-                        joinedload(database.Income.currency)
+                    select(database.Income)
+                    .where(database.Income.id == id_)
+                    .options(
+                        joinedload(database.Income.currency),
                     )
                 )
-                for item in results.scalars():
-                    yield item
+                if not (item := results.scalars().one_or_none()):
+                    raise errors.NotFoundError(f"Income {id_} not found")
+                else:
+                    return item
 
     async def add_income(self, candidate: database.Income) -> database.Income:
         """Add item to the 'incomes' table."""

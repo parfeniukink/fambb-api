@@ -2,11 +2,9 @@ __all__ = (
     "analytics",
     "costs",
     "currencies",
+    "incomes",
     "users",
 )
 
 
-from .analytics import router
-from .costs import router
-from .currencies import router
-from .users import router
+from . import analytics, costs, currencies, incomes, users

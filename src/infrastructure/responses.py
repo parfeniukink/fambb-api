@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Generic, Literal, TypeVar
 
 from fastapi import Query
@@ -14,9 +15,6 @@ class InternalData(BaseModel):
         arbitrary_types_allowed=True,
         from_attributes=True,
     )
-
-
-_TInternalData = TypeVar("_TInternalData", bound=InternalData)
 
 
 class PublicData(BaseModel):
@@ -40,7 +38,7 @@ class ResponseMultiPaginated(PublicData, Generic[_TPublicData]):
     paginated with cursor pagination.
     """
 
-    result: list[_TPublicData]
+    result: Sequence[_TPublicData]
     context: int = Field(
         description=(
             "The user ID that should be used for the "
@@ -53,7 +51,7 @@ class ResponseMultiPaginated(PublicData, Generic[_TPublicData]):
 class ResponseMulti(PublicData, Generic[_TPublicData]):
     """Generic response model that consist multiple results."""
 
-    result: list[_TPublicData]
+    result: Sequence[_TPublicData]
 
 
 class Response(PublicData, Generic[_TPublicData]):

@@ -77,11 +77,34 @@ class Cost(PublicData):
     id: int
     name: str
     value: int
-    timestamp: datetime = Field(
-        default_factory=datetime.now,
-        description=(
-            "Define the timestamp for the cost. The default value is 'now'"
-        ),
-    )
+    timestamp: datetime
     currency: Currency
     category: CostCategory
+
+
+class IncomeCreateBody(PublicData):
+    """The request body to create a new income."""
+
+    name: str = Field(description="The name of the currency")
+    value: int = Field(description="The value in cents")
+    source: domain.transactions.IncomeSource = Field(
+        default="revenue", description="Available 'source' for the income."
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description=("The date of a transaction"),
+    )
+    currency_id: int = Field(description="Internal currency system identifier")
+
+
+class Income(PublicData):
+    """The public representation of an income."""
+
+    id: int = Field(description="Unique identifier in the system")
+    name: str = Field(description="The name of the currency")
+    value: int = Field(description="The value in cents")
+    source: domain.transactions.IncomeSource = Field(
+        default="revenue", description="Available 'source' for the income."
+    )
+    timestamp: datetime = Field(description=("The date of a transaction"))
+    currency: Currency

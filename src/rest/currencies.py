@@ -12,7 +12,7 @@ router = APIRouter(prefix="/currencies", tags=["Currencies"])
 async def currencies(_=Depends(op.authorize)) -> ResponseMulti[Currency]:
     """Return available cost categories."""
 
-    currencies: tuple[database.Currency] = (
+    currencies: tuple[database.Currency, ...] = (
         await domain.EquityRepository().currencies()
     )
 

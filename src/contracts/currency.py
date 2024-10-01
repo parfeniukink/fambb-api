@@ -1,19 +1,21 @@
 import functools
 
+from pydantic import Field
+
 from src.infrastructure import PublicData, database
 
 
 class CurrencyCreateBody(PublicData):
     """The request body to create a new currency."""
 
-    name: str
-    sign: str
+    name: str = Field(description="International name of a currency")
+    sign: str = Field(description="International sign of a currency")
 
 
 class Currency(CurrencyCreateBody):
     """The public representation of a currency."""
 
-    id: int
+    id: int = Field(description="Unique identifier in the system")
 
     @functools.singledispatchmethod
     @classmethod
