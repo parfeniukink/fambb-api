@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncGenerator
 from datetime import date
 
@@ -13,19 +14,25 @@ async def add_cost(
     category_id: int,
     user_id: int,
 ) -> database.Cost:
-    async with database.transaction():
-        instance = await domain.transactions.TransactionRepository().add_cost(
-            candidate=database.Cost(
-                name=name,
-                value=value,
-                timestamp=timestamp,
-                user_id=user_id,
-                currency_id=currency_id,
-                category_id=category_id,
-            )
-        )
 
-        # TODO: decrease the equity
+    async with database.transaction() as session:
+        tasks = (
+            domain.transactions.TransactionRepository().add_cost(
+                candidate=database.Cost(
+                    name=name,
+                    value=value,
+                    timestamp=timestamp,
+                    user_id=user_id,
+                    currency_id=currency_id,
+                    category_id=category_id,
+                )
+            ),
+            domain.equity.EquityRepository().decrease_equity(
+                currency_id, value
+            ),
+        )
+        instance, *_ = await asyncio.gather(*tasks)
+        await session.flush()
 
     return await domain.transactions.TransactionRepository().cost(
         id_=instance.id

@@ -1,5 +1,5 @@
 """
-this package includes high-level tests for Cost operatinos
+this package includes high-level tests for cost operatinos
 """
 
 import httpx
@@ -80,14 +80,14 @@ async def test_costs_fetch(client: httpx.AsyncClient, cost_factory):
 
 
 @pytest.mark.use_db
-async def test_cost_creation(
+async def test_cost_add(
     client: httpx.AsyncClient, cost_categories, currencies
 ):
     response = await client.post(
         "/costs",
         json={
             "name": "PS5",
-            "value": 10000,
+            "value": 100,
             "timestamp": "2024-09-28",
             "currency_id": 1,
             "category_id": 1,
@@ -98,8 +98,13 @@ async def test_cost_creation(
         database.Cost
     )
 
+    currency: database.Currency = (
+        await domain.equity.EquityRepository().currency(id_=1)
+    )
+
     assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert total == 1
+    assert currency.equity == currencies[0].equity - 100
 
 
 # ==================================================

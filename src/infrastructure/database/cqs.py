@@ -48,6 +48,19 @@ async def transaction():
 
 
 class Command:
+    """cqs 'Command' non-data descriptor
+
+    usage:
+        ```py
+        async with self.query.session as session:
+            async with session.begin():
+                result: Result = await session.execute(
+                    select(database.Table)
+                )
+                return tuple(result.scalars().all())
+        ```
+    """
+
     def __get__(self, instance, owner):
         if not (session := CTX_CQS_COMMAND_SESSION.get()):
             raise ValueError(
@@ -66,7 +79,7 @@ class Command:
 
 
 class Query:
-    def __get__(self, instance: object, owner):
+    def __get__(self, instance, owner):
         return self
 
     @property

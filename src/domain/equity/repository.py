@@ -1,14 +1,23 @@
-from typing import AsyncGenerator
-
-from sqlalchemy import Result, select
+from sqlalchemy import Result, select, update
 
 from src.infrastructure import database
 
-from .entities import Equity
-
 
 class EquityRepository(database.Repository):
-    async def currencies(self) -> tuple[database.Currency]:
+    async def currency(self, id_: int) -> database.Currency:
+        """search by ``id``."""
+
+        async with self.query.session as session:
+            async with session.begin():
+                results: Result = await session.execute(
+                    select(database.Currency).where(
+                        database.Currency.id == id_
+                    )
+                )
+                item: database.Currency = results.scalars().one()
+                return item
+
+    async def currencies(self) -> tuple[database.Currency, ...]:
         """select everything from 'currencies' table."""
 
         async with self.query.session as session:
@@ -26,12 +35,26 @@ class EquityRepository(database.Repository):
         self.command.session.add(candidate)
         return candidate
 
-    async def decrease_equity(self, currency_id: int, total: int) -> Equity:
+    async def decrease_equity(self, currency_id: int, value: int) -> None:
         """decrease the equity for a currency."""
 
-        raise NotImplementedError
+        query = (
+            update(database.Currency)
+            .where(database.Currency.id == currency_id)
+            .values({"equity": database.Currency.equity - value})
+            .returning(database.Currency)
+        )
 
-    async def increase_equity(self, currency_id: int, total: int) -> Equity:
+        await self.command.session.execute(query)
+
+    async def increase_equity(self, currency_id: int, value: int) -> None:
         """increase the equity for a currency."""
 
-        raise NotImplementedError
+        query = (
+            update(database.Currency)
+            .where(database.Currency.id == currency_id)
+            .values({"equity": database.Currency.equity + value})
+            .returning(database.Currency)
+        )
+
+        await self.command.session.execute(query)

@@ -16,10 +16,10 @@ from src.infrastructure import (
     ResponseMulti,
     ResponseMultiPaginated,
     database,
-    get_cursor_pagination_params,
+    get_offset_pagination_params,
 )
 
-router = APIRouter(prefix="/costs", tags=["Costs"])
+router = APIRouter(prefix="/costs", tags=["Transactions", "Costs"])
 
 
 @router.get("/categories", status_code=status.HTTP_200_OK)
@@ -56,7 +56,7 @@ async def cost_category_create(
 @router.get("", status_code=status.HTTP_200_OK)
 async def costs(
     user: domain.users.User = Depends(op.authorize),
-    pagination: OffsetPagination = Depends(get_cursor_pagination_params),
+    pagination: OffsetPagination = Depends(get_offset_pagination_params),
 ) -> ResponseMultiPaginated[Cost]:
     """get costs."""
 
