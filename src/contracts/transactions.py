@@ -108,3 +108,31 @@ class Income(PublicData):
     )
     timestamp: datetime = Field(description=("The date of a transaction"))
     currency: Currency
+
+
+class ExchangeCreateBody(PublicData):
+    """The request body to create a new income."""
+
+    from_value: int = Field(description="")
+    to_value: int
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description=("The date of a transaction"),
+    )
+    from_currency_id: int = Field(
+        description="Internal currency system identifier"
+    )
+    to_currency_id: int = Field(
+        description="Internal currency system identifier"
+    )
+
+
+class Exchange(PublicData):
+    """The public representation of an income."""
+
+    id: int = Field(description="Unique identifier in the system")
+    from_value: int
+    to_value: int
+    timestamp: datetime = Field(description=("The date of a transaction"))
+    from_currency: Currency
+    to_currency: Currency

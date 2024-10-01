@@ -111,6 +111,61 @@ async def add_income(
     )
 
 
+async def get_currency_exchanges(
+    limit: int,
+    offset: int,
+    user_id: int | None = None,
+) -> tuple[database.Exchange, ...]:
+    """get paginated costs. proxy values to the repository."""
+
+    items = tuple(
+        [
+            item
+            async for item in domain.transactions.TransactionRepository().exchanges(
+                user_id=user_id, offset=offset, limit=limit
+            )
+        ]
+    )
+
+    return items
+
+
+async def currency_exchange(
+    from_value: int,
+    to_value: int,
+    timestamp: date,
+    from_currency_id: int,
+    to_currency_id: int,
+    user_id: int,
+) -> database.Exchange:
+    async with database.transaction() as session:
+        tasks = (
+            domain.transactions.TransactionRepository().add_exchange(
+                candidate=database.Exchange(
+                    to_value=from_value,
+                    from_value=to_value,
+                    timestamp=timestamp,
+                    from_currency_id=from_currency_id,
+                    to_currency_id=to_currency_id,
+                    user_id=user_id,
+                )
+            ),
+            domain.equity.EquityRepository().decrease_equity(
+                currency_id=from_currency_id, value=from_value
+            ),
+            domain.equity.EquityRepository().increase_equity(
+                currency_id=to_currency_id, value=to_value
+            ),
+        )
+
+        instance, *_ = await asyncio.gather(*tasks)
+        await session.flush()
+
+    return await domain.transactions.TransactionRepository().exchange(
+        id_=instance.id
+    )
+
+
 async def get_transactions(
     currency_id: int | None,
 ) -> AsyncGenerator[domain.transactions.Transaction, None]:

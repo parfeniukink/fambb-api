@@ -88,9 +88,8 @@ async def test_cost_add(
         json={
             "name": "PS5",
             "value": 100,
-            "timestamp": "2024-09-28",
-            "currency_id": 1,
-            "category_id": 1,
+            "currencyId": 1,
+            "categoryId": 1,
         },
     )
 
@@ -116,7 +115,7 @@ async def test_cost_add(
         ({}, "missing"),
         ({"name": None}, "bad-type"),
         ({"name": 12}, "bad-type"),
-        ({"another-field": "proper string"}, "missing"),
+        ({"anotherField": "proper string"}, "missing"),
     ],
 )
 @pytest.mark.use_db

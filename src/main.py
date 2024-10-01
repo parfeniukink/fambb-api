@@ -26,6 +26,7 @@ app: FastAPI = factories.web_application(
         rest.analytics.router,
         rest.costs.router,
         rest.incomes.router,
+        rest.exchange.router,
         rest.currencies.router,
         rest.users.router,
     ),

@@ -89,3 +89,45 @@ async def income_factory(
             return results
 
     return inner
+
+
+class ExchangeCandidateFactory(SQLAlchemyFactory[database.Exchange]):
+    __model__ = database.Exchange
+
+
+@pytest.fixture
+async def exchange_factory(
+    john,
+    currencies: list[database.Currency],
+) -> Callable:
+    """
+    params:
+        ``n`` - stands for number of generaget items.
+    """
+
+    from_currency, to_currency = currencies
+
+    async def inner(n=1) -> list[database.Exchange]:
+        candidates = (
+            ExchangeCandidateFactory.build(
+                user_id=john.id,
+                from_currency_id=from_currency.id,
+                to_currency_id=to_currency.id,
+            )
+            for _ in range(n)
+        )
+
+        async with database.transaction() as session:
+            tasks = (
+                domain.transactions.TransactionRepository().add_exchange(
+                    candidate
+                )
+                for candidate in candidates
+            )
+
+            results: list[database.Exchange] = await asyncio.gather(*tasks)
+            await session.flush()
+
+            return results
+
+    return inner

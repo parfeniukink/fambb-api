@@ -51,6 +51,7 @@ def app() -> FastAPI:
             rest.currencies.router,
             rest.costs.router,
             rest.incomes.router,
+            rest.exchange.router,
             rest.analytics.router,
         ),
         exception_handlers={

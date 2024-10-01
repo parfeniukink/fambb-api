@@ -147,19 +147,45 @@ class TransactionRepository(database.Repository):
         self.command.session.add(candidate)
         return candidate
 
-    async def exchanges(self) -> AsyncGenerator[Exchange, None]:
+    async def exchanges(
+        self, /, **kwargs
+    ) -> AsyncGenerator[database.Exchange, None]:
         """get all exchanges from 'exchanges' table"""
+
+        query: Select = (
+            select(database.Exchange)
+            .options(
+                joinedload(database.Exchange.from_currency),
+                joinedload(database.Exchange.to_currency),
+            )
+            .order_by(database.Exchange.timestamp)
+        )
+
+        query = self._add_pagination_filters(query, **kwargs)
+
+        async with self.query.session as session:
+            async with session.begin():
+                results: Result = await session.execute(query)
+                for item in results.scalars():
+                    yield item
+
+    async def exchange(self, id_: int) -> database.Exchange:
+        """get specific item from 'exchange' table"""
 
         async with self.query.session as session:
             async with session.begin():
                 results: Result = await session.execute(
-                    select(database.Exchange).options(
+                    select(database.Exchange)
+                    .where(database.Exchange.id == id_)
+                    .options(
                         joinedload(database.Exchange.from_currency),
                         joinedload(database.Exchange.to_currency),
                     )
                 )
-                for item in results.scalars():
-                    yield item
+                if not (item := results.scalars().one_or_none()):
+                    raise errors.NotFoundError(f"Exchange {id_} not found")
+                else:
+                    return item
 
     async def add_exchange(
         self, candidate: database.Exchange

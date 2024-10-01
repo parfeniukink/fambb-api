@@ -1,6 +1,8 @@
 """
-this package includes high-level tests for income operatinos
+this package includes high-level tests for currency exchange operatinos
 """
+
+import asyncio
 
 import httpx
 import pytest
@@ -13,15 +15,15 @@ from src.infrastructure import database
 # ==================================================
 # tests for not authorized
 # ==================================================
-async def test_income_fetch_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.get("/incomes")
+async def test_exchange_fetch_anonymous(anonymous: httpx.AsyncClient):
+    response = await anonymous.get("/exchange")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def test_income_create_anonymous(
+async def test_exchange_add_anonymous(
     anonymous: httpx.AsyncClient,
 ):
-    response = await anonymous.post("/incomes", json={})
+    response = await anonymous.post("/exchange", json={})
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -29,23 +31,24 @@ async def test_income_create_anonymous(
 # tests for authorized user
 # ==================================================
 @pytest.mark.use_db
-async def test_incomes_fetch(client: httpx.AsyncClient, income_factory):
+async def test_exchange_fetch(client: httpx.AsyncClient, exchange_factory):
     """test response paginated by default."""
 
-    incomes: list[database.Income] = await income_factory(n=15)
+    items: list[database.Exchange] = await exchange_factory(n=15)
 
-    response1: httpx.Response = await client.get("/incomes")
+    response1: httpx.Response = await client.get("/exchange")
     response1_data = response1.json()
+
     response2: httpx.Response = await client.get(
-        "/incomes", params={"context": response1_data["context"]}
+        "/exchange", params={"context": response1_data["context"]}
     )
     response2_data = response2.json()
 
     total = await domain.transactions.TransactionRepository().count(
-        database.Income
+        database.Exchange
     )
 
-    assert total == len(incomes)
+    assert total == len(items)
 
     assert response1.status_code == status.HTTP_200_OK
     assert len(response1_data["result"]) == 10
@@ -58,28 +61,32 @@ async def test_incomes_fetch(client: httpx.AsyncClient, income_factory):
 
 
 @pytest.mark.use_db
-async def test_income_add(client: httpx.AsyncClient, currencies):
+async def test_exchange_add(client: httpx.AsyncClient, currencies):
     response = await client.post(
-        "/incomes",
+        "/exchange",
         json={
-            "name": "PS5",
-            "value": 100,
-            "source": "revenue",
-            "currencyId": 1,
+            "fromCurrencyId": 1,
+            "fromValue": 100,
+            "toCurrencyId": 2,
+            "toValue": 2000,
         },
     )
 
     total = await domain.transactions.TransactionRepository().count(
-        database.Income
+        database.Exchange
     )
 
-    currency: database.Currency = (
-        await domain.equity.EquityRepository().currency(id_=1)
+    tasks = (
+        domain.equity.EquityRepository().currency(id_=1),
+        domain.equity.EquityRepository().currency(id_=2),
     )
+
+    from_currency, to_currency = await asyncio.gather(*tasks)
 
     assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert total == 1
-    assert currency.equity == currencies[0].equity + 100
+    assert from_currency.equity == currencies[0].equity - 100
+    assert to_currency.equity == currencies[1].equity + 2000
 
 
 # ==================================================
@@ -91,17 +98,17 @@ async def test_income_add(client: httpx.AsyncClient, currencies):
         {},
         {"name": None},
         {"name": 12},
-        {"anotherField": "proper string"},
+        {"another-field": "proper string"},
     ],
 )
 @pytest.mark.use_db
-async def test_income_add_unprocessable(
+async def test_exchange_add_unprocessable(
     client: httpx.AsyncClient, payload: dict
 ):
-    response = await client.post("/incomes", json=payload)
+    response = await client.post("/exchange", json=payload)
 
     total = await domain.transactions.TransactionRepository().count(
-        database.Income
+        database.Exchange
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

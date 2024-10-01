@@ -85,7 +85,8 @@ class Exchange(InternalData):
     """
 
     id: int
-    value: int
+    from_value: int
+    to_value: int
     timestamp: datetime
 
     user_id: int
