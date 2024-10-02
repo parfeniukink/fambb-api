@@ -27,6 +27,20 @@ async def test_exchange_add_anonymous(
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+async def test_exchange_delete_anonymous(
+    anonymous: httpx.AsyncClient,
+):
+    response = await anonymous.delete("/exchange/1")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+async def test_exchange_update_anonymous(
+    anonymous: httpx.AsyncClient,
+):
+    response = await anonymous.patch("/exchange/1", json={})
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
 # ==================================================
 # tests for authorized user
 # ==================================================
@@ -87,6 +101,27 @@ async def test_exchange_add(client: httpx.AsyncClient, currencies):
     assert total == 1
     assert from_currency.equity == currencies[0].equity - 100
     assert to_currency.equity == currencies[1].equity + 2000
+
+
+@pytest.mark.use_db
+async def test_exchange_delete(
+    client: httpx.AsyncClient, currencies, exchange_factory
+):
+    item, *_ = await exchange_factory(n=1)
+    response = await client.delete(f"/exchange/{item.id}")
+
+    currency_from, currency_to = await asyncio.gather(
+        domain.equity.EquityRepository().currency(id_=1),
+        domain.equity.EquityRepository().currency(id_=2),
+    )
+    total = await domain.transactions.TransactionRepository().count(
+        database.Exchange
+    )
+
+    assert total == 0
+    assert response.status_code == status.HTTP_204_NO_CONTENT, response.json()
+    assert currency_from.equity == currencies[0].equity + item.from_value
+    assert currency_to.equity == currencies[1].equity - item.to_value
 
 
 # ==================================================

@@ -161,17 +161,33 @@ class Income(PublicData):
 class ExchangeCreateBody(PublicData):
     """The request body to create a new income."""
 
-    from_value: int = Field(description="")
-    to_value: int
+    from_value: int = Field(description="Given value")
+    to_value: int = Field(description="Received value")
     timestamp: date = Field(
-        default_factory=date.today,
-        description=("The date of a transaction"),
+        default_factory=date.today, description="The date of a transaction"
     )
     from_currency_id: int = Field(
         description="Internal currency system identifier"
     )
     to_currency_id: int = Field(
         description="Internal currency system identifier"
+    )
+
+
+class ExchangeUpdateBody(PublicData):
+    """The request body to update the existing exchange."""
+
+    from_value: int | None = Field(default=None, description="Given value")
+    to_value: int | None = Field(default=None, description="Received value")
+    timestamp: date | None = Field(
+        default=None,
+        description="The date of a transaction",
+    )
+    from_currency_id: int | None = Field(
+        default=None, description="Internal currency system identifier"
+    )
+    to_currency_id: int | None = Field(
+        default=None, description="Internal currency system identifier"
     )
 
 

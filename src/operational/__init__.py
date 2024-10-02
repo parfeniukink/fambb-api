@@ -14,6 +14,9 @@ __all__ = (
     "add_income",
     "authorize",
     "currency_exchange",
+    "delete_cost",
+    "delete_currency_exchange",
+    "delete_income",
     "get_costs",
     "get_currency_exchanges",
     "get_incomes",
@@ -37,5 +40,8 @@ from .transactions import (
     get_transactions,
     update_cost,
     update_income,
+    delete_income,
+    delete_cost,
+    delete_currency_exchange,
 )
 from .users import user_retrieve

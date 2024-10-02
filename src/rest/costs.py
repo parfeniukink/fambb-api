@@ -116,3 +116,13 @@ async def update_cost(
     )
 
     return Response[Cost](result=Cost.model_validate(item))
+
+
+@router.delete("/{cost_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_cost(
+    cost_id: int,
+    _: domain.users.User = Depends(op.authorize),
+) -> None:
+    """delete cost. side effect: the equity is decreased."""
+
+    await op.delete_cost(cost_id=cost_id)

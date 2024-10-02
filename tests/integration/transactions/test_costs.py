@@ -27,6 +27,16 @@ async def test_cost_categories_create_anonymous(anonymous: httpx.AsyncClient):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+async def test_cost_update_anonymous(anonymous: httpx.AsyncClient):
+    response = await anonymous.patch("/costs/1", json={"name": "..."})
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+async def test_cost_delete_anonymous(anonymous: httpx.AsyncClient):
+    response = await anonymous.patch("/costs/1", json={"name": "..."})
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
 # ==================================================
 # tests for authorized user
 # ==================================================
@@ -208,6 +218,26 @@ async def test_cost_update_currency_and_value(
     assert src_currency.equity == currencies[0].equity + cost.value
     assert dst_currency.equity == currencies[1].equity - payload["value"]
     assert updated_instance.currency_id == payload["currency_id"]
+
+
+@pytest.mark.use_db
+async def test_cost_delete(
+    client: httpx.AsyncClient, currencies, cost_factory
+):
+    cost, *_ = await cost_factory(n=1)
+    response = await client.delete(f"/costs/{cost.id}")
+
+    currency = await domain.equity.EquityRepository().currency(
+        id_=cost.currency_id
+    )
+
+    total = await domain.transactions.TransactionRepository().count(
+        database.Cost
+    )
+
+    assert total == 0
+    assert response.status_code == status.HTTP_204_NO_CONTENT, response.json()
+    assert currency.equity == currencies[0].equity + cost.value
 
 
 # ==================================================

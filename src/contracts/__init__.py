@@ -7,14 +7,15 @@ __all__ = (
     "CostCategoryCreateBody",
     "CostCreateBody",
     "CostUpdateBody",
-    "IncomeUpdateBody",
     "Currency",
     "CurrencyCreateBody",
     "Equity",
     "Exchange",
     "ExchangeCreateBody",
+    "ExchangeUpdateBody",
     "Income",
     "IncomeCreateBody",
+    "IncomeUpdateBody",
     "Transaction",
     "User",
     "UserCreateRequestBody",
@@ -36,5 +37,6 @@ from .transactions import (
     IncomeCreateBody,
     IncomeUpdateBody,
     Transaction,
+    ExchangeUpdateBody,
 )
 from .users import User, UserCreateRequestBody

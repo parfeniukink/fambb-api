@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, status
 
 from src import domain
 from src import operational as op
-from src.contracts import Exchange, ExchangeCreateBody
+from src.contracts import Exchange, ExchangeCreateBody, ExchangeUpdateBody
 from src.infrastructure import (
     OffsetPagination,
     Response,
@@ -63,3 +63,30 @@ async def add_exchange(
     )
 
     return Response[Exchange](result=Exchange.model_validate(item))
+
+
+@router.delete("/{exchange_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_exchange(
+    exchange_id: int,
+    _: domain.users.User = Depends(op.authorize),
+) -> None:
+    """delete exchange. side effect: the equity is decreased."""
+
+    await op.delete_currency_exchange(item_id=exchange_id)
+
+
+@router.patch("/{exchange_id}")
+async def update_exchange(
+    exchange_id: int,
+    body: ExchangeUpdateBody = Body(...),
+    _: domain.users.User = Depends(op.authorize),
+) -> None:
+    """update exchange. side effect: the equity is decreased.
+
+    notes:
+        this feature is currently not available because of the complexity
+        in the equity operations and the huge amount of tests that should
+        be added to create a robust feature.
+    """
+
+    raise NotImplementedError("This feature is not available for the MVP")

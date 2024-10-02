@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 
-from sqlalchemy import Result, Select, select, update
+from sqlalchemy import Result, Select, delete, select, update
 from sqlalchemy.orm import joinedload
 
 from src.infrastructure import database, errors
@@ -219,7 +219,13 @@ class TransactionRepository(database.Repository):
     async def add_exchange(
         self, candidate: database.Exchange
     ) -> database.Exchange:
-        """Add item to the 'exchanges' table."""
+        """add item to the 'exchanges' table."""
 
         self.command.session.add(candidate)
         return candidate
+
+    async def delete(self, table, candidate_id) -> None:
+        """delete some specific trasaction from the database."""
+
+        query = delete(table).where(getattr(table, "id") == candidate_id)
+        await self.command.session.execute(query)

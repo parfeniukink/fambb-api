@@ -51,7 +51,7 @@ async def add_income(
     user: domain.users.User = Depends(op.authorize),
     body: IncomeCreateBody = Body(...),
 ) -> Response[Income]:
-    """add income. side effect: the equity is decreased."""
+    """add income. side effect: the equity is increased."""
 
     item: database.Income = await op.add_income(
         name=body.name,
@@ -71,10 +71,20 @@ async def update_income(
     _: domain.users.User = Depends(op.authorize),
     body: IncomeUpdateBody = Body(...),
 ) -> Response[Income]:
-    """add income. side effect: the equity is decreased."""
+    """update income. side effect: equity updates."""
 
     item: database.Income = await op.update_income(
         income_id=income_id, **body.model_dump(exclude_unset=True)
     )
 
     return Response[Income](result=Income.model_validate(item))
+
+
+@router.delete("/{income_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_income(
+    income_id: int,
+    _: domain.users.User = Depends(op.authorize),
+) -> None:
+    """delete income. side effect: the equity is decreased."""
+
+    await op.delete_income(income_id=income_id)
