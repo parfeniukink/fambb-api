@@ -1,9 +1,10 @@
 import asyncio
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Coroutine
 from datetime import date
+from typing import Any
 
 from src import domain
-from src.infrastructure import database
+from src.infrastructure import database, errors
 
 
 async def add_cost(
@@ -164,6 +165,72 @@ async def currency_exchange(
     return await domain.transactions.TransactionRepository().exchange(
         id_=instance.id
     )
+
+
+async def update_cost(cost_id: int, **values) -> database.Cost:
+    """update the cost with additional validations.
+
+    params:
+        ``cost_id``  stands for the candidate identifier
+        ``values``  includes update payload candidate
+
+    workflow:
+        get cost instance of 404
+        if value is the same - remove it from the payload.
+        update the ``cost``
+        update ``equity``
+    """
+
+    duplicates = set()
+    transaction_repository = domain.transactions.TransactionRepository()
+    equity_repository = domain.equity.EquityRepository()
+    cost = await transaction_repository.cost(id_=cost_id)
+
+    for attr, value in values.items():
+        try:
+            if getattr(cost, attr) == value:
+                duplicates.add(attr)
+        except AttributeError as error:
+            raise errors.DatabaseError(
+                f"'costs' table does not have '{attr}' column"
+            ) from error
+
+    for attr in duplicates:
+        del values[attr]
+
+    tasks: list[Coroutine] = [
+        transaction_repository.update_cost(cost, **values),
+    ]
+
+    # add tasks depending on ``currency_id`` and ``value`` input parameters
+    if (new_currency_id := values.get("currency_id")) is not None:
+        if (value := values.get("value")) is not None:
+            tasks.append(
+                equity_repository.increase_equity(cost.currency.id, cost.value)
+            )
+            tasks.append(
+                equity_repository.decrease_equity(new_currency_id, value)
+            )
+        else:
+            tasks.append(
+                equity_repository.increase_equity(cost.currency.id, cost.value)
+            )
+            tasks.append(
+                equity_repository.decrease_equity(new_currency_id, cost.value)
+            )
+    else:
+        if (value := values.get("value")) is not None:
+            tasks.append(
+                equity_repository.decrease_equity(
+                    cost.currency_id, value - cost.value
+                )
+            )
+
+    async with database.transaction() as session:
+        await asyncio.gather(*tasks)
+        await session.flush()
+
+    return cost
 
 
 async def get_transactions(

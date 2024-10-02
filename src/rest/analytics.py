@@ -9,6 +9,13 @@ from src.infrastructure import ResponseMulti
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
+@router.get("/", status_code=status.HTTP_200_OK)
+async def charts() -> ResponseMulti[contracts.Chart]:
+    """Expose last transactions, not filtered but limited with Settings."""
+
+    raise NotImplementedError
+
+
 @router.get("/equity", status_code=status.HTTP_200_OK)
 async def equity() -> ResponseMulti[contracts.Equity]:
     """Expose the ``equity``, related to each currency."""

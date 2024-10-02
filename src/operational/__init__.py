@@ -19,6 +19,7 @@ __all__ = (
     "get_incomes",
     "get_last_transactions",
     "get_transactions",
+    "update_cost",
     "user_retrieve",
 )
 
@@ -33,5 +34,6 @@ from .transactions import (
     get_incomes,
     get_last_transactions,
     get_transactions,
+    update_cost,
 )
 from .users import user_retrieve

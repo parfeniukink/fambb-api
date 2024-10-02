@@ -1,13 +1,14 @@
 __all__ = (
-    "OffsetPagination",
     "ErrorDetail",
     "ErrorResponse",
     "ErrorResponseMulti",
     "InternalData",
+    "OffsetPagination",
     "PublicData",
     "Response",
     "ResponseMulti",
     "ResponseMultiPaginated",
+    "_TPublicData",
     "database",
     "errors",
     "factories",
@@ -27,5 +28,6 @@ from .responses import (
     Response,
     ResponseMulti,
     ResponseMultiPaginated,
+    _TPublicData,
     get_offset_pagination_params,
 )

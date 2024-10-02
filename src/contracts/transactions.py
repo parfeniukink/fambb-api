@@ -1,5 +1,5 @@
 import functools
-from datetime import datetime
+from datetime import date
 
 from pydantic import Field
 
@@ -61,8 +61,8 @@ class CostCreateBody(PublicData):
 
     name: str = Field(description="The name of the currency")
     value: int = Field(description="The value in cents")
-    timestamp: datetime = Field(
-        default_factory=datetime.now,
+    timestamp: date = Field(
+        default_factory=date.today,
         description=(
             "Define the timestamp for the cost. The default value is 'now'"
         ),
@@ -71,13 +71,37 @@ class CostCreateBody(PublicData):
     category_id: int
 
 
+class CostUpdateBody(PublicData):
+    """The request body to update the existing cost."""
+
+    name: str | None = Field(
+        default=None,
+        description="The name of the currency",
+    )
+    value: int | None = Field(default=None, description="The value in cents")
+    timestamp: date | None = Field(
+        default=None,
+        description=(
+            "Define the timestamp for the cost. The default value is 'now'"
+        ),
+    )
+    currency_id: int | None = Field(
+        default=None,
+        description="A new currency id. Must be different from the previous one",
+    )
+    category_id: int | None = Field(
+        default=None,
+        description="A new currency id. Must be different from the previous one",
+    )
+
+
 class Cost(PublicData):
     """The public representation of a cost."""
 
     id: int
     name: str
     value: int
-    timestamp: datetime
+    timestamp: date
     currency: Currency
     category: CostCategory
 
@@ -90,8 +114,8 @@ class IncomeCreateBody(PublicData):
     source: domain.transactions.IncomeSource = Field(
         default="revenue", description="Available 'source' for the income."
     )
-    timestamp: datetime = Field(
-        default_factory=datetime.now,
+    timestamp: date = Field(
+        default_factory=date.today,
         description=("The date of a transaction"),
     )
     currency_id: int = Field(description="Internal currency system identifier")
@@ -106,7 +130,7 @@ class Income(PublicData):
     source: domain.transactions.IncomeSource = Field(
         default="revenue", description="Available 'source' for the income."
     )
-    timestamp: datetime = Field(description=("The date of a transaction"))
+    timestamp: date = Field(description=("The date of a transaction"))
     currency: Currency
 
 
@@ -115,8 +139,8 @@ class ExchangeCreateBody(PublicData):
 
     from_value: int = Field(description="")
     to_value: int
-    timestamp: datetime = Field(
-        default_factory=datetime.now,
+    timestamp: date = Field(
+        default_factory=date.today,
         description=("The date of a transaction"),
     )
     from_currency_id: int = Field(
@@ -133,6 +157,6 @@ class Exchange(PublicData):
     id: int = Field(description="Unique identifier in the system")
     from_value: int
     to_value: int
-    timestamp: datetime = Field(description=("The date of a transaction"))
+    timestamp: date = Field(description=("The date of a transaction"))
     from_currency: Currency
     to_currency: Currency

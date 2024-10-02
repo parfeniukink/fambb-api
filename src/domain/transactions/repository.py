@@ -1,12 +1,11 @@
-import operator
 from collections.abc import AsyncGenerator
 
-from sqlalchemy import Result, Select, select
+from sqlalchemy import Result, Select, select, update
 from sqlalchemy.orm import joinedload
 
 from src.infrastructure import database, errors
 
-from .entities import CostCategory, Exchange, Transaction
+from .entities import CostCategory, Transaction
 
 
 class TransactionRepository(database.Repository):
@@ -97,6 +96,21 @@ class TransactionRepository(database.Repository):
         """Add item to the 'costs' table."""
 
         self.command.session.add(candidate)
+        return candidate
+
+    async def update_cost(
+        self, candidate: database.Cost, **values
+    ) -> database.Cost:
+
+        query = (
+            update(database.Cost)
+            .where(database.Cost.id == candidate.id)
+            .values(values)
+            .returning(database.Cost)
+        )
+
+        await self.command.session.execute(query)
+
         return candidate
 
     async def incomes(

@@ -1,8 +1,12 @@
 __all__ = (
+    "Chart",
+    "ChartMath",
+    "ChartSection",
     "Cost",
     "CostCategory",
     "CostCategoryCreateBody",
     "CostCreateBody",
+    "CostUpdateBody",
     "Currency",
     "CurrencyCreateBody",
     "Equity",
@@ -15,6 +19,7 @@ __all__ = (
     "UserCreateRequestBody",
 )
 
+from .analytics import Chart, ChartMath, ChartSection
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
 from .transactions import (
@@ -22,6 +27,7 @@ from .transactions import (
     CostCategory,
     CostCategoryCreateBody,
     CostCreateBody,
+    CostUpdateBody,
     Currency,
     Exchange,
     ExchangeCreateBody,

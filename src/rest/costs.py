@@ -9,6 +9,7 @@ from src.contracts import (
     CostCategory,
     CostCategoryCreateBody,
     CostCreateBody,
+    CostUpdateBody,
 )
 from src.infrastructure import (
     OffsetPagination,
@@ -97,6 +98,21 @@ async def add_cost(
         user_id=user.id,
         currency_id=body.currency_id,
         category_id=body.category_id,
+    )
+
+    return Response[Cost](result=Cost.model_validate(item))
+
+
+@router.patch("/{cost_id}", status_code=status.HTTP_200_OK)
+async def update_cost(
+    cost_id: int,
+    _: domain.users.User = Depends(op.authorize),
+    body: CostUpdateBody = Body(...),
+) -> Response[Cost]:
+    """add cost. side effect: the equity is decreased."""
+
+    item: database.Cost = await op.update_cost(
+        cost_id=cost_id, **body.model_dump(exclude_unset=True)
     )
 
     return Response[Cost](result=Cost.model_validate(item))
