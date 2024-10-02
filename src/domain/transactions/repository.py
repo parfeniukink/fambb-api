@@ -161,6 +161,21 @@ class TransactionRepository(database.Repository):
         self.command.session.add(candidate)
         return candidate
 
+    async def update_income(
+        self, candidate: database.Income, **values
+    ) -> database.Income:
+
+        query = (
+            update(database.Income)
+            .where(database.Income.id == candidate.id)
+            .values(values)
+            .returning(database.Income)
+        )
+
+        await self.command.session.execute(query)
+
+        return candidate
+
     async def exchanges(
         self, /, **kwargs
     ) -> AsyncGenerator[database.Exchange, None]:

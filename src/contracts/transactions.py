@@ -59,7 +59,7 @@ class CostCategory(CostCategoryCreateBody):
 class CostCreateBody(PublicData):
     """The request body to create a new cost."""
 
-    name: str = Field(description="The name of the currency")
+    name: str = Field(description="The name of the cost")
     value: int = Field(description="The value in cents")
     timestamp: date = Field(
         default_factory=date.today,
@@ -109,7 +109,7 @@ class Cost(PublicData):
 class IncomeCreateBody(PublicData):
     """The request body to create a new income."""
 
-    name: str = Field(description="The name of the currency")
+    name: str = Field(description="The name of the income")
     value: int = Field(description="The value in cents")
     source: domain.transactions.IncomeSource = Field(
         default="revenue", description="Available 'source' for the income."
@@ -119,6 +119,30 @@ class IncomeCreateBody(PublicData):
         description=("The date of a transaction"),
     )
     currency_id: int = Field(description="Internal currency system identifier")
+
+
+class IncomeUpdateBody(PublicData):
+    """The request body to update the existing income."""
+
+    name: str | None = Field(
+        default=None,
+        description="The name of the income",
+    )
+    value: int | None = Field(default=None, description="The value in cents")
+    source: domain.transactions.IncomeSource | None = Field(
+        default=None,
+        description="The income source",
+    )
+    timestamp: date | None = Field(
+        default=None,
+        description=(
+            "Define the timestamp for the cost. The default value is 'now'"
+        ),
+    )
+    currency_id: int | None = Field(
+        default=None,
+        description="A new currency id. Must be different from the previous one",
+    )
 
 
 class Income(PublicData):

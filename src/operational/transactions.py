@@ -233,6 +233,71 @@ async def update_cost(cost_id: int, **values) -> database.Cost:
     return cost
 
 
+async def update_income(income_id: int, **values) -> database.Income:
+    """update the income with additional validations.
+
+    params:
+        ``income_id``  stands for the candidate identifier
+        ``values``  includes update payload candidate
+
+    workflow:
+        get income instance of 404
+        if value is the same - remove it from the payload.
+        update the ``income``
+        update ``equity``
+    """
+
+    duplicates = set()
+    transaction_repository = domain.transactions.TransactionRepository()
+    equity_repository = domain.equity.EquityRepository()
+    income = await transaction_repository.income(id_=income_id)
+
+    for attr, value in values.items():
+        try:
+            if getattr(income, attr) == value:
+                duplicates.add(attr)
+        except AttributeError as error:
+            raise errors.DatabaseError(
+                f"'incomes' table does not have '{attr}' column"
+            ) from error
+
+    for attr in duplicates:
+        del values[attr]
+
+    tasks: list[Coroutine] = [
+        transaction_repository.update_income(income, **values),
+    ]
+
+    # add tasks depending on ``currency_id`` and ``value`` input parameters
+    if (new_currency_id := values.get("currency_id")) is not None:
+        tasks.append(
+            equity_repository.decrease_equity(income.currency.id, income.value)
+        )
+        if (value := values.get("value")) is not None:
+            tasks.append(
+                equity_repository.increase_equity(new_currency_id, value)
+            )
+        else:
+            tasks.append(
+                equity_repository.increase_equity(
+                    new_currency_id, income.value
+                )
+            )
+    else:
+        if (value := values.get("value")) is not None:
+            tasks.append(
+                equity_repository.increase_equity(
+                    income.currency_id, value - income.value
+                )
+            )
+
+    async with database.transaction() as session:
+        await asyncio.gather(*tasks)
+        await session.flush()
+
+    return income
+
+
 async def get_transactions(
     currency_id: int | None,
 ) -> AsyncGenerator[domain.transactions.Transaction, None]:

@@ -2,11 +2,15 @@
 this package includes high-level tests for income operatinos
 """
 
+import asyncio
+import json
+from datetime import timedelta
+
 import httpx
 import pytest
 from fastapi import status
 
-from src import domain
+from src import contracts, domain
 from src.infrastructure import database
 
 
@@ -80,6 +84,105 @@ async def test_income_add(client: httpx.AsyncClient, currencies):
     assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert total == 1
     assert currency.equity == currencies[0].equity + 100
+
+
+@pytest.mark.use_db
+async def test_income_update_safe(
+    client: httpx.AsyncClient, currencies, income_factory
+):
+    """test operations that should not change the equity."""
+
+    income, *_ = await income_factory(n=1)
+    body = contracts.IncomeUpdateBody(
+        name="".join((income.name, "some salt")),
+        timestamp=income.timestamp - timedelta(days=3),
+    )
+    response = await client.patch(
+        f"/incomes/{income.id}", json=json.loads(body.json(exclude_unset=True))
+    )
+
+    currency: database.Currency = (
+        await domain.equity.EquityRepository().currency(id_=1)
+    )
+
+    updated_instance = (
+        await domain.transactions.TransactionRepository().income(id_=income.id)
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.json()
+    assert currency.equity == currencies[0].equity
+    for attr in {"name", "timestamp"}:
+        assert getattr(updated_instance, attr) == getattr(body, attr)
+
+
+@pytest.mark.use_db
+async def test_income_update_only_value_increased(
+    client: httpx.AsyncClient, currencies, income_factory
+):
+    income, *_ = await income_factory(n=1)
+    new_value = income.value + 100
+    response = await client.patch(
+        f"/incomes/{income.id}", json={"value": new_value}
+    )
+
+    currency: database.Currency = (
+        await domain.equity.EquityRepository().currency(id_=1)
+    )
+    updated_instance = (
+        await domain.transactions.TransactionRepository().income(id_=income.id)
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.json()
+    assert currency.equity == currencies[0].equity + 100
+    assert updated_instance.value == income.value + 100
+
+
+@pytest.mark.use_db
+async def test_income_update_only_currency(
+    client: httpx.AsyncClient, currencies, income_factory
+):
+    income, *_ = await income_factory(n=1)
+    new_currency_id = 2
+    response = await client.patch(
+        f"/incomes/{income.id}", json={"currency_id": new_currency_id}
+    )
+
+    src_currency, dst_currency = await asyncio.gather(
+        domain.equity.EquityRepository().currency(id_=income.currency_id),
+        domain.equity.EquityRepository().currency(id_=new_currency_id),
+    )
+
+    updated_instance = (
+        await domain.transactions.TransactionRepository().income(id_=income.id)
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.json()
+    assert src_currency.equity == currencies[0].equity - income.value
+    assert dst_currency.equity == currencies[1].equity + income.value
+    assert updated_instance.currency_id == new_currency_id
+
+
+@pytest.mark.use_db
+async def test_income_update_currency_and_value(
+    client: httpx.AsyncClient, currencies, income_factory
+):
+    income, *_ = await income_factory(n=1)
+    payload = {"value": income.value + 100, "currency_id": 2}
+    response = await client.patch(f"/incomes/{income.id}", json=payload)
+
+    src_currency, dst_currency = await asyncio.gather(
+        domain.equity.EquityRepository().currency(id_=income.currency_id),
+        domain.equity.EquityRepository().currency(id_=payload["currency_id"]),
+    )
+
+    updated_instance = (
+        await domain.transactions.TransactionRepository().income(id_=income.id)
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.json()
+    assert src_currency.equity == currencies[0].equity - income.value
+    assert dst_currency.equity == currencies[1].equity + payload["value"]
+    assert updated_instance.currency_id == payload["currency_id"]
 
 
 # ==================================================

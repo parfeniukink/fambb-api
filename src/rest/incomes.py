@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, status
 
 from src import domain
 from src import operational as op
-from src.contracts import Income, IncomeCreateBody
+from src.contracts import Income, IncomeCreateBody, IncomeUpdateBody
 from src.infrastructure import (
     OffsetPagination,
     Response,
@@ -60,6 +60,21 @@ async def add_income(
         source=body.source,
         currency_id=body.currency_id,
         user_id=user.id,
+    )
+
+    return Response[Income](result=Income.model_validate(item))
+
+
+@router.patch("/{income_id}", status_code=status.HTTP_200_OK)
+async def update_income(
+    income_id: int,
+    _: domain.users.User = Depends(op.authorize),
+    body: IncomeUpdateBody = Body(...),
+) -> Response[Income]:
+    """add income. side effect: the equity is decreased."""
+
+    item: database.Income = await op.update_income(
+        income_id=income_id, **body.model_dump(exclude_unset=True)
     )
 
     return Response[Income](result=Income.model_validate(item))
