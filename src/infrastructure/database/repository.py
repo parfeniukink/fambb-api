@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import Result, Select, func, select
+from sqlalchemy import CompoundSelect, Result, Select, func, select
 
 from src.infrastructure import errors
 
@@ -56,11 +56,17 @@ class Repository:
     query = Query()
     command = Command()
 
-    async def count(self, table) -> int:
+    async def count(self, table, **filters) -> int:
         """get the number of items in a table"""
+
+        _filters: dict = {
+            key: value for key, value in filters.items() if value
+        }
 
         try:
             query: Select = select(func.count(getattr(table, "id")))
+            for attr, value in _filters:
+                query = getattr(query, "where")(getattr(table, attr) == value)
         except AttributeError as error:
             raise errors.DatabaseError(
                 f"``id`` does not exist for {table} "
@@ -69,7 +75,7 @@ class Repository:
         async with self.query.session as session:
             async with session.begin():
                 result: Result = await session.execute(query)
-                value: Any = result.scalar()
+                value = result.scalar()
 
                 if not isinstance(value, int):
                     raise errors.DatabaseError(
@@ -82,17 +88,12 @@ class Repository:
                     return value
 
     def _add_pagination_filters(
-        self,
-        query: Select,
-        /,
-        offset: int = 0,
-        limit: int = 10,
-        **_,
-    ) -> Select:
+        self, query, /, offset: int = 0, limit: int = 10, **_
+    ):
         """update the query if pagination filters are specified.
 
         params:
-            ``last_id: int | None`` to apply filter `WHERE id > {last_id}`
+            ``offset: int | None`` to apply filter `OFFSET {last_id}`
             ``limit: int | None`` to apply filter `LIMIT {limit}`
         """
 

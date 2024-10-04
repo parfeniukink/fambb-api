@@ -1,5 +1,5 @@
 """
-test equity and currencies.
+test currencies.
 """
 
 import httpx

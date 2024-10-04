@@ -1,23 +1,32 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src import contracts, domain
 from src import operational as op
-from src.infrastructure import ResponseMulti
+from src.infrastructure import (
+    OffsetPagination,
+    ResponseMulti,
+    ResponseMultiPaginated,
+    get_offset_pagination_params,
+)
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def charts() -> ResponseMulti[contracts.Chart]:
+async def charts(
+    _: domain.users.User = Depends(op.authorize),
+) -> ResponseMulti[contracts.Chart]:
     """Expose last transactions, not filtered but limited with Settings."""
 
     raise NotImplementedError
 
 
 @router.get("/equity", status_code=status.HTTP_200_OK)
-async def equity() -> ResponseMulti[contracts.Equity]:
+async def equity(
+    _: domain.users.User = Depends(op.authorize),
+) -> ResponseMulti[contracts.Equity]:
     """Expose the ``equity``, related to each currency."""
 
     return ResponseMulti[contracts.Equity](
@@ -30,28 +39,39 @@ async def equity() -> ResponseMulti[contracts.Equity]:
 
 @router.get("/transactions", status_code=status.HTTP_200_OK)
 async def transactions(
-    currency: Annotated[
+    currency_id: Annotated[
         int | None,
-        Query(description="ID of a currency to filter. Skip to ignore."),
+        Query(description="Filter by currency id. Skip to ignore."),
     ] = None,
-) -> ResponseMulti[contracts.Transaction]:
-    """Expose last transactions, not filtered but limited with Settings."""
+    pagination: OffsetPagination = Depends(get_offset_pagination_params),
+    _: domain.users.User = Depends(op.authorize),
+) -> ResponseMultiPaginated[contracts.Transaction]:
+    """Expose transactions. Includes costs, incomes and exchanges.
 
-    return ResponseMulti[contracts.Transaction](
-        result=[
-            contracts.Transaction.from_instance(item)
-            async for item in op.get_transactions(currency_id=currency)
-        ]
+    Notes:
+        The returned ``total`` value is based on applied filters.
+        If the currency is specified - ``total`` might be changed
+        so you can rely on data properly.
+    """
+
+    (
+        items,
+        total,
+    ) = await domain.transactions.TransactionRepository().transactions(
+        currency_id=currency_id,
+        offset=pagination.context,
+        limit=pagination.limit,
     )
 
+    if items:
+        context: int = pagination.context + len(items)
+        left: int = total - context
+    else:
+        context = 0
+        left = 0
 
-@router.get("/transactions/last", status_code=status.HTTP_200_OK)
-async def transactions_last() -> ResponseMulti[contracts.Transaction]:
-    """Expose last transactions, not filtered but limited with Settings."""
-
-    return ResponseMulti[contracts.Transaction](
-        result=[
-            contracts.Transaction.from_instance(item)
-            async for item in op.get_last_transactions()
-        ]
+    return ResponseMultiPaginated[contracts.Transaction](
+        result=[contracts.Transaction.from_instance(item) for item in items],
+        context=context,
+        left=left,
     )

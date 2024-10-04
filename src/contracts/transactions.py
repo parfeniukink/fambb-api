@@ -17,10 +17,18 @@ class Transaction(PublicData):
         This class is mostly for the analytics.
     """
 
-    operation: domain.transactions.OperationType
-    name: str
-    value: int
-    currency: domain.equity.Currency
+    operation: domain.transactions.OperationType = Field(
+        description="The type of the operation"
+    )
+    name: str = Field(description="The name of the transaction")
+    value: int = Field(description="The value in cents")
+    timestamp: date = Field(
+        default_factory=date.today,
+        description=(
+            "Define the timestamp for the cost. The default value is 'now'"
+        ),
+    )
+    currency: str = Field(description="The sign of the currency")
 
     @functools.singledispatchmethod
     @classmethod
@@ -36,11 +44,7 @@ class Transaction(PublicData):
             operation=instance.operation,
             name=instance.name,
             value=instance.value,
-            currency=domain.equity.Currency(
-                id=instance.currency.id,
-                name=instance.currency.name,
-                sign=instance.currency.sign,
-            ),
+            currency=instance.currency.sign,
         )
 
 

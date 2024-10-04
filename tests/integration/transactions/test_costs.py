@@ -85,11 +85,12 @@ async def test_costs_fetch(client: httpx.AsyncClient, cost_factory):
 
     assert total == len(costs)
     assert response1.status_code == status.HTTP_200_OK
+    assert response2.status_code == status.HTTP_200_OK
     assert len(response1_data["result"]) == 10
-    assert response1_data["context"] == 10
-    assert response1_data["left"] == 5
     assert len(response2_data["result"]) == 5
+    assert response1_data["context"] == 10
     assert response2_data["context"] == 15
+    assert response1_data["left"] == 5
     assert response2_data["left"] == 0
 
 

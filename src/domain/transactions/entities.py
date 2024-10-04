@@ -13,7 +13,7 @@ notes:
     for the simplicity.
 """
 
-from datetime import datetime
+from datetime import date
 
 from src.domain.equity import Currency
 from src.infrastructure import InternalData
@@ -38,17 +38,18 @@ class Transaction(InternalData):
         is kept as 'Entity' instead of an 'Value object'.
     """
 
+    operation: OperationType
     name: str
     value: int
+    timestamp: date
     currency: Currency
-    operation: OperationType
 
 
 class Income(InternalData):
     id: int
     name: str
     value: int
-    timestamp: datetime
+    timestamp: date
     source: IncomeSource
 
     user_id: int
@@ -64,7 +65,7 @@ class Cost(InternalData):
     id: int
     name: str
     value: int
-    timestamp: datetime
+    timestamp: date
 
     user_id: int
     currency: Currency
@@ -87,7 +88,7 @@ class Exchange(InternalData):
     id: int
     from_value: int
     to_value: int
-    timestamp: datetime
+    timestamp: date
 
     user_id: int
     from_currency: Currency

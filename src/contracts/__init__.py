@@ -33,10 +33,10 @@ from .transactions import (
     Currency,
     Exchange,
     ExchangeCreateBody,
+    ExchangeUpdateBody,
     Income,
     IncomeCreateBody,
     IncomeUpdateBody,
     Transaction,
-    ExchangeUpdateBody,
 )
 from .users import User, UserCreateRequestBody

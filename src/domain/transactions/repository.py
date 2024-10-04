@@ -1,8 +1,18 @@
 from collections.abc import AsyncGenerator
 
-from sqlalchemy import Result, Select, delete, select, update
-from sqlalchemy.orm import joinedload
+from sqlalchemy import (
+    Result,
+    Select,
+    String,
+    delete,
+    func,
+    select,
+    union_all,
+    update,
+)
+from sqlalchemy.orm import aliased, joinedload
 
+from src import domain
 from src.infrastructure import database, errors
 
 from .entities import CostCategory, Transaction
@@ -18,18 +28,99 @@ class TransactionRepository(database.Repository):
     """
 
     async def transactions(
-        self, batch_size: int | None = None
-    ) -> AsyncGenerator[Transaction, None]:
+        self, /, currency_id: int | None, **kwargs
+    ) -> tuple[tuple[Transaction, ...], int]:
         """get all the items from 'costs', 'incomes', 'exchanges' tables
         in the internal representation.
-
-        params:
-            ``batch_size`` configures how the data is going to be fetched
-                           from the database. if `None` - regular fetch all
-                           items from the database.
         """
 
-        raise NotImplementedError
+        CurrencyAlias = aliased(database.Currency)
+
+        # select costs
+        cost_query = select(
+            database.Cost.name.label("name"),
+            database.Cost.value.label("value"),
+            database.Cost.timestamp.label("timestamp"),
+            func.cast("cost", String).label("operation_type"),  # type: ignore[arg-type]
+            CurrencyAlias,
+        ).join(CurrencyAlias, database.Cost.currency)
+
+        # select incomes
+        income_query = select(
+            database.Income.name.label("name"),
+            database.Income.value.label("value"),
+            database.Income.timestamp.label("timestamp"),
+            func.cast("income", String).label("operation_type"),  # type: ignore[arg-type]
+            CurrencyAlias,
+        ).join(CurrencyAlias, database.Income.currency)
+
+        # select exchanges
+        exchange_query = select(
+            func.cast("exchange", String).label("name"),  # type: ignore[arg-type]
+            database.Exchange.to_value.label("value"),
+            database.Exchange.timestamp.label("timestamp"),
+            func.cast("exchange", String).label("operation_type"),  # type: ignore[arg-type]
+            CurrencyAlias,
+        ).join(CurrencyAlias, database.Exchange.to_currency)
+
+        # add currency filter if specified
+        if currency_id is not None:
+            cost_query = cost_query.where(
+                database.Cost.currency_id == currency_id
+            )
+            income_query = income_query.where(
+                database.Income.currency_id == currency_id
+            )
+            exchange_query = exchange_query.where(
+                database.Exchange.to_currency_id == currency_id
+            )
+
+        # combine all the queries using UNION ALL
+        union_query = union_all(
+            cost_query, income_query, exchange_query
+        ).order_by("timestamp")
+
+        paginated_query = self._add_pagination_filters(union_query, **kwargs)
+        count_query = select(func.count()).select_from(union_query)  # type: ignore[arg-type]
+
+        results: list[Transaction] = []
+
+        # execute the query and map results to ``Transaction`` attributes
+        async with self.query.session as session:
+            async with session.begin():
+                # calculate total
+                count_result = await session.execute(count_query)
+                if not (total := count_result.scalar()):
+                    raise errors.DatabaseError("Can't get the total of items")
+
+                result = await session.execute(paginated_query)
+                for row in result:
+                    (
+                        name,
+                        value,
+                        timestamp,
+                        operation_type,
+                        currency_name,
+                        currency_sign,
+                        _,  # currency equity
+                        _currency_id,
+                    ) = row
+
+                    results.append(
+                        Transaction(
+                            name=name,
+                            value=value,
+                            timestamp=timestamp,
+                            operation=operation_type,
+                            currency=domain.equity.Currency(
+                                id=_currency_id,
+                                name=currency_name,
+                                sign=currency_sign,
+                            ),
+                        )
+                    )
+
+        return tuple(results), total
 
     async def cost_categories(self) -> AsyncGenerator[CostCategory, None]:
         """get all items from 'cost_categories' table"""

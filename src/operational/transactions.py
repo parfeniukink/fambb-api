@@ -1,7 +1,6 @@
 import asyncio
-from collections.abc import AsyncGenerator, Coroutine
+from collections.abc import Coroutine
 from datetime import date
-from typing import Any
 
 from src import domain
 from src.infrastructure import database, errors
@@ -391,20 +390,3 @@ async def delete_currency_exchange(item_id: int) -> None:
 
     async with database.transaction():
         await asyncio.gather(*tasks)
-
-
-# ==================================================
-# deprecated section. TODO: move to the analytics
-# ==================================================
-async def get_transactions(
-    currency_id: int | None,
-) -> AsyncGenerator[domain.transactions.Transaction, None]:
-    raise NotImplementedError
-    yield
-
-
-async def get_last_transactions() -> (
-    AsyncGenerator[domain.transactions.Transaction, None]
-):
-    raise NotImplementedError
-    yield
