@@ -332,6 +332,19 @@ async def currency_exchange(
     to_currency_id: int,
     user_id: int,
 ) -> database.Exchange:
+    """exchange the currency.
+
+    params:
+        ``from_value``  how much you give
+        ``to_value``  how much you receive
+        ``from_currency_id``  source currency id
+        ``to_currency_id``  destination currency id
+
+    workflow:
+        create an exchange rate database record
+        update equity for both currencies
+    """
+
     async with database.transaction() as session:
         tasks = (
             domain.transactions.TransactionRepository().add_exchange(
