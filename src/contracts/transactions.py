@@ -23,7 +23,6 @@ class Transaction(PublicData):
     name: str = Field(description="The name of the transaction")
     value: int = Field(description="The value in cents")
     timestamp: date = Field(
-        default_factory=date.today,
         description=(
             "Define the timestamp for the cost. The default value is 'now'"
         ),
@@ -44,6 +43,7 @@ class Transaction(PublicData):
             operation=instance.operation,
             name=instance.name,
             value=instance.value,
+            timestamp=instance.timestamp,
             currency=instance.currency.sign,
         )
 
