@@ -5,6 +5,7 @@ from sqlalchemy import (
     Select,
     String,
     delete,
+    desc,
     func,
     select,
     union_all,
@@ -78,7 +79,7 @@ class TransactionRepository(database.Repository):
         # combine all the queries using UNION ALL
         union_query = union_all(
             cost_query, income_query, exchange_query
-        ).order_by("timestamp")
+        ).order_by(desc("timestamp"))
 
         paginated_query = self._add_pagination_filters(union_query, **kwargs)
         count_query = select(func.count()).select_from(union_query)  # type: ignore[arg-type]
