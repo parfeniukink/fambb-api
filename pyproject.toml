@@ -94,7 +94,7 @@ follow_imports = 'silent'
 
 
 [tool.pytest.ini_options]
-addopts = '-s -vvv'
+addopts = '-s -vvv -x'
 cache_dir = '/tmp'
 asyncio_mode = 'auto'
 python_files = 'test_*.py'
