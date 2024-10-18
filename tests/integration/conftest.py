@@ -22,6 +22,8 @@ class ExchangeCandidateFactory(SQLAlchemyFactory[database.Exchange]):
 
 @pytest.fixture
 async def currencies() -> list[database.Currency]:
+    """by default has 0 equity."""
+
     async with database.transaction() as session:
         tasks = [
             domain.equity.EquityRepository().add_currency(

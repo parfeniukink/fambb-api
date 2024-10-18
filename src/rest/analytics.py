@@ -41,7 +41,10 @@ async def equity(
 async def transactions(
     currency_id: Annotated[
         int | None,
-        Query(description="Filter by currency id. Skip to ignore.", alias="currencyId"),
+        Query(
+            description="Filter by currency id. Skip to ignore.",
+            alias="currencyId",
+        ),
     ] = None,
     pagination: OffsetPagination = Depends(get_offset_pagination_params),
     _: domain.users.User = Depends(op.authorize),
