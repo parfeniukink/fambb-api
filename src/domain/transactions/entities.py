@@ -44,6 +44,12 @@ class Transaction(InternalData):
     timestamp: date
     currency: Currency
 
+    @property
+    def value_prettified(self) -> float:
+        """return the pretty float value with cents."""
+
+        return round(self.value / 100, 2)
+
 
 class Income(InternalData):
     id: int

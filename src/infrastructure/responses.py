@@ -1,5 +1,6 @@
+import json
 from collections.abc import Sequence
-from typing import Generic, Literal, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, alias_generators, conlist
@@ -28,6 +29,16 @@ class PublicData(BaseModel):
         loc_by_alias=True,
         alias_generator=alias_generators.to_camel,
     )
+
+    def json_body(self, /, *, exclude_unset=True) -> dict[str, Any]:
+        """try to convert to the dictionary with some adjustment."""
+
+        try:
+            return json.loads(self.json(exclude_unset=exclude_unset))
+        except json.JSONDecodeError as error:
+            raise ValueError(
+                f"{self.__class__.__name__} instance in not JSON serializable"
+            ) from error
 
 
 _TPublicData = TypeVar("_TPublicData", bound=PublicData)

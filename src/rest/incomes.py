@@ -55,7 +55,7 @@ async def add_income(
 
     item: database.Income = await op.add_income(
         name=body.name,
-        value=body.value,
+        value=body.value_in_cents,
         timestamp=body.timestamp,
         source=body.source,
         currency_id=body.currency_id,

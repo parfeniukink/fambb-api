@@ -102,7 +102,7 @@ async def test_cost_add(
         "/costs",
         json={
             "name": "PS5",
-            "value": 100,
+            "value": 100,  # value is not in cents
             "currencyId": 1,
             "categoryId": 1,
         },
@@ -118,7 +118,7 @@ async def test_cost_add(
 
     assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert total == 1
-    assert currency.equity == currencies[0].equity - 100
+    assert currency.equity == currencies[0].equity - 10000
 
 
 @pytest.mark.use_db
@@ -156,9 +156,9 @@ async def test_cost_update_only_value_increased(
     client: httpx.AsyncClient, currencies, cost_factory
 ):
     cost, *_ = await cost_factory(n=1)
-    new_value = cost.value + 100
+    new_value = cost.value + 10000
     response = await client.patch(
-        f"/costs/{cost.id}", json={"value": new_value}
+        f"/costs/{cost.id}", json={"value": new_value / 100}
     )
 
     currency: database.Currency = (
@@ -169,8 +169,8 @@ async def test_cost_update_only_value_increased(
     )
 
     assert response.status_code == status.HTTP_200_OK, response.json()
-    assert currency.equity == currencies[0].equity - 100
-    assert updated_instance.value == cost.value + 100
+    assert currency.equity == cost.value - new_value
+    assert updated_instance.value == new_value
 
 
 @pytest.mark.use_db
@@ -202,8 +202,15 @@ async def test_cost_update_only_currency(
 async def test_cost_update_currency_and_value(
     client: httpx.AsyncClient, currencies, cost_factory
 ):
+    """upadte value and currency.
+
+    workflow:
+        increase the cost value for 100.00
+        HTTP PATCH /costs/id to update the item in the database
+    """
+
     cost, *_ = await cost_factory(n=1)
-    payload = {"value": cost.value + 100, "currency_id": 2}
+    payload = {"value": cost.value / 100 + 100.00, "currency_id": 2}
     response = await client.patch(f"/costs/{cost.id}", json=payload)
 
     src_currency, dst_currency = await asyncio.gather(
@@ -216,8 +223,10 @@ async def test_cost_update_currency_and_value(
     )
 
     assert response.status_code == status.HTTP_200_OK, response.json()
-    assert src_currency.equity == currencies[0].equity + cost.value
-    assert dst_currency.equity == currencies[1].equity - payload["value"]
+    assert src_currency.equity == cost.value  # increase for an old value
+    assert dst_currency.equity == -(
+        cost.value + 10000
+    )  # decrease for a new value
     assert updated_instance.currency_id == payload["currency_id"]
 
 
@@ -263,7 +272,9 @@ async def test_cost_category_creation_unprocessable(
         database.CostCategory
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert (
+        response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    ), payload
     assert (
         response.json()["result"][0]["detail"]["type"] == error_type
     ), response.json()
@@ -284,15 +295,15 @@ async def test_cost_category_creation_unprocessable(
         },
         {
             "name": "correct",
-            "value": 12.2,
+            "value": -1,  # negative
             "currencyId": 1,
             "categoryId": 1,
         },
         {
             "name": "correct",
             "value": 100,
-            "currencyId": None,
-            "categoryId": None,
+            "currencyId": None,  # invalid
+            "categoryId": None,  # invalid
         },
     ],
 )
@@ -304,5 +315,7 @@ async def test_cost_creation_unprocessable(client: httpx.AsyncClient, payload):
         database.Cost
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert (
+        response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    ), response.json()
     assert total == 0

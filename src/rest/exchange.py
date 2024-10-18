@@ -54,8 +54,8 @@ async def add_exchange(
     """add exchange. side effect: the equity is updated for 2 currencies."""
 
     item: database.Exchange = await op.currency_exchange(
-        from_value=body.from_value,
-        to_value=body.to_value,
+        from_value=body.from_value_in_cents,
+        to_value=body.to_value_in_cents,
         timestamp=body.timestamp,
         from_currency_id=body.from_currency_id,
         to_currency_id=body.to_currency_id,

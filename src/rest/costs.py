@@ -93,7 +93,7 @@ async def add_cost(
 
     item: database.Cost = await op.add_cost(
         name=body.name,
-        value=body.value,
+        value=body.value_in_cents,
         timestamp=body.timestamp,
         user_id=user.id,
         currency_id=body.currency_id,
@@ -111,9 +111,11 @@ async def update_cost(
 ) -> Response[Cost]:
     """add cost. side effect: the equity is decreased."""
 
-    item: database.Cost = await op.update_cost(
-        cost_id=cost_id, **body.model_dump(exclude_unset=True)
-    )
+    payload = body.model_dump(exclude_unset=True)
+    if _value := body.value_in_cents:
+        payload |= {"value": _value}
+
+    item: database.Cost = await op.update_cost(cost_id=cost_id, **payload)
 
     return Response[Cost](result=Cost.model_validate(item))
 

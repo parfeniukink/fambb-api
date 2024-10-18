@@ -3,7 +3,6 @@ this package includes high-level tests for income operatinos
 """
 
 import asyncio
-import json
 from datetime import timedelta
 
 import httpx
@@ -66,8 +65,8 @@ async def test_income_add(client: httpx.AsyncClient, currencies):
     response = await client.post(
         "/incomes",
         json={
-            "name": "PS5",
-            "value": 100,
+            "name": "office job",
+            "value": 100.0,  # not in cents
             "source": "revenue",
             "currencyId": 1,
         },
@@ -83,7 +82,7 @@ async def test_income_add(client: httpx.AsyncClient, currencies):
 
     assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert total == 1
-    assert currency.equity == currencies[0].equity + 100
+    assert currency.equity == currencies[0].equity + 10000
 
 
 @pytest.mark.use_db
@@ -97,8 +96,9 @@ async def test_income_update_safe(
         name="".join((income.name, "some salt")),
         timestamp=income.timestamp - timedelta(days=3),
     )
+
     response = await client.patch(
-        f"/incomes/{income.id}", json=json.loads(body.json(exclude_unset=True))
+        f"/incomes/{income.id}", json=body.json_body()
     )
 
     currency: database.Currency = (

@@ -6,7 +6,7 @@ from src.infrastructure import PublicData, database
 
 class Equity(PublicData):
     currency: domain.equity.Currency
-    amount: int
+    amount: float
 
     @functools.singledispatchmethod
     @classmethod
@@ -24,5 +24,5 @@ class Equity(PublicData):
                 name=instance.name,
                 sign=instance.sign,
             ),
-            amount=instance.equity,
+            amount=domain.transactions.as_pretty_money(instance.equity),
         )

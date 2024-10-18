@@ -80,9 +80,9 @@ async def test_exchange_add(client: httpx.AsyncClient, currencies):
         "/exchange",
         json={
             "fromCurrencyId": 1,
-            "fromValue": 100,
+            "fromValue": 10.00,
             "toCurrencyId": 2,
-            "toValue": 2000,
+            "toValue": 20.00,
         },
     )
 
@@ -99,7 +99,7 @@ async def test_exchange_add(client: httpx.AsyncClient, currencies):
 
     assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert total == 1
-    assert from_currency.equity == currencies[0].equity - 100
+    assert from_currency.equity == currencies[0].equity - 1000
     assert to_currency.equity == currencies[1].equity + 2000
 
 
