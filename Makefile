@@ -52,6 +52,10 @@ run:
 test:
 	python -m pytest ./tests
 
+.PHONY: xtest
+xtest:
+	python -m pytest -n 4 ./tests
+
 
 # Code quality
 # -------------------------------------------------------------------------
