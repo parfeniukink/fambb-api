@@ -222,6 +222,13 @@ class IncomeUpdateBody(
         description="A new currency id. Must be different from the previous one",
     )
 
+    @property
+    def value_in_cents(self) -> int | None:
+        with contextlib.suppress(ValueError):
+            return domain.transactions.cents_from_raw(self.value)
+
+        return None
+
 
 class Income(PublicData):
     """The public representation of an income."""
@@ -321,6 +328,20 @@ class ExchangeUpdateBody(PublicData, _TimestampValidationMixin):
         else:
             domain.transactions.cents_from_raw(value)
             return value
+
+    @property
+    def to_value_in_cents(self) -> int | None:
+        with contextlib.suppress(ValueError):
+            return domain.transactions.cents_from_raw(self.to_value)
+
+        return None
+
+    @property
+    def from_value_in_cents(self) -> int | None:
+        with contextlib.suppress(ValueError):
+            return domain.transactions.cents_from_raw(self.from_value)
+
+        return None
 
 
 class Exchange(PublicData):

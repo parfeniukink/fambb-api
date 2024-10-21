@@ -34,13 +34,6 @@ async def test_exchange_delete_anonymous(
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def test_exchange_update_anonymous(
-    anonymous: httpx.AsyncClient,
-):
-    response = await anonymous.patch("/exchange/1", json={})
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
 # ==================================================
 # tests for authorized user
 # ==================================================

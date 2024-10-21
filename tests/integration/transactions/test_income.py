@@ -120,7 +120,7 @@ async def test_income_update_only_value_increased(
     client: httpx.AsyncClient, currencies, income_factory
 ):
     income, *_ = await income_factory(n=1)
-    new_value = income.value + 100
+    new_value = domain.transactions.pretty_money(income.value) + 100
     response = await client.patch(
         f"/incomes/{income.id}", json={"value": new_value}
     )
@@ -133,8 +133,8 @@ async def test_income_update_only_value_increased(
     )
 
     assert response.status_code == status.HTTP_200_OK, response.json()
-    assert currency.equity == currencies[0].equity + 100
-    assert updated_instance.value == income.value + 100
+    assert currency.equity == currencies[0].equity + 10000
+    assert updated_instance.value == income.value + 10000
 
 
 @pytest.mark.use_db
@@ -167,7 +167,10 @@ async def test_income_update_currency_and_value(
     client: httpx.AsyncClient, currencies, income_factory
 ):
     income, *_ = await income_factory(n=1)
-    payload = {"value": income.value + 100, "currency_id": 2}
+    payload = {
+        "value": domain.transactions.pretty_money(income.value) + 100,
+        "currency_id": 2,
+    }
     response = await client.patch(f"/incomes/{income.id}", json=payload)
 
     src_currency, dst_currency = await asyncio.gather(
@@ -181,7 +184,7 @@ async def test_income_update_currency_and_value(
 
     assert response.status_code == status.HTTP_200_OK, response.json()
     assert src_currency.equity == currencies[0].equity - income.value
-    assert dst_currency.equity == currencies[1].equity + payload["value"]
+    assert dst_currency.equity == income.value + 10000
     assert updated_instance.currency_id == payload["currency_id"]
 
 

@@ -87,8 +87,12 @@ async def update_income(
 ) -> Response[Income]:
     """update income. side effect: equity updates."""
 
+    payload = body.model_dump(exclude_unset=True)
+    if _value := body.value_in_cents:
+        payload |= {"value": _value}
+
     item: database.Income = await op.update_income(
-        income_id=income_id, **body.model_dump(exclude_unset=True)
+        income_id=income_id, **payload
     )
 
     return Response[Income](result=Income.model_validate(item))

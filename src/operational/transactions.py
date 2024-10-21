@@ -303,7 +303,7 @@ async def delete_income(income_id: int):
 
 
 # ==================================================
-# exchange section
+# currency exchange section
 # ==================================================
 async def get_currency_exchanges(
     limit: int,
