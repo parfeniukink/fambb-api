@@ -39,6 +39,7 @@ class TransactionRepository(database.Repository):
 
         # select costs
         cost_query = select(
+            database.Cost.id.label("id"),
             database.Cost.name.label("name"),
             database.Cost.value.label("value"),
             database.Cost.timestamp.label("timestamp"),
@@ -48,6 +49,7 @@ class TransactionRepository(database.Repository):
 
         # select incomes
         income_query = select(
+            database.Income.id.label("id"),
             database.Income.name.label("name"),
             database.Income.value.label("value"),
             database.Income.timestamp.label("timestamp"),
@@ -57,6 +59,7 @@ class TransactionRepository(database.Repository):
 
         # select exchanges
         exchange_query = select(
+            database.Exchange.id.label("id"),
             func.cast("exchange", String).label("name"),  # type: ignore[arg-type]
             database.Exchange.to_value.label("value"),
             database.Exchange.timestamp.label("timestamp"),
@@ -97,6 +100,7 @@ class TransactionRepository(database.Repository):
                 result = await session.execute(paginated_query)
                 for row in result:
                     (
+                        id_,
                         name,
                         value,
                         timestamp,
@@ -109,6 +113,7 @@ class TransactionRepository(database.Repository):
 
                     results.append(
                         Transaction(
+                            id=id_,
                             name=name,
                             value=value,
                             timestamp=timestamp,

@@ -14,7 +14,7 @@ from src.infrastructure import (
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("", status_code=status.HTTP_200_OK)
 async def charts(
     _: domain.users.User = Depends(op.authorize),
 ) -> ResponseMulti[contracts.Chart]:

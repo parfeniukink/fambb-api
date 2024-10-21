@@ -1,11 +1,12 @@
 import contextlib
 import functools
 from datetime import date
+from typing import cast, get_args
 
 from pydantic import Field, field_validator
 
 from src import domain
-from src.infrastructure import PublicData
+from src.infrastructure import PublicData, database, errors
 
 from .currency import Currency
 
@@ -43,6 +44,7 @@ class Transaction(PublicData):
         This class is mostly for the analytics.
     """
 
+    id: int = Field(description="Internal id of the cost/income/exchange.")
     operation: domain.transactions.OperationType = Field(
         description="The type of the operation"
     )
@@ -66,9 +68,10 @@ class Transaction(PublicData):
     @classmethod
     def _(cls, instance: domain.transactions.Transaction):
         return cls(
+            id=instance.id,
             operation=instance.operation,
             name=instance.name,
-            value=instance.value_prettified,
+            value=domain.transactions.pretty_money(instance.value),
             timestamp=instance.timestamp,
             currency=instance.currency.sign,
         )
@@ -150,6 +153,26 @@ class Cost(PublicData):
     currency: Currency
     category: CostCategory
 
+    @functools.singledispatchmethod
+    @classmethod
+    def from_instance(cls, instance) -> "Cost":
+        raise NotImplementedError(
+            f"Can not convert {type(instance)} "
+            f"into the {type(cls.__name__)} contract"
+        )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: database.Cost):
+        return cls(
+            id=instance.id,
+            name=instance.name,
+            value=domain.transactions.pretty_money(instance.value),
+            timestamp=instance.timestamp,
+            currency=Currency.model_validate(instance.currency),
+            category=CostCategory.model_validate(instance.category),
+        )
+
 
 class IncomeCreateBody(
     PublicData, _ValueValidationMixin, _TimestampValidationMixin
@@ -211,6 +234,29 @@ class Income(PublicData):
     )
     timestamp: date = Field(description=("The date of a transaction"))
     currency: Currency
+
+    @functools.singledispatchmethod
+    @classmethod
+    def from_instance(cls, instance) -> "Income":
+        raise NotImplementedError(
+            f"Can not convert {type(instance)} "
+            f"into the {type(cls.__name__)} contract"
+        )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: database.Income):
+        # TODO: ``instance.source`` is not just a `Literal` type.
+        #       provide a proper type validation.
+
+        return cls(
+            id=instance.id,
+            name=instance.name,
+            value=domain.transactions.pretty_money(instance.value),
+            source=cast(domain.transactions.IncomeSource, instance.source),
+            timestamp=instance.timestamp,
+            currency=Currency.model_validate(instance.currency),
+        )
 
 
 class ExchangeCreateBody(PublicData, _TimestampValidationMixin):
@@ -286,3 +332,23 @@ class Exchange(PublicData):
     timestamp: date = Field(description=("The date of a transaction"))
     from_currency: Currency
     to_currency: Currency
+
+    @functools.singledispatchmethod
+    @classmethod
+    def from_instance(cls, instance) -> "Exchange":
+        raise NotImplementedError(
+            f"Can not convert {type(instance)} "
+            f"into the {type(cls.__name__)} contract"
+        )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: database.Exchange):
+        return cls(
+            id=instance.id,
+            from_value=domain.transactions.pretty_money(instance.from_value),
+            to_value=domain.transactions.pretty_money(instance.to_value),
+            timestamp=instance.timestamp,
+            from_currency=Currency.model_validate(instance.from_currency),
+            to_currency=Currency.model_validate(instance.to_currency),
+        )

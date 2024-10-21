@@ -71,3 +71,9 @@ def timestamp_from_raw(value: Any, /, **_) -> date:
             f"Can not convet {value} of type {type(value)} "
             "to the `datetime.date` in Python"
         )
+
+
+def pretty_money(value: int) -> float:
+    """return the pretty float value with cents."""
+
+    return round(value / 100, 2)

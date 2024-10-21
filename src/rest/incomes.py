@@ -65,6 +65,20 @@ async def add_income(
     return Response[Income](result=Income.model_validate(item))
 
 
+@router.get("/{income_id}", status_code=status.HTTP_200_OK)
+async def get_income(
+    income_id: int, _: domain.users.User = Depends(op.authorize)
+) -> Response[Income]:
+    """get income."""
+
+    async with database.transaction():
+        instance = await domain.transactions.TransactionRepository().income(
+            id_=income_id
+        )
+
+    return Response[Income](result=Income.from_instance(instance))
+
+
 @router.patch("/{income_id}", status_code=status.HTTP_200_OK)
 async def update_income(
     income_id: int,

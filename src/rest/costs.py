@@ -103,6 +103,20 @@ async def add_cost(
     return Response[Cost](result=Cost.model_validate(item))
 
 
+@router.get("/{cost_id}", status_code=status.HTTP_200_OK)
+async def get_cost(
+    cost_id: int, _: domain.users.User = Depends(op.authorize)
+) -> Response[Cost]:
+    """get an existing cost."""
+
+    async with database.transaction():
+        cost: database.Cost = (
+            await domain.transactions.TransactionRepository().cost(id_=cost_id)
+        )
+
+    return Response[Cost](result=Cost.from_instance(cost))
+
+
 @router.patch("/{cost_id}", status_code=status.HTTP_200_OK)
 async def update_cost(
     cost_id: int,

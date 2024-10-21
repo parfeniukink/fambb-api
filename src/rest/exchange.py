@@ -65,6 +65,19 @@ async def add_exchange(
     return Response[Exchange](result=Exchange.model_validate(item))
 
 
+@router.get("/{exchange_id}", status_code=status.HTTP_200_OK)
+async def get_exchange(
+    exchange_id: int, _: domain.users.User = Depends(op.authorize)
+) -> Response[Exchange]:
+    """get exchange."""
+
+    instance = await domain.transactions.TransactionRepository().exchange(
+        id_=exchange_id
+    )
+
+    return Response[Exchange](result=Exchange.from_instance(instance))
+
+
 @router.delete("/{exchange_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_exchange(
     exchange_id: int,

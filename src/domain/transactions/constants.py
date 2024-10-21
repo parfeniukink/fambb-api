@@ -1,4 +1,1 @@
-from typing import Literal
-
-OperationType = Literal["cost", "income", "exchange"]
-IncomeSource = Literal["revenue", "gift", "debt", "other"]
+OPERATION_TYPES = ["revenue", "gift", "debt", "other"]
