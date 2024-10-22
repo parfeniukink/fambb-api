@@ -1,4 +1,5 @@
 import asyncio
+import random
 from collections.abc import Callable
 
 import pytest
@@ -18,6 +19,10 @@ class IncomeCandidateFactory(SQLAlchemyFactory[database.Income]):
 
 class ExchangeCandidateFactory(SQLAlchemyFactory[database.Exchange]):
     __model__ = database.Exchange
+
+
+class CostShortcutCandidateFactory(SQLAlchemyFactory[database.CostShortcut]):
+    __model__ = database.CostShortcut
 
 
 @pytest.fixture
@@ -164,6 +169,47 @@ async def exchange_factory(
             )
 
             results: list[database.Exchange] = await asyncio.gather(*tasks)
+            await session.flush()
+
+            return results
+
+    return inner
+
+
+@pytest.fixture
+async def cost_shortcut_factory(
+    john,
+    currencies: list[database.Currency],
+    cost_categories: list[database.CostCategory],
+) -> Callable:
+    """
+    params:
+        ``n`` - stands for number of generaget items.
+    """
+
+    currency = currencies[0]
+    category = cost_categories[0]
+
+    async def inner(n=1) -> list[database.CostShortcut]:
+        candidates = (
+            CostShortcutCandidateFactory.build(
+                user_id=john.id,
+                currency_id=currency.id,
+                category_id=category.id,
+                value=random.randint(1000, 2000),
+            )
+            for _ in range(n)
+        )
+
+        async with database.transaction() as session:
+            tasks = (
+                domain.transactions.TransactionRepository().add_cost_shortcut(
+                    candidate
+                )
+                for candidate in candidates
+            )
+
+            results: list[database.CostShortcut] = await asyncio.gather(*tasks)
             await session.flush()
 
             return results

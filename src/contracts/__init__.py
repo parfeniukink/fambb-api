@@ -6,6 +6,8 @@ __all__ = (
     "CostCategory",
     "CostCategoryCreateBody",
     "CostCreateBody",
+    "CostShortcut",
+    "CostShortcutCreateBody",
     "CostUpdateBody",
     "Currency",
     "CurrencyCreateBody",
@@ -24,6 +26,7 @@ __all__ = (
 from .analytics import Chart, ChartMath, ChartSection
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
+from .shortcuts import CostShortcut, CostShortcutCreateBody
 from .transactions import (
     Cost,
     CostCategory,

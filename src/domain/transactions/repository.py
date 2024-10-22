@@ -21,13 +21,15 @@ from .entities import CostCategory, Transaction
 
 class TransactionRepository(database.Repository):
     """
-    TransactionRepository is a data access entrypoint.
-    It allows manage costs, incomes, exchanges.
-    Everything that could be treated as a 'Money Transaction'.
+    ``TransactionRepository`` is a data access entrypoint.
+    it allows manage costs, incomes, exchanges.
 
-    It uses the 'Query Builder' to create SQL queries.
+    it uses the 'Query Builder' to create SQL queries.
     """
 
+    # ==================================================
+    # unified || aggregated section
+    # ==================================================
     async def transactions(
         self, /, currency_id: int | None, **kwargs
     ) -> tuple[tuple[Transaction, ...], int]:
@@ -128,6 +130,15 @@ class TransactionRepository(database.Repository):
 
         return tuple(results), total
 
+    async def delete(self, table, candidate_id) -> None:
+        """delete some specific trasaction from the specified table."""
+
+        query = delete(table).where(getattr(table, "id") == candidate_id)
+        await self.command.session.execute(query)
+
+    # ==================================================
+    # costs section
+    # ==================================================
     async def cost_categories(self) -> AsyncGenerator[CostCategory, None]:
         """get all items from 'cost_categories' table"""
 
@@ -190,7 +201,7 @@ class TransactionRepository(database.Repository):
                     return item
 
     async def add_cost(self, candidate: database.Cost) -> database.Cost:
-        """Add item to the 'costs' table."""
+        """add item to the 'costs' table."""
 
         self.command.session.add(candidate)
         return candidate
@@ -210,6 +221,9 @@ class TransactionRepository(database.Repository):
 
         return candidate
 
+    # ==================================================
+    # incomes section
+    # ==================================================
     async def incomes(
         self, /, **kwargs
     ) -> AsyncGenerator[database.Income, None]:
@@ -253,7 +267,7 @@ class TransactionRepository(database.Repository):
                     return item
 
     async def add_income(self, candidate: database.Income) -> database.Income:
-        """Add item to the 'incomes' table."""
+        """add item to the 'incomes' table."""
 
         self.command.session.add(candidate)
         return candidate
@@ -273,6 +287,9 @@ class TransactionRepository(database.Repository):
 
         return candidate
 
+    # ==================================================
+    # exchanges section
+    # ==================================================
     async def exchanges(
         self, /, **kwargs
     ) -> AsyncGenerator[database.Exchange, None]:
@@ -321,8 +338,59 @@ class TransactionRepository(database.Repository):
         self.command.session.add(candidate)
         return candidate
 
-    async def delete(self, table, candidate_id) -> None:
-        """delete some specific trasaction from the database."""
+    # ==================================================
+    # cost shortcuts section
+    # ==================================================
+    async def cost_shortcuts(
+        self, user_id: int
+    ) -> AsyncGenerator[database.CostShortcut, None]:
+        """return all the cost shortcuts from the  database."""
 
-        query = delete(table).where(getattr(table, "id") == candidate_id)
-        await self.command.session.execute(query)
+        query: Select = (
+            select(database.CostShortcut)
+            .where(database.CostShortcut.user_id == user_id)
+            .options(
+                joinedload(database.CostShortcut.currency),
+                joinedload(database.CostShortcut.category),
+            )
+            .order_by(database.CostShortcut.id)
+        )
+
+        async with self.query.session as session:
+            async with session.begin():
+                results: Result = await session.execute(query)
+                for item in results.scalars():
+                    yield item
+
+    async def add_cost_shortcut(
+        self, candidate: database.CostShortcut
+    ) -> database.CostShortcut:
+        """add item to the 'cost_shortcuts' table."""
+
+        self.command.session.add(candidate)
+        return candidate
+
+    async def cost_shortcut(
+        self, user_id: int, id_: int
+    ) -> database.CostShortcut:
+        """get specific item from 'cost_shortcuts' table."""
+
+        async with self.query.session as session:
+            async with session.begin():
+                results: Result = await session.execute(
+                    select(database.CostShortcut)
+                    .where(
+                        database.CostShortcut.id == id_,
+                        database.CostShortcut.user_id == user_id,
+                    )
+                    .options(
+                        joinedload(database.CostShortcut.currency),
+                        joinedload(database.CostShortcut.category),
+                    )
+                )
+                if not (item := results.scalars().one_or_none()):
+                    raise errors.NotFoundError(
+                        f"Cost Shortcut {id_} not found"
+                    )
+                else:
+                    return item

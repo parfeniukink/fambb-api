@@ -15,6 +15,7 @@ __all__ = (
     "authorize",
     "currency_exchange",
     "delete_cost",
+    "delete_cost_shortcut",
     "delete_currency_exchange",
     "delete_income",
     "get_costs",
@@ -29,11 +30,14 @@ __all__ = (
 from .authorization import authorize
 from .transactions import (
     add_cost,
+    add_cost_shortcut,
     add_income,
     currency_exchange,
     delete_cost,
+    delete_cost_shortcut,
     delete_currency_exchange,
     delete_income,
+    get_cost_shortcuts,
     get_costs,
     get_currency_exchanges,
     get_incomes,

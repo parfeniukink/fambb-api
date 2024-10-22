@@ -1,39 +1,15 @@
 import contextlib
 import functools
 from datetime import date
-from typing import cast, get_args
+from typing import cast
 
 from pydantic import Field, field_validator
 
 from src import domain
-from src.infrastructure import PublicData, database, errors
+from src.infrastructure import PublicData, database
 
+from ._mixins import _TimestampValidationMixin, _ValueValidationMixin
 from .currency import Currency
-
-
-class _TimestampValidationMixin:
-    @field_validator("timestamp", mode="before")
-    @classmethod
-    def _timestamp_is_valid(cls, value: str | None) -> date | None:
-        """check if it is possible to convet the timestamp string."""
-
-        if value is None:
-            return value
-        else:
-            return domain.transactions.timestamp_from_raw(value)
-
-
-class _ValueValidationMixin:
-    @field_validator("value", mode="before")
-    @classmethod
-    def _value_is_valid(cls, value: float | None):
-        """check if the value is convertable to cents."""
-
-        if value is None:
-            return value
-        else:
-            domain.transactions.cents_from_raw(value)
-            return value
 
 
 class Transaction(PublicData):

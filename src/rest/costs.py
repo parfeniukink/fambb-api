@@ -9,6 +9,8 @@ from src.contracts import (
     CostCategory,
     CostCategoryCreateBody,
     CostCreateBody,
+    CostShortcut,
+    CostShortcutCreateBody,
     CostUpdateBody,
 )
 from src.infrastructure import (
@@ -23,6 +25,10 @@ from src.infrastructure import (
 router = APIRouter(prefix="/costs", tags=["Transactions", "Costs"])
 
 
+# ===========================================================
+# cost categories section.
+# on top because of the FastAPI router dispatching hierarchy
+# ===========================================================
 @router.get("/categories", status_code=status.HTTP_200_OK)
 async def cost_categories(
     _=Depends(op.authorize),
@@ -54,6 +60,60 @@ async def cost_category_create(
     return Response[CostCategory](result=CostCategory.model_validate(item))
 
 
+# ===========================================================
+# cost shortcuts section.
+# on top because of the FastAPI router dispatching hierarchy
+# ===========================================================
+@router.post(
+    "/shortcuts",
+    status_code=status.HTTP_201_CREATED,
+    tags=["Transactions", "Shortcuts"],
+)
+async def cost_shortcut_create(
+    user: domain.users.User = Depends(op.authorize),
+    body: CostShortcutCreateBody = Body(...),
+) -> Response[CostShortcut]:
+    """Create yet another 'Cost Shortcut'."""
+
+    payload = body.model_dump(exclude_unset=True) | {
+        "user": user,
+        "value": body.value_in_cents,
+    }
+    item: database.CostShortcut = await op.add_cost_shortcut(**payload)
+
+    return Response[CostShortcut](result=CostShortcut.model_validate(item))
+
+
+@router.get("/shortcuts", tags=["Transactions", "Shortcuts"])
+async def cost_shortcuts(
+    user: domain.users.User = Depends(op.authorize),
+) -> ResponseMulti[CostShortcut]:
+    """Create yet another 'Cost Shortcut'."""
+
+    return ResponseMulti[CostShortcut](
+        result=[
+            CostShortcut.model_validate(item)
+            for item in await op.get_cost_shortcuts(user)
+        ]
+    )
+
+
+@router.delete(
+    "/shortcuts/{shortcut_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Transactions", "Shortcuts"],
+)
+async def cost_shortcut_delete(
+    shortcut_id: int, user: domain.users.User = Depends(op.authorize)
+) -> None:
+    """delete the existing eost shortcut."""
+
+    await op.delete_cost_shortcut(user, shortcut_id)
+
+
+# ===========================================================
+# cost section
+# ===========================================================
 @router.get("", status_code=status.HTTP_200_OK)
 async def costs(
     user: domain.users.User = Depends(op.authorize),

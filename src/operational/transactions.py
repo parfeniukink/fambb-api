@@ -403,3 +403,59 @@ async def delete_currency_exchange(item_id: int) -> None:
 
     async with database.transaction():
         await asyncio.gather(*tasks)
+
+
+# ==================================================
+# shortcuts section
+# ==================================================
+async def add_cost_shortcut(
+    user: domain.users.User,
+    name: str,
+    currency_id: int,
+    category_id: int,
+    value: int | None = None,
+) -> database.CostShortcut:
+    async with database.transaction() as session:
+        instance: (
+            database.CostShortcut
+        ) = await domain.transactions.TransactionRepository().add_cost_shortcut(
+            candidate=database.CostShortcut(
+                name=name,
+                value=value,
+                timestamp=date.today(),
+                currency_id=currency_id,
+                category_id=category_id,
+                user_id=user.id,
+            )
+        )
+        await session.flush()  # get the id
+
+    return await domain.transactions.TransactionRepository().cost_shortcut(
+        user_id=user.id, id_=instance.id
+    )
+
+
+async def get_cost_shortcuts(
+    user: domain.users.User,
+) -> tuple[database.CostShortcut, ...]:
+    """return all the cost shortcuts for the user."""
+
+    items = tuple(
+        [
+            item
+            async for item in domain.transactions.TransactionRepository().cost_shortcuts(
+                user_id=user.id
+            )
+        ]
+    )
+
+    return items
+
+
+async def delete_cost_shortcut(user: domain.users.User, shortcut_id: int):
+    # TODO: add permission restriction
+
+    async with database.transaction():
+        await domain.transactions.TransactionRepository().delete(
+            database.CostShortcut, candidate_id=shortcut_id
+        )

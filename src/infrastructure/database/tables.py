@@ -50,6 +50,8 @@ Table = TypeVar("Table", bound=Base)
 
 
 class DefaultColumnsMixin:
+    """includes only the id."""
+
     id: Mapped[int] = mapped_column(primary_key=True)
 
 
@@ -78,9 +80,6 @@ class User(Base, DefaultColumnsMixin):
     token: Mapped[str]
 
     # user configurations
-    common_costs: Mapped[str | None] = mapped_column(default=None)
-    common_incomes: Mapped[str | None] = mapped_column(default=None)
-
     default_currency_id: Mapped[int | None] = mapped_column(
         ForeignKey("currencies.id", ondelete="RESTRICT"), default=None
     )
@@ -88,14 +87,19 @@ class User(Base, DefaultColumnsMixin):
         ForeignKey("cost_categories.id", ondelete="RESTRICT"), default=None
     )
 
+    # joined tables
     default_currency: "Mapped[Currency]" = relationship(
         viewonly=True, lazy="select", foreign_keys=[default_currency_id]
     )
     default_cost_category: "Mapped[CostCategory]" = relationship(
         viewonly=True, lazy="select", foreign_keys=[default_cost_category_id]
     )
+
     costs: "Mapped[list[Cost]]" = relationship(
         "Cost", viewonly=True, uselist=True
+    )
+    cost_shortcuts: "Mapped[list[CostShortcut]]" = relationship(
+        "CostShortcut", viewonly=True, uselist=True
     )
     incomes: "Mapped[list[Income]]" = relationship(
         "Income", viewonly=True, uselist=True
@@ -122,6 +126,9 @@ class Currency(Base, DefaultColumnsMixin):
 
     costs: "Mapped[list[Cost]]" = relationship(
         "Cost", viewonly=True, uselist=True
+    )
+    cost_shortcuts: "Mapped[list[CostShortcut]]" = relationship(
+        "CostShortcut", viewonly=True, uselist=True
     )
     incomes: "Mapped[list[Income]]" = relationship(
         "Income", viewonly=True, uselist=True
@@ -167,8 +174,28 @@ class Cost(Base, DefaultColumnsMixin):
     value: Mapped[int]
     timestamp: Mapped[date] = mapped_column(
         default=functools.partial(date.today),
-        onupdate=functools.partial(date.today),
         server_default=func.CURRENT_TIMESTAMP(),
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("cost_categories.id", ondelete="RESTRICT")
+    )
+    currency_id: Mapped[int] = mapped_column(
+        ForeignKey("currencies.id", ondelete="RESTRICT")
+    )
+
+    # joined tables
+    category: Mapped[CostCategory] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[category_id]
+    )
+    currency: Mapped[Currency] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[currency_id]
+    )
+    user: Mapped[User] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[user_id]
     )
 
     @validates("value")
@@ -182,26 +209,6 @@ class Cost(Base, DefaultColumnsMixin):
             raise ValueError("Cost value must be >= 0")
         else:
             return address
-
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="RESTRICT")
-    )
-    category_id: Mapped[int] = mapped_column(
-        ForeignKey("cost_categories.id", ondelete="RESTRICT")
-    )
-    currency_id: Mapped[int] = mapped_column(
-        ForeignKey("currencies.id", ondelete="RESTRICT")
-    )
-
-    user: Mapped[User] = relationship(
-        viewonly=True, lazy="select", foreign_keys=[user_id]
-    )
-    category: Mapped[CostCategory] = relationship(
-        viewonly=True, lazy="select", foreign_keys=[category_id]
-    )
-    currency: Mapped[Currency] = relationship(
-        viewonly=True, lazy="select", foreign_keys=[currency_id]
-    )
 
 
 class Income(Base, DefaultColumnsMixin):
@@ -330,3 +337,54 @@ class Exchange(Base, DefaultColumnsMixin):
             raise ValueError("Cost value must be >= 0")
         else:
             return address
+
+
+class CostShortcut(Base, DefaultColumnsMixin):
+    """table includes 'cost shortcuts'.
+    it is used to store the data about frequently-used cost objects.
+
+    params:
+        ``name`` - 'System76 laptop'
+        ``value`` - `180000` which is 1800.00 in cents. optional
+        ``category_id`` - cost category id
+        ``currency_id`` - operation currency
+        ``user_id`` - creator
+    """
+
+    __tablename__ = "cost_shortcuts"
+
+    name: Mapped[str] = mapped_column(String(100))
+    value: Mapped[int | None] = mapped_column(default=None)
+    timestamp: Mapped[date] = mapped_column(
+        default=functools.partial(date.today),
+        server_default=func.CURRENT_TIMESTAMP(),
+    )
+
+    @validates("value")
+    def validate_positive_value(self, key, address) -> int:
+        if not isinstance(address, int):
+            raise TypeError(
+                f"Received value is not valid integer. Type: {type(address)}"
+            )
+
+        if address < 0:
+            raise ValueError("Cost value must be >= 0")
+        else:
+            return address
+
+    currency_id: Mapped[int] = mapped_column(
+        ForeignKey("currencies.id", ondelete="RESTRICT")
+    )
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("cost_categories.id", ondelete="RESTRICT")
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT")
+    )
+
+    currency: Mapped[Currency] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[currency_id]
+    )
+    category: Mapped[CostCategory] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[category_id]
+    )
