@@ -349,8 +349,8 @@ async def currency_exchange(
         tasks = (
             domain.transactions.TransactionRepository().add_exchange(
                 candidate=database.Exchange(
-                    to_value=from_value,
-                    from_value=to_value,
+                    from_value=from_value,
+                    to_value=to_value,
                     timestamp=timestamp,
                     from_currency_id=from_currency_id,
                     to_currency_id=to_currency_id,
