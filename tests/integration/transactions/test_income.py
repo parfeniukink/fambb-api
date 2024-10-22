@@ -167,9 +167,9 @@ async def test_income_update_currency_and_value(
     client: httpx.AsyncClient, currencies, income_factory
 ):
     income, *_ = await income_factory(n=1)
-    payload = {
-        "value": domain.transactions.pretty_money(income.value) + 100,
+    payload: dict = {
         "currency_id": 2,
+        "value": domain.transactions.pretty_money(income.value) + 100,
     }
     response = await client.patch(f"/incomes/{income.id}", json=payload)
 

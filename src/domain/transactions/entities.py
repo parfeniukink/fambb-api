@@ -16,7 +16,7 @@ notes:
 from datetime import date
 
 from src.domain.equity import Currency
-from src.infrastructure import InternalData, errors
+from src.infrastructure import InternalData
 
 from .types import IncomeSource, OperationType
 
