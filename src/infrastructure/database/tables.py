@@ -361,7 +361,10 @@ class CostShortcut(Base, DefaultColumnsMixin):
     )
 
     @validates("value")
-    def validate_positive_value(self, key, address) -> int:
+    def validate_positive_value(self, key, address) -> int | None:
+        if address is None:
+            return None
+
         if not isinstance(address, int):
             raise TypeError(
                 f"Received value is not valid integer. Type: {type(address)}"

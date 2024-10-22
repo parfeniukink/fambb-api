@@ -411,9 +411,9 @@ async def delete_currency_exchange(item_id: int) -> None:
 async def add_cost_shortcut(
     user: domain.users.User,
     name: str,
+    value: int | None,
     currency_id: int,
     category_id: int,
-    value: int | None = None,
 ) -> database.CostShortcut:
     async with database.transaction() as session:
         instance: (

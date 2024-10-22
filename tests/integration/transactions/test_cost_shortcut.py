@@ -38,17 +38,29 @@ async def test_cost_shortcut_delete_anonymous(anonymous: httpx.AsyncClient):
 # tests for authorized user
 # ==================================================
 @pytest.mark.use_db
-async def test_cost_shortcut_create(
-    client: httpx.AsyncClient, cost_categories, currencies
-):
-    response = await client.post(
-        "/costs/shortcuts",
-        json={
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
             "name": "PS5",
             "value": 100,
             "currencyId": 1,
             "categoryId": 1,
         },
+        {
+            # with no value
+            "name": "PS5",
+            "currencyId": 1,
+            "categoryId": 1,
+        },
+    ],
+)
+async def test_cost_shortcut_create(
+    client: httpx.AsyncClient, cost_categories, currencies, payload
+):
+    response = await client.post(
+        "/costs/shortcuts",
+        json=payload,
     )
 
     total = await domain.transactions.TransactionRepository().count(
