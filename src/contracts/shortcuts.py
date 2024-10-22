@@ -6,6 +6,8 @@ from src import domain
 from src.infrastructure import PublicData
 
 from ._mixins import _ValueValidationMixin
+from .currency import Currency
+from .transactions import CostCategory
 
 
 class CostShortcutCreateBody(PublicData, _ValueValidationMixin):
@@ -26,3 +28,7 @@ class CostShortcutCreateBody(PublicData, _ValueValidationMixin):
 
 class CostShortcut(CostShortcutCreateBody):
     id: int
+    name: str = Field(description="The name of the cost")
+    value: float | None = Field(default=None, examples=[12.2, 650, None])
+    currency: Currency
+    category: CostCategory
