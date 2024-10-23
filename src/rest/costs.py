@@ -93,7 +93,7 @@ async def cost_shortcuts(
 
     return ResponseMulti[CostShortcut](
         result=[
-            CostShortcut.model_validate(item)
+            CostShortcut.from_instance(item)
             for item in await op.get_cost_shortcuts(user)
         ]
     )
@@ -125,7 +125,9 @@ async def cost_shortcut_apply(
     """delete the existing eost shortcut."""
 
     cost: database.Cost = await op.apply_cost_shortcut(
-        user, shortcut_id, value=body.value_in_cents if body else None
+        user,
+        shortcut_id,
+        value=domain.transactions.cents_from_raw(body.value) if body else None,
     )
 
     return Response[Cost](result=Cost.from_instance(cost))
@@ -158,7 +160,7 @@ async def costs(
         left = 0
 
     return ResponseMultiPaginated[Cost](
-        result=[Cost.model_validate(item) for item in items],
+        result=[Cost.from_instance(item) for item in items],
         context=context,
         left=left,
     )
@@ -180,7 +182,7 @@ async def add_cost(
         category_id=body.category_id,
     )
 
-    return Response[Cost](result=Cost.model_validate(item))
+    return Response[Cost](result=Cost.from_instance(item))
 
 
 @router.get("/{cost_id}", status_code=status.HTTP_200_OK)
@@ -211,7 +213,7 @@ async def update_cost(
 
     item: database.Cost = await op.update_cost(cost_id=cost_id, **payload)
 
-    return Response[Cost](result=Cost.model_validate(item))
+    return Response[Cost](result=Cost.from_instance(item))
 
 
 @router.delete("/{cost_id}", status_code=status.HTTP_204_NO_CONTENT)

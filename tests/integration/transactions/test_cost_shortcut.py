@@ -131,7 +131,11 @@ async def test_cost_shortcuts_apply(
 async def test_cost_shortcuts_apply_no_value(
     client: httpx.AsyncClient, cost_shortcut_factory
 ):
-    item, *_ = await cost_shortcut_factory(n=1)  # no value is specified 
+    """it is not allowed to apply the cost shortcut with no value without
+    the HTTP body specified.
+    """
+
+    item, *_ = await cost_shortcut_factory(n=1)  # no value is specified
     repository = domain.transactions.TransactionRepository()
 
     response = await client.post(f"/costs/shortcuts/{item.id}")
