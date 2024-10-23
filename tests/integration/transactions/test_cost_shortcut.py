@@ -69,6 +69,11 @@ async def test_cost_shortcut_create(
 
     assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert total == 1
+    assert (
+        received_value == 100.0
+        if (received_value := response.json()["result"]["value"])
+        else True  # check if the value is specified
+    ), received_value
 
 
 @pytest.mark.use_db
@@ -100,3 +105,23 @@ async def test_cost_shortcuts_delete(
 
     assert response.status_code == status.HTTP_204_NO_CONTENT, response.json()
     assert total == len(items) - 1
+
+
+@pytest.mark.use_db
+async def test_cost_shortcuts_apply(
+    client: httpx.AsyncClient, cost_shortcut_factory
+):
+    item, *_ = await cost_shortcut_factory(n=1, value=10000)  # 100.00
+    repository = domain.transactions.TransactionRepository()
+
+    response = await client.post(f"/costs/shortcuts/{item.id}")
+    raw_response = response.json()["result"]
+
+    total_costs = await repository.count(database.Cost)
+    created_instance: database.Cost = await repository.cost(
+        id_=raw_response["id"]
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, raw_response
+    assert total_costs == 1
+    assert created_instance.value == item.value, raw_response

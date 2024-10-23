@@ -190,13 +190,15 @@ async def cost_shortcut_factory(
     currency = currencies[0]
     category = cost_categories[0]
 
-    async def inner(n=1) -> list[database.CostShortcut]:
+    async def inner(
+        n=1, value: int | None = None
+    ) -> list[database.CostShortcut]:
         candidates = (
             CostShortcutCandidateFactory.build(
                 user_id=john.id,
                 currency_id=currency.id,
                 category_id=category.id,
-                value=random.randint(1000, 2000),
+                value=value,
             )
             for _ in range(n)
         )

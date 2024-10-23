@@ -28,7 +28,6 @@ __all__ = (
     "Transaction",
     "TransactionRepository",
     "as_cents",
-    "as_pretty_money",
     "cents_from_raw",
     "pretty_money",
     "timestamp_from_raw",
@@ -41,6 +40,6 @@ from .data_transformation import (
     timestamp_from_raw,
 )
 from .entities import Cost, CostCategory, Exchange, Income, Transaction
-from .formatters import as_cents, as_pretty_money
+from .data_transformation import as_cents
 from .repository import TransactionRepository
 from .types import IncomeSource, OperationType

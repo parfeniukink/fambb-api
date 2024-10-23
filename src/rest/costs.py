@@ -81,7 +81,7 @@ async def cost_shortcut_create(
     }
     item: database.CostShortcut = await op.add_cost_shortcut(**payload)
 
-    return Response[CostShortcut](result=CostShortcut.model_validate(item))
+    return Response[CostShortcut](result=CostShortcut.from_instance(item))
 
 
 @router.get("/shortcuts", tags=["Transactions", "Shortcuts"])
@@ -109,6 +109,21 @@ async def cost_shortcut_delete(
     """delete the existing eost shortcut."""
 
     await op.delete_cost_shortcut(user, shortcut_id)
+
+
+@router.post(
+    "/shortcuts/{shortcut_id}",
+    status_code=status.HTTP_201_CREATED,
+    tags=["Transactions", "Shortcuts"],
+)
+async def cost_shortcut_apply(
+    shortcut_id: int, user: domain.users.User = Depends(op.authorize)
+) -> Response[Cost]:
+    """delete the existing eost shortcut."""
+
+    cost: database.Cost = await op.apply_cost_shortcut(user, shortcut_id)
+
+    return Response[Cost](result=Cost.from_instance(cost))
 
 
 # ===========================================================

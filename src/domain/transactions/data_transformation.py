@@ -2,7 +2,16 @@ import contextlib
 from datetime import date, datetime
 from typing import Any
 
-from .formatters import as_cents
+
+def as_cents(value: float, /, **_) -> int:
+    """just a simple convert to the integer value representation."""
+
+    if not isinstance(value, float):
+        raise ValueError(
+            f"Can not convet {value} of type {type(value)} to cents"
+        )
+    else:
+        return int(round(value * 100, 2))
 
 
 def cents_from_raw(value: Any, /, **_) -> int:
@@ -73,7 +82,12 @@ def timestamp_from_raw(value: Any, /, **_) -> date:
         )
 
 
-def pretty_money(value: int) -> float:
+def pretty_money(value: int, /, **_) -> float:
     """return the pretty float value with cents."""
+
+    if not isinstance(value, int):
+        raise ValueError(f"Such operation is allowed only for integers")
+    else:
+        return round(value / 100, 2)
 
     return round(value / 100, 2)

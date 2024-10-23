@@ -452,10 +452,35 @@ async def get_cost_shortcuts(
     return items
 
 
-async def delete_cost_shortcut(user: domain.users.User, shortcut_id: int):
+async def delete_cost_shortcut(_: domain.users.User, shortcut_id: int) -> None:
     # TODO: add permission restriction
 
     async with database.transaction():
         await domain.transactions.TransactionRepository().delete(
             database.CostShortcut, candidate_id=shortcut_id
         )
+
+
+async def apply_cost_shortcut(
+    user: domain.users.User, shortcut_id: int
+) -> database.Cost:
+    """try to apply the cost shortcut."""
+
+    repository = domain.transactions.TransactionRepository()
+
+    shortcut: database.CostShortcut = await repository.cost_shortcut(
+        user_id=user.id, id_=shortcut_id
+    )
+
+    async with database.transaction():
+        cost: database.Cost = await repository.add_cost(
+            candidate=database.Cost(
+                name=shortcut.name,
+                value=shortcut.value,
+                currency_id=shortcut.currency_id,
+                category_id=shortcut.category_id,
+                user_id=user.id,
+            )
+        )
+
+    return await repository.cost(id_=cost.id)
