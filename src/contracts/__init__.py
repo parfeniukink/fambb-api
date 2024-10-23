@@ -7,6 +7,7 @@ __all__ = (
     "CostCategoryCreateBody",
     "CostCreateBody",
     "CostShortcut",
+    "CostShortcutApply",
     "CostShortcutCreateBody",
     "CostUpdateBody",
     "Currency",
@@ -26,7 +27,7 @@ __all__ = (
 from .analytics import Chart, ChartMath, ChartSection
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
-from .shortcuts import CostShortcut, CostShortcutCreateBody
+from .shortcuts import CostShortcut, CostShortcutCreateBody, CostShortcutApply
 from .transactions import (
     Cost,
     CostCategory,

@@ -125,3 +125,18 @@ async def test_cost_shortcuts_apply(
     assert response.status_code == status.HTTP_201_CREATED, raw_response
     assert total_costs == 1
     assert created_instance.value == item.value, raw_response
+
+
+@pytest.mark.use_db
+async def test_cost_shortcuts_apply_no_value(
+    client: httpx.AsyncClient, cost_shortcut_factory
+):
+    item, *_ = await cost_shortcut_factory(n=1)  # no value is specified 
+    repository = domain.transactions.TransactionRepository()
+
+    response = await client.post(f"/costs/shortcuts/{item.id}")
+
+    total_costs = await repository.count(database.Cost)
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert total_costs == 0

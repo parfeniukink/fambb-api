@@ -55,6 +55,7 @@ def app() -> FastAPI:
             rest.analytics.router,
         ),
         exception_handlers={
+            ValueError: errors.value_error_handler,
             RequestValidationError: errors.unprocessable_entity_error_handler,
             HTTPException: errors.fastapi_http_exception_handler,
             errors.BaseError: errors.base_error_handler,

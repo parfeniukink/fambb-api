@@ -67,6 +67,16 @@ def unprocessable_entity_error_handler(
     )
 
 
+def value_error_handler(_: Request, error: ValueError) -> JSONResponse:
+    response = ErrorResponse(message=str(error))
+    logger.error(response.model_dump(by_alias=True))
+
+    return JSONResponse(
+        content=jsonable_encoder(response.model_dump(by_alias=True)),
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    )
+
+
 def fastapi_http_exception_handler(
     _: Request, error: HTTPException
 ) -> JSONResponse:

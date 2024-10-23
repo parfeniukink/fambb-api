@@ -462,7 +462,7 @@ async def delete_cost_shortcut(_: domain.users.User, shortcut_id: int) -> None:
 
 
 async def apply_cost_shortcut(
-    user: domain.users.User, shortcut_id: int
+    user: domain.users.User, shortcut_id: int, value: int | None
 ) -> database.Cost:
     """try to apply the cost shortcut."""
 
@@ -472,11 +472,14 @@ async def apply_cost_shortcut(
         user_id=user.id, id_=shortcut_id
     )
 
+    if shortcut.value is None and value is None:
+        raise ValueError("The value for the cost shortcut is not specified.")
+
     async with database.transaction():
         cost: database.Cost = await repository.add_cost(
             candidate=database.Cost(
                 name=shortcut.name,
-                value=shortcut.value,
+                value=shortcut.value or value,
                 currency_id=shortcut.currency_id,
                 category_id=shortcut.category_id,
                 user_id=user.id,

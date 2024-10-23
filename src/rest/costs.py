@@ -6,6 +6,7 @@ from src import domain
 from src import operational as op
 from src.contracts import (
     Cost,
+    CostShortcutApply,
     CostCategory,
     CostCategoryCreateBody,
     CostCreateBody,
@@ -117,11 +118,15 @@ async def cost_shortcut_delete(
     tags=["Transactions", "Shortcuts"],
 )
 async def cost_shortcut_apply(
-    shortcut_id: int, user: domain.users.User = Depends(op.authorize)
+    shortcut_id: int,
+    user: domain.users.User = Depends(op.authorize),
+    body: CostShortcutApply | None = Body(default=None),
 ) -> Response[Cost]:
     """delete the existing eost shortcut."""
 
-    cost: database.Cost = await op.apply_cost_shortcut(user, shortcut_id)
+    cost: database.Cost = await op.apply_cost_shortcut(
+        user, shortcut_id, value=body.value_in_cents if body else None
+    )
 
     return Response[Cost](result=Cost.from_instance(cost))
 
