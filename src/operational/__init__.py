@@ -35,6 +35,7 @@ from .transactions import (
     add_cost,
     add_cost_shortcut,
     add_income,
+    apply_cost_shortcut,
     currency_exchange,
     delete_cost,
     delete_cost_shortcut,
@@ -46,6 +47,5 @@ from .transactions import (
     get_incomes,
     update_cost,
     update_income,
-    apply_cost_shortcut,
 )
 from .users import user_retrieve

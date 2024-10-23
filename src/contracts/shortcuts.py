@@ -56,5 +56,6 @@ class CostShortcut(PublicData):
             category=CostCategory.model_validate(instance.category),
         )
 
+
 class CostShortcutApply(PublicData):
     value: float

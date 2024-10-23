@@ -6,11 +6,11 @@ from src import domain
 from src import operational as op
 from src.contracts import (
     Cost,
-    CostShortcutApply,
     CostCategory,
     CostCategoryCreateBody,
     CostCreateBody,
     CostShortcut,
+    CostShortcutApply,
     CostShortcutCreateBody,
     CostUpdateBody,
 )

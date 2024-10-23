@@ -109,7 +109,7 @@ async def test_cost_shortcuts_delete(
 
 @pytest.mark.use_db
 async def test_cost_shortcuts_apply(
-    client: httpx.AsyncClient, cost_shortcut_factory
+    client: httpx.AsyncClient, cost_shortcut_factory, currencies
 ):
     item, *_ = await cost_shortcut_factory(n=1, value=10000)  # 100.00
     repository = domain.transactions.TransactionRepository()
@@ -122,9 +122,14 @@ async def test_cost_shortcuts_apply(
         id_=raw_response["id"]
     )
 
+    currency: database.Currency = (
+        await domain.equity.EquityRepository().currency(id_=item.currency_id)
+    )
+
     assert response.status_code == status.HTTP_201_CREATED, raw_response
     assert total_costs == 1
     assert created_instance.value == item.value, raw_response
+    assert currency.equity == currencies[0].equity - item.value
 
 
 @pytest.mark.use_db

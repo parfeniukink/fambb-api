@@ -24,5 +24,5 @@ class Equity(PublicData):
                 name=instance.name,
                 sign=instance.sign,
             ),
-            amount=domain.transactions.as_pretty_money(instance.equity),
+            amount=domain.transactions.pretty_money(instance.equity),
         )

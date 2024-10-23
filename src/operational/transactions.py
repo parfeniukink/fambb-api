@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import Coroutine
 from datetime import date
+from typing import cast
 
 from src import domain
 from src.infrastructure import database, errors
@@ -474,16 +475,14 @@ async def apply_cost_shortcut(
 
     if shortcut.value is None and value is None:
         raise ValueError("The value for the cost shortcut is not specified.")
-
-    async with database.transaction():
-        cost: database.Cost = await repository.add_cost(
-            candidate=database.Cost(
-                name=shortcut.name,
-                value=shortcut.value or value,
-                currency_id=shortcut.currency_id,
-                category_id=shortcut.category_id,
-                user_id=user.id,
-            )
+    else:
+        cost: database.Cost = await add_cost(
+            name=shortcut.name,
+            value=cast(int, shortcut.value or value),
+            timestamp=date.today(),
+            currency_id=shortcut.currency_id,
+            category_id=shortcut.category_id,
+            user_id=user.id,
         )
 
     return await repository.cost(id_=cost.id)

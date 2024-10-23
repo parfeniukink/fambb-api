@@ -27,7 +27,7 @@ __all__ = (
 from .analytics import Chart, ChartMath, ChartSection
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
-from .shortcuts import CostShortcut, CostShortcutCreateBody, CostShortcutApply
+from .shortcuts import CostShortcut, CostShortcutApply, CostShortcutCreateBody
 from .transactions import (
     Cost,
     CostCategory,
