@@ -21,6 +21,7 @@ __all__ = (
     "IncomeUpdateBody",
     "Transaction",
     "User",
+    "UserConfigurationUpdateRequestBody",
     "UserCreateRequestBody",
 )
 
@@ -43,4 +44,8 @@ from .transactions import (
     IncomeUpdateBody,
     Transaction,
 )
-from .users import User, UserCreateRequestBody
+from .users import (
+    User,
+    UserConfigurationUpdateRequestBody,
+    UserCreateRequestBody,
+)

@@ -1,6 +1,8 @@
+import functools
+
 from pydantic import Field
 
-from src.infrastructure import PublicData
+from src.infrastructure import PublicData, database
 
 from .currency import Currency
 from .transactions import CostCategory
@@ -10,16 +12,17 @@ class UserConfiguration(PublicData):
     default_currency: Currency | None = Field(
         default=None, description="A default currency costs and incomes"
     )
-    default_category: CostCategory | None = Field(
+    default_cost_category: CostCategory | None = Field(
         default=None, description="A default currency costs and incomes"
     )
-    common_costs: tuple[str, ...] | None = Field(
-        default=None,
-        description="A common costs list to be used as a placeholder, etc",
+
+
+class UserConfigurationUpdateRequestBody(PublicData):
+    default_currency_id: int | None = Field(
+        default=None, description="Update the default_currency_id"
     )
-    common_incomes: tuple[str, ...] | None = Field(
-        default=None,
-        description="A common incomes list to be used as a placeholder, etc",
+    default_cost_category_id: int | None = Field(
+        default=None, description="Update the default_cost_category_id"
     )
 
 
@@ -33,3 +36,37 @@ class User(PublicData):
     id: int
     name: str
     configuration: UserConfiguration = UserConfiguration()
+
+    @functools.singledispatchmethod
+    @classmethod
+    def from_instance(cls, instance) -> "User":
+        raise NotImplementedError(
+            f"Can not get {cls.__name__} from {type(instance)} type"
+        )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: database.User):
+        return cls(
+            id=instance.id,
+            name=instance.name,
+            configuration=UserConfiguration(
+                default_currency=(
+                    Currency(
+                        id=currency.id,
+                        name=currency.name,
+                        sign=currency.sign,
+                    )
+                    if (currency := instance.default_currency)
+                    else None
+                ),
+                default_cost_category=(
+                    CostCategory(
+                        id=cost_category.id,
+                        name=cost_category.name,
+                    )
+                    if (cost_category := instance.default_cost_category)
+                    else None
+                ),
+            ),
+        )
