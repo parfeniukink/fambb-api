@@ -14,15 +14,6 @@ from src.infrastructure import (
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
-@router.get("", status_code=status.HTTP_200_OK)
-async def charts(
-    _: domain.users.User = Depends(op.authorize),
-) -> ResponseMulti[contracts.Chart]:
-    """Expose last transactions, not filtered but limited with Settings."""
-
-    raise NotImplementedError
-
-
 @router.get("/equity", status_code=status.HTTP_200_OK)
 async def equity(
     _: domain.users.User = Depends(op.authorize),
