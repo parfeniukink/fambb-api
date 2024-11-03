@@ -18,7 +18,70 @@ from datetime import datetime
 from src import domain
 from src.infrastructure import database
 
-connection = sqlite3.connect("db.sqlite3")
+connection = sqlite3.connect("../db.sqlite3")
+
+COST_CATEGORIES_MAPPER = {
+    "🍽 Food": {
+        "old_id": 1,
+    },
+    "🥗 Restaurants": {
+        "old_id": 1,
+    },
+    "🍔 Food delivery": {
+        "old_id": 2,
+    },
+    "🚌 Roads": {
+        "old_id": 3,
+    },
+    "👚 Clothes": {
+        "old_id": 4,
+    },
+    "🚙 Car": {
+        "old_id": 5,
+    },
+    "⛽️ Fuel": {
+        "old_id": 6,
+    },
+    "🪴 Household": {
+        "old_id": 8,
+    },
+    "🤝 Rents": {
+        "old_id": 9,
+    },
+    "💳 Services": {
+        "old_id": 10,
+    },
+    "🏝 Leisure": {
+        "old_id": 11,
+    },
+    "💻 Technical stuff": {
+        "old_id": 12,
+    },
+    "📚 Education": {
+        "old_id": 13,
+    },
+    "🎁 Gifts": {
+        "old_id": 14,
+    },
+    "📦 Other": {
+        "old_id": 15,
+    },
+    "♥️ Health": {
+        "old_id": 16,
+    },
+    "💼 Business": {
+        "old_id": 17,
+    },
+    "💸 Debts": {
+        "old_id": 18,
+    },
+    "🏠️ House": {
+        "old_id": 19,
+    },
+    "💸 Taxes": {
+        "old_id": 20,
+    },
+}
 
 
 async def migrate_cost_categories():
