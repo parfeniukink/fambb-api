@@ -2,7 +2,7 @@
 .idea/
 .vscode/
 
-# operating specific files
+# operating system specific files
 .DS_Store
 
 
