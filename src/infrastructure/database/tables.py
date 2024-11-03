@@ -77,7 +77,7 @@ class User(Base, DefaultColumnsMixin):
     __tablename__ = "users"
 
     name: Mapped[str] = mapped_column(unique=True)
-    token: Mapped[str]
+    token: Mapped[str] = mapped_column(unique=True)
 
     # user configurations
     default_currency_id: Mapped[int | None] = mapped_column(
