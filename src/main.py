@@ -20,6 +20,19 @@ logger.add(
 
 # adjust the application
 # -------------------------------
+exception_handlers = (
+    {
+        ValueError: errors.value_error_handler,
+        RequestValidationError: errors.unprocessable_entity_error_handler,
+        HTTPException: errors.fastapi_http_exception_handler,
+        errors.BaseError: errors.base_error_handler,
+        NotImplementedError: errors.not_implemented_error_handler,
+        Exception: errors.unhandled_error_handler,
+    }
+    if settings.debug is False
+    else {}
+)
+
 app: FastAPI = factories.web_application(
     debug=settings.debug,
     rest_routers=(
@@ -33,12 +46,5 @@ app: FastAPI = factories.web_application(
     middlewares=(
         (CORSMiddleware, middleware.FASTAPI_CORS_MIDDLEWARE_OPTIONS),
     ),
-    exception_handlers={
-        ValueError: errors.value_error_handler,
-        RequestValidationError: errors.unprocessable_entity_error_handler,
-        HTTPException: errors.fastapi_http_exception_handler,
-        errors.BaseError: errors.base_error_handler,
-        NotImplementedError: errors.not_implemented_error_handler,
-        Exception: errors.unhandled_error_handler,
-    },
+    exception_handlers=exception_handlers,
 )
