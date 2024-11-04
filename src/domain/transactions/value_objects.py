@@ -107,10 +107,21 @@ class TransactionsBasicAnalytics(InternalData):
 
     @property
     def total_ratio(self) -> float:
-        """all the 'inbounds incomes' to all the 'outbounds expences'."""
+        """all the 'inbounds incomes' to all the 'outbounds expences'.
+
+        notes:
+            outbounds = sum of all the costs totals
+            inbounds = sum of all the incomes totals
+
+        workflow:
+            if outbounds > inbounds - no ratio
+        """
 
         inbounds = self.incomes.total + self.from_exchanges
         outbounds = self.costs.total
+
+        if outbounds > inbounds:
+            return 100.0
 
         try:
             result = outbounds / inbounds * 100
