@@ -24,9 +24,6 @@ async def update_user_configuration(
 ) -> None:
     """Update the user configuration partially."""
 
-    print("=" * 50)
-    print(body.model_dump(exclude_unset=True))
-    print("=" * 50)
     async with database.transaction():
         await domain.UserRepository().update_user_configuration(
             user_id=user.id, **body.model_dump(exclude_unset=True)
