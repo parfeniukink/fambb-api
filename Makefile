@@ -44,6 +44,9 @@ migrate:
 run:
 	uvicorn src.main:app --reload
 
+.PHONY: run.prod
+run.prod:
+	gunicorn src.main:app --worker-class uvicorn.workers.UvicornWorker
 
 
 # Tests
