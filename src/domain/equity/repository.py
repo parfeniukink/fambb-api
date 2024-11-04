@@ -1,4 +1,4 @@
-from sqlalchemy import Result, select, update
+from sqlalchemy import Result, desc, select, update
 
 from src.infrastructure import database
 
@@ -23,7 +23,9 @@ class EquityRepository(database.Repository):
         async with self.query.session as session:
             async with session.begin():
                 result: Result = await session.execute(
-                    select(database.Currency)
+                    select(database.Currency).order_by(
+                        desc(database.Currency.id)
+                    )
                 )
                 return tuple(result.scalars().all())
 

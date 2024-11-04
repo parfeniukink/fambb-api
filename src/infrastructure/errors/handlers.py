@@ -1,6 +1,10 @@
 """
-This module is used for representing FastAPI error handlers
+module with fastapi error handlers
 that are dispatched automatically by fastapi engine.
+
+
+todo:
+ - [ ] add handler for invalid `Literal` query parameters
 """
 
 from fastapi import HTTPException

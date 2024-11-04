@@ -18,35 +18,7 @@ from datetime import date
 from src.domain.equity import Currency
 from src.infrastructure import InternalData
 
-from .types import IncomeSource, OperationType
-
-
-class Transaction(InternalData):
-    """represents the data structure across multiple database
-    tables: 'incomes', 'costs', 'exchanges'.
-
-    params:
-        ``id`` the id of the cost or income or exchange.
-        ``currency`` stands for the 'currency sign'. Ex: $, etc.
-
-    notes:
-        for the``exchange`` type of operation, the ``currency`` belongs
-        to the ``exchanges.to_currency`` database parameter.
-        the value that is going to be used is a sign of that currency.
-
-        there is no reason to keep the ``id`` since they will be probably
-        duplicated for different types of operations. nevertheless this
-        is kept as 'Entity' instead of an 'Value object'.
-
-        the ``id`` IS NOT unique.
-    """
-
-    id: int
-    operation: OperationType
-    name: str
-    value: int
-    timestamp: date
-    currency: Currency
+from .types import IncomeSource
 
 
 class Income(InternalData):

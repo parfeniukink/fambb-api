@@ -1,4 +1,8 @@
+import asyncio
+import itertools
+import operator
 from collections.abc import AsyncGenerator
+from datetime import date
 
 from sqlalchemy import (
     Result,
@@ -13,10 +17,16 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import aliased, joinedload
 
-from src import domain
+from src.domain.equity import Currency
 from src.infrastructure import database, errors
 
-from .entities import CostCategory, Transaction
+from .entities import CostCategory
+from .value_objects import (
+    CostsByCategory,
+    IncomesBySource,
+    Transaction,
+    TransactionsBasicAnalytics,
+)
 
 
 class TransactionRepository(database.Repository):
@@ -122,7 +132,7 @@ class TransactionRepository(database.Repository):
                             value=value,
                             timestamp=timestamp,
                             operation=operation_type,
-                            currency=domain.equity.Currency(
+                            currency=Currency(
                                 id=_currency_id,
                                 name=currency_name,
                                 sign=currency_sign,
@@ -396,3 +406,174 @@ class TransactionRepository(database.Repository):
                     )
                 else:
                     return item
+
+    # ==================================================
+    # analytics section
+    # ==================================================
+    async def transactions_basic_analytics(
+        self, /, start_date: date, end_date: date
+    ) -> tuple[TransactionsBasicAnalytics, ...]:
+        """build the transactions 'basic analytics' on the database level.
+
+        args:
+            ``currency_id`` - ID of the currency to filter by, if specified.
+            ``start_date`` - Starting date of the analytics period.
+            ``end_date`` - Ending date of the analytics period.
+
+
+        workflow:
+            build database queries. all (except of exchanges)
+                are grouped by currency
+            execute SQL queries asynchronously
+            build the internal data structure to be returned
+
+        notes:
+            the 'key' of the result dictionary belongs
+            to the `currency_id` of the related analytics block.
+        """
+
+        # ==================================================
+        # costs section
+        # ==================================================
+        cost_totals_by_currency_query: Select = (
+            select(
+                database.Cost.currency_id.label("currency_id"),
+                func.sum(database.Cost.value).label("total"),
+            )
+            .where(
+                database.Cost.timestamp.between(start_date, end_date),
+            )
+            .group_by(database.Cost.currency_id)
+            .order_by(database.Cost.currency_id)
+        )
+
+        cost_categories_totals_by_currency_query: Select = (
+            select(
+                # cost && cost category
+                database.Cost.currency_id.label("currency_id"),
+                database.CostCategory.name.label("category_name"),
+                # custom calculation. the `sum` of all the costs in the range
+                (func.sum(database.Cost.value)).label("total"),
+            )
+            .join(
+                database.CostCategory,
+                database.Cost.category_id == database.CostCategory.id,
+            )
+            .where(
+                database.Cost.timestamp.between(start_date, end_date),
+            )
+            .group_by(database.Cost.currency_id, database.CostCategory.id)
+            .order_by(database.Cost.currency_id, database.CostCategory.id)
+        )
+
+        # ==================================================
+        # incomes section
+        # ==================================================
+        income_totals_by_currency_query: Select = (
+            select(
+                database.Income.currency_id.label("currency_id"),
+                func.sum(database.Income.value).label("total"),
+            )
+            .where(
+                database.Income.timestamp.between(start_date, end_date),
+            )
+            .group_by(database.Income.currency_id)
+            .order_by(database.Income.currency_id)
+        )
+
+        incomes_by_currency_and_source_query: Select = (
+            select(
+                # income
+                database.Income.currency_id.label("currency_id"),
+                database.Income.source.label("source"),
+                # custom calculation. the `sum` of all the incomes in the range
+                (func.sum(database.Income.value)).label("total"),
+            )
+            .where(
+                database.Income.timestamp.between(start_date, end_date),
+            )
+            .group_by(database.Income.currency_id, database.Income.source)
+            .order_by(database.Income.currency_id, database.Income.source)
+        )
+
+        exchanges_query: Select = (
+            select(database.Exchange)
+            .where(
+                database.Exchange.timestamp.between(start_date, end_date),
+            )
+            .order_by(database.Exchange.timestamp)
+        )
+
+        # perform database queries
+        async with self.query.session as session:
+            async with session.begin():
+                try:
+                    (
+                        _currencies,
+                        _costs_totals_by_currency,
+                        _cost_totals_by_currency_and_category,
+                        _incomes_totals_by_currency,
+                        _income_totals_by_currency_and_source,
+                        _exchanges,
+                    ) = await asyncio.gather(
+                        session.execute(
+                            select(database.Currency).order_by(
+                                desc(database.Currency.id)
+                            )
+                        ),
+                        session.execute(cost_totals_by_currency_query),
+                        session.execute(
+                            cost_categories_totals_by_currency_query
+                        ),
+                        session.execute(income_totals_by_currency_query),
+                        session.execute(incomes_by_currency_and_source_query),
+                        session.execute(exchanges_query),
+                    )
+
+                except Exception as error:
+                    raise errors.DatabaseError(str(error)) from error
+
+        results: dict[int, TransactionsBasicAnalytics] = {
+            currency.id: TransactionsBasicAnalytics(
+                currency=Currency.from_instance(currency)
+            )
+            for currency in _currencies.scalars().all()
+        }
+
+        # update costs currency total
+        for currency_id, total in _costs_totals_by_currency:
+            results[currency_id].costs.total = total
+
+        # update incomes currency total
+        for currency_id, total in _incomes_totals_by_currency:
+            results[currency_id].incomes.total = total
+
+        # update cost categories totals
+        for currency_id, items in itertools.groupby(
+            _cost_totals_by_currency_and_category,
+            key=operator.attrgetter("currency_id"),
+        ):
+            results[currency_id].costs.by_category += [
+                CostsByCategory(
+                    name=category_name,
+                    total=total,
+                    ratio=total / results[currency_id].costs.total * 100,
+                )
+                for _, category_name, total in items
+            ]
+
+        # update incomes sources totals
+        for currency_id, items in itertools.groupby(
+            _income_totals_by_currency_and_source,
+            key=operator.attrgetter("currency_id"),
+        ):
+            results[currency_id].incomes.by_source += [
+                (IncomesBySource(source=source, total=total))
+                for _, source, total in items
+            ]
+
+        for item in _exchanges.scalars().all():
+            results[item.from_currency_id].from_exchanges -= item.from_value
+            results[item.to_currency_id].from_exchanges += item.to_value
+
+        return tuple(results.values())

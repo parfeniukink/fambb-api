@@ -2,6 +2,7 @@ import functools
 
 from pydantic import Field
 
+from src import domain
 from src.infrastructure import PublicData, database
 
 
@@ -21,14 +22,15 @@ class Currency(CurrencyCreateBody):
     @classmethod
     def from_instance(cls, instance) -> "Currency":
         raise NotImplementedError(
-            f"Can not convert {type(instance)} into the Equity contract"
+            f"Can not convert {type(instance)} into the Currency contract"
         )
 
     @from_instance.register
     @classmethod
     def _(cls, instance: database.Currency):
-        return cls(
-            id=instance.id,
-            name=instance.name,
-            sign=instance.sign,
-        )
+        return cls.model_validate(instance)
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: domain.equity.Currency):
+        return cls.model_validate(instance)

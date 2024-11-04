@@ -1,7 +1,5 @@
 __all__ = (
-    "Chart",
-    "ChartMath",
-    "ChartSection",
+    "AnalyticsPeriodQuery",
     "Cost",
     "CostCategory",
     "CostCategoryCreateBody",
@@ -20,12 +18,13 @@ __all__ = (
     "IncomeCreateBody",
     "IncomeUpdateBody",
     "Transaction",
+    "TransactionBasicAnalytics",
     "User",
     "UserConfigurationUpdateRequestBody",
     "UserCreateRequestBody",
 )
 
-from .analytics import Chart, ChartMath, ChartSection
+from .analytics import AnalyticsPeriodQuery, TransactionBasicAnalytics
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
 from .shortcuts import CostShortcut, CostShortcutApply, CostShortcutCreateBody

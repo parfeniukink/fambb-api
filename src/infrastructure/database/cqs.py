@@ -17,6 +17,7 @@ from contextlib import asynccontextmanager
 from contextvars import ContextVar
 
 from loguru import logger
+from sqlalchemy import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure import errors

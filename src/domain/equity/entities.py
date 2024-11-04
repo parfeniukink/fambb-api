@@ -29,13 +29,9 @@ class Currency(InternalData):
     @from_instance.register
     @classmethod
     def _(cls, instance: database.Currency):
-        return cls(
-            id=instance.id,
-            name=instance.name,
-            sign=instance.sign,
-        )
+        return cls.model_validate(instance)
 
 
 class Equity(Currency):
 
-    equity: int
+    equity: float

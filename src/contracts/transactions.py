@@ -3,7 +3,7 @@ import functools
 from datetime import date
 from typing import cast
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from src import domain
 from src.infrastructure import PublicData, database
@@ -257,15 +257,22 @@ class ExchangeCreateBody(PublicData, _TimestampValidationMixin):
         description="Internal currency system identifier"
     )
 
+    @model_validator(mode="after")
+    def validate_different_currencies(self):
+        if self.from_currency_id == self.to_currency_id:
+            raise ValueError("Currencies must be different")
+        else:
+            return self
+
     @property
     def from_value_in_cents(self) -> int:
-        """return the value but in cents."""
+        """return the `from_value` but in cents."""
 
         return int(self.from_value * 100)
 
     @property
     def to_value_in_cents(self) -> int:
-        """return the value but in cents."""
+        """return the `to_value` but in cents."""
 
         return int(self.to_value * 100)
 

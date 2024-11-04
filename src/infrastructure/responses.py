@@ -126,8 +126,8 @@ def get_offset_pagination_params(
         ```py
         @router.get("")
         async def controller(
-            pagination: CursorPagination = fastapi.Depends(
-                get_cursor_pagination_params
+            pagination: OffsetPagination = fastapi.Depends(
+                get_offset_pagination_params
             )
         ):
             ...
