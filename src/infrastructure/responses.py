@@ -8,16 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field, alias_generators, conlist
 ErrorType = Literal["internal", "external", "missing", "bad-type"]
 
 
-class InternalData(BaseModel):
-    model_config = ConfigDict(
-        extra="ignore",
-        use_enum_values=True,
-        validate_assignment=True,
-        arbitrary_types_allowed=True,
-        from_attributes=True,
-    )
-
-
 class PublicData(BaseModel):
     model_config = ConfigDict(
         extra="ignore",
@@ -34,7 +24,9 @@ class PublicData(BaseModel):
         """try to convert to the dictionary with some adjustment."""
 
         try:
-            return json.loads(self.json(exclude_unset=exclude_unset))
+            return json.loads(
+                self.model_dump_json(exclude_unset=exclude_unset)
+            )
         except json.JSONDecodeError as error:
             raise ValueError(
                 f"{self.__class__.__name__} instance in not JSON serializable"

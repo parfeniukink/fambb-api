@@ -19,11 +19,13 @@ __all__ = (
 
 
 from . import database, dates, errors, factories, middleware
+from .entities import (
+    InternalData,
+)
 from .responses import (
     ErrorDetail,
     ErrorResponse,
     ErrorResponseMulti,
-    InternalData,
     OffsetPagination,
     PublicData,
     Response,
