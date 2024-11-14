@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
@@ -7,10 +7,8 @@ from src import contracts, domain
 from src import operational as op
 from src.infrastructure import (
     OffsetPagination,
-    Response,
     ResponseMulti,
     ResponseMultiPaginated,
-    database,
     dates,
     get_offset_pagination_params,
 )
@@ -118,7 +116,7 @@ async def transaction_basic_analytics(
             # get instances by specified start and end dates
             instances: tuple[
                 domain.transactions.TransactionsBasicAnalytics, ...
-            ] = await domain.transactions.TransactionRepository().transactions_basic_analytics(
+            ] = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
                 start_date=start_date, end_date=end_date
             )
     else:
@@ -131,13 +129,13 @@ async def transaction_basic_analytics(
         else:
             # get instances by period
             if period == "current-month":
-                instances = await domain.transactions.TransactionRepository().transactions_basic_analytics(
+                instances = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
                     start_date=dates.get_first_date_of_current_month(),
                     end_date=date.today(),
                 )
             elif period == "previous-month":
                 start_date, end_date = dates.get_previous_month_range()
-                instances = await domain.transactions.TransactionRepository().transactions_basic_analytics(
+                instances = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
                     start_date=start_date, end_date=end_date
                 )
             else:

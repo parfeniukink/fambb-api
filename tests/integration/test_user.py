@@ -1,5 +1,5 @@
 """
-this module includes tests related to the user and user configuration. 
+this module includes tests related to the user and user configuration.
 """
 
 import asyncio

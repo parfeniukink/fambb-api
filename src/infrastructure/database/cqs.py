@@ -17,7 +17,6 @@ from contextlib import asynccontextmanager
 from contextvars import ContextVar
 
 from loguru import logger
-from sqlalchemy import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure import errors
@@ -86,7 +85,9 @@ class Query:
     @property
     @asynccontextmanager
     async def session(self) -> AsyncGenerator[AsyncSession, None]:
-        """create a new session for each new query to be able to get them concurrently."""
+        """create a new session for each new query
+        to be able to get them concurrently.
+        """
 
         session = session_factoy()
 

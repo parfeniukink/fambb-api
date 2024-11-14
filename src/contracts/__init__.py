@@ -34,7 +34,6 @@ from .transactions import (
     CostCategoryCreateBody,
     CostCreateBody,
     CostUpdateBody,
-    Currency,
     Exchange,
     ExchangeCreateBody,
     ExchangeUpdateBody,

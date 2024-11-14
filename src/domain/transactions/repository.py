@@ -55,7 +55,9 @@ class TransactionRepository(database.Repository):
             database.Cost.name.label("name"),
             database.Cost.value.label("value"),
             database.Cost.timestamp.label("timestamp"),
-            func.cast("cost", String).label("operation_type"),  # type: ignore[arg-type]
+            func.cast("cost", String).label(  # type: ignore[arg-type]
+                "operation_type",
+            ),
             CurrencyAlias,
         ).join(CurrencyAlias, database.Cost.currency)
 
@@ -65,17 +67,23 @@ class TransactionRepository(database.Repository):
             database.Income.name.label("name"),
             database.Income.value.label("value"),
             database.Income.timestamp.label("timestamp"),
-            func.cast("income", String).label("operation_type"),  # type: ignore[arg-type]
+            func.cast("income", String).label(  # type: ignore[arg-type]
+                "operation_type",
+            ),
             CurrencyAlias,
         ).join(CurrencyAlias, database.Income.currency)
 
         # select exchanges
         exchange_query = select(
             database.Exchange.id.label("id"),
-            func.cast("exchange", String).label("name"),  # type: ignore[arg-type]
+            func.cast("exchange", String).label(  # type: ignore[arg-type]
+                "name",
+            ),
             database.Exchange.to_value.label("value"),
             database.Exchange.timestamp.label("timestamp"),
-            func.cast("exchange", String).label("operation_type"),  # type: ignore[arg-type]
+            func.cast("exchange", String).label(  # type: ignore[arg-type]
+                "operation_type",
+            ),
             CurrencyAlias,
         ).join(CurrencyAlias, database.Exchange.to_currency)
 
@@ -99,7 +107,9 @@ class TransactionRepository(database.Repository):
         )
 
         paginated_query = self._add_pagination_filters(union_query, **kwargs)
-        count_query = select(func.count()).select_from(union_query)  # type: ignore[arg-type]
+        count_query = select(func.count()).select_from(
+            union_query,  # type: ignore[arg-type]
+        )
 
         results: list[Transaction] = []
 

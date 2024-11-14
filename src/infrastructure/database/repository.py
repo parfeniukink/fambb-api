@@ -1,6 +1,4 @@
-from typing import Any
-
-from sqlalchemy import CompoundSelect, Result, Select, func, select
+from sqlalchemy import Result, Select, func, select
 
 from src.infrastructure import errors
 

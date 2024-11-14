@@ -1,5 +1,4 @@
 import asyncio
-import random
 from collections.abc import Callable
 
 import pytest

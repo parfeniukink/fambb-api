@@ -86,8 +86,6 @@ def pretty_money(value: int, /, **_) -> float:
     """return the pretty float value with cents."""
 
     if not isinstance(value, int):
-        raise ValueError(f"Such operation is allowed only for integers")
+        raise ValueError("Such operation is allowed only for integers")
     else:
         return round(value / 100, 2)
-
-    return round(value / 100, 2)

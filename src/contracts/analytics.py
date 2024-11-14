@@ -2,9 +2,6 @@
 module with analytics contracts. basically it represents some analytics
 by calculating values of all the transactions, saved in the database
 for the specific dates range.
-
-notes:
-    
 """
 
 import functools
@@ -71,7 +68,9 @@ class TransactionBasicAnalytics(PublicData):
         description="The impact of currency exchange transactions"
     )
     total_ratio: float = Field(
-        description="The ratio all the outbound to all the inbound totals in %",
+        description=(
+            "The ratio all the outbound to all the inbound totals in %"
+        ),
     )
 
     @field_validator("total_ratio", mode="after")

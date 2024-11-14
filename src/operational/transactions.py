@@ -20,8 +20,10 @@ async def get_costs(
     items = tuple(
         [
             item
-            async for item in domain.transactions.TransactionRepository().costs(
-                user_id=user_id, offset=offset, limit=limit
+            async for item in (
+                domain.transactions.TransactionRepository().costs(
+                    user_id=user_id, offset=offset, limit=limit
+                )
             )
         ]
     )
@@ -167,8 +169,10 @@ async def get_incomes(
     items = tuple(
         [
             item
-            async for item in domain.transactions.TransactionRepository().incomes(
-                user_id=user_id, offset=offset, limit=limit
+            async for item in (
+                domain.transactions.TransactionRepository().incomes(
+                    user_id=user_id, offset=offset, limit=limit
+                )
             )
         ]
     )
@@ -316,8 +320,10 @@ async def get_currency_exchanges(
     items = tuple(
         [
             item
-            async for item in domain.transactions.TransactionRepository().exchanges(
-                user_id=user_id, offset=offset, limit=limit
+            async for item in (
+                domain.transactions.TransactionRepository().exchanges(
+                    user_id=user_id, offset=offset, limit=limit
+                )
             )
         ]
     )
@@ -419,7 +425,7 @@ async def add_cost_shortcut(
     async with database.transaction() as session:
         instance: (
             database.CostShortcut
-        ) = await domain.transactions.TransactionRepository().add_cost_shortcut(
+        ) = await domain.transactions.TransactionRepository().add_cost_shortcut(  # noqa: E501
             candidate=database.CostShortcut(
                 name=name,
                 value=value,
@@ -444,8 +450,10 @@ async def get_cost_shortcuts(
     items = tuple(
         [
             item
-            async for item in domain.transactions.TransactionRepository().cost_shortcuts(
-                user_id=user.id
+            async for item in (
+                domain.transactions.TransactionRepository().cost_shortcuts(
+                    user_id=user.id
+                )
             )
         ]
     )

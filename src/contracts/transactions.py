@@ -104,11 +104,15 @@ class CostUpdateBody(
     )
     currency_id: int | None = Field(
         default=None,
-        description="A new currency id. Must be different from the previous one",
+        description=(
+            "A new currency id. Must be different from the previous one"
+        ),
     )
     category_id: int | None = Field(
         default=None,
-        description="A new currency id. Must be different from the previous one",
+        description=(
+            "A new currency id. Must be different from the previous one"
+        ),
     )
 
     @property
@@ -195,7 +199,9 @@ class IncomeUpdateBody(
     )
     currency_id: int | None = Field(
         default=None,
-        description="A new currency id. Must be different from the previous one",
+        description=(
+            "A new currency id. Must be different from the previous one"
+        ),
     )
 
     @property

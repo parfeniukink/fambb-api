@@ -39,7 +39,9 @@ async def cost_categories(
     return ResponseMulti[CostCategory](
         result=[
             CostCategory.model_validate(item)
-            async for item in domain.transactions.TransactionRepository().cost_categories()
+            async for item in (
+                domain.transactions.TransactionRepository().cost_categories()
+            )
         ]
     )
 
@@ -54,7 +56,7 @@ async def cost_category_create(
     async with database.transaction():
         item: (
             database.CostCategory
-        ) = await domain.transactions.TransactionRepository().add_cost_category(
+        ) = await domain.transactions.TransactionRepository().add_cost_category(  # noqa: E501
             candidate=database.CostCategory(name=schema.name)
         )
 

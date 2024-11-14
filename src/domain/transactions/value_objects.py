@@ -125,7 +125,7 @@ class TransactionsBasicAnalytics(InternalData):
 
         try:
             result = outbounds / inbounds * 100
-        except ZeroDivisionError as error:
+        except ZeroDivisionError:
             return 100.0
         else:
             return result
