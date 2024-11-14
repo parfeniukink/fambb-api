@@ -70,6 +70,7 @@ quality:
 
 .PHONY: check
 check:
+	python -m flake8 .
 	python -m isort --check .
 	python -m black --check .
 	python -m mypy --check-untyped-defs

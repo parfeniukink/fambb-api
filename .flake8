@@ -1,4 +1,19 @@
 [flake8]
-max-line-length = 79
-exclude = venv,__pycache__
+exclude =
+    .git,
+    __pycache__,
+    venv,
+    migrations,
+    scripts
 
+extend-ignore =
+    # allow `elif` block
+    RET505,
+    # allow `else` block
+    RET506
+
+per-file-ignores =
+    __init__.py: F401, F403
+
+max-line-length = 79
+max-complexity = 10
