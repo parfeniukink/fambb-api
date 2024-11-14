@@ -9,7 +9,7 @@ security = HTTPBearer(auto_error=False)
 
 async def authorize(
     creds: HTTPAuthorizationCredentials | None = Depends(security),
-):
+) -> domain.User:
     if creds is None:
         raise errors.AuthenticationError(
             "Authorization HTTP header is not specified"
@@ -23,4 +23,4 @@ async def authorize(
     except errors.NotFoundError as error:
         raise errors.AuthenticationError("Invalid Token") from error
     else:
-        return user
+        return domain.User.from_instance(user)
