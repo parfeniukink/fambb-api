@@ -2,6 +2,7 @@ import functools
 
 from pydantic import Field
 
+from src import domain
 from src.infrastructure import PublicData, database
 
 from .currency import Currency
@@ -70,3 +71,8 @@ class User(PublicData):
                 ),
             ),
         )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: domain.users.User):
+        return User.model_validate(instance)
