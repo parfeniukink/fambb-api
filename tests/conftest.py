@@ -8,7 +8,7 @@ import httpx
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from loguru import logger
 from sqlalchemy import NullPool
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -98,7 +98,9 @@ async def client(
     headers = {"Authorization": f"Bearer {john.token}"}
 
     async with httpx.AsyncClient(
-        app=app, base_url="http://testserver", headers=headers
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+        headers=headers,
     ) as client:
         yield client
 

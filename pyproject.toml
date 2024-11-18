@@ -107,6 +107,8 @@ filterwarnings = [
 markers = [
     "use_db: recreate database tables for this test from the scratch"
 ]
+# to avoid `PytestDeprecationWarning` of `pytest_asyncio` plugin
+asyncio_default_fixture_loop_scope = "function"
 
 
 # ************************************************
