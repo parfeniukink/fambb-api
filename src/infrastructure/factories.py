@@ -4,18 +4,12 @@ from fastapi import APIRouter, FastAPI
 from starlette.middleware import _MiddlewareClass
 
 
-def web_application(
+def asgi_app(
     *_,
     rest_routers: Iterable[APIRouter],
     middlewares: Iterable[tuple[type[_MiddlewareClass], dict]] | None = None,
     **kwargs,
 ) -> FastAPI:
-    """the application factory using FastAPI framework.
-
-    notes:
-        positional arguments are not allowed.
-    """
-
     # initialize the base fastapi application
     app = FastAPI(**kwargs)
 
