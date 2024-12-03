@@ -16,6 +16,7 @@ import functools
 from datetime import date
 from typing import TypeVar
 
+from sqlalchemy.dialects import postgresql
 from sqlalchemy import DATE, ForeignKey, Integer, MetaData, String, func
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -80,6 +81,12 @@ class User(Base, DefaultColumnsMixin):
     token: Mapped[str] = mapped_column(unique=True)
 
     # user configurations
+    cost_snippets: Mapped[list[str] | None] = mapped_column(
+        postgresql.ARRAY(String, dimensions=1), default=None
+    )
+    income_snippets: Mapped[list[str] | None] = mapped_column(
+        postgresql.ARRAY(String, dimensions=1), default=None
+    )
     default_currency_id: Mapped[int | None] = mapped_column(
         ForeignKey("currencies.id", ondelete="RESTRICT"), default=None
     )
