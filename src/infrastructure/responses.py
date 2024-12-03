@@ -103,11 +103,11 @@ class OffsetPagination(PublicData):
 
 
 def get_offset_pagination_params(
-    context: str | None = Query(
+    context: int | None = Query(
         default=None,
         description="The highest id of previously received item list",
     ),
-    limit: str | None = Query(
+    limit: int | None = Query(
         default=None,
         description="Limit results total items",
     ),
@@ -125,20 +125,4 @@ def get_offset_pagination_params(
             ...
     """
 
-    if not context:
-        _context = 0
-    else:
-        try:
-            _context = int(context)
-        except ValueError as error:
-            raise error
-
-    if not limit:
-        _limit = 10  # default value
-    else:
-        try:
-            _limit = int(limit)
-        except ValueError as error:
-            raise error
-
-    return OffsetPagination(context=_context, limit=_limit)
+    return OffsetPagination(context=context or 0, limit=limit or 0)
