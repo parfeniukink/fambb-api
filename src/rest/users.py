@@ -14,7 +14,8 @@ async def user_retrieve(
 ) -> Response[User]:
     """Retrieve user information information."""
 
-    return Response[User](result=User.from_instance(user))
+    response = Response[User](result=User.from_instance(user))
+    return response
 
 
 @router.put("/configuration")

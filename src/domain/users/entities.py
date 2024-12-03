@@ -16,8 +16,8 @@ class UserConfiguration(InternalData):
 
     default_currency: Currency | None = None
     default_cost_category: CostCategory | None = None
-    common_costs: tuple[str, ...] | None = None
-    common_incomes: tuple[str, ...] | None = None
+    cost_snippets: tuple[str, ...] | None = None
+    income_snippets: tuple[str, ...] | None = None
 
 
 class User(InternalData):
@@ -43,6 +43,16 @@ class User(InternalData):
             name=instance.name,
             token=instance.token,
             configuration=UserConfiguration(
+                cost_snippets=(
+                    tuple(instance.cost_snippets)
+                    if instance.cost_snippets
+                    else None
+                ),
+                income_snippets=(
+                    tuple(instance.income_snippets)
+                    if instance.income_snippets
+                    else None
+                ),
                 default_currency=(
                     Currency.from_instance(instance.default_currency)
                     if instance.default_currency

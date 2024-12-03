@@ -16,6 +16,14 @@ class UserConfiguration(PublicData):
     default_cost_category: CostCategory | None = Field(
         default=None, description="A default currency costs and incomes"
     )
+    cost_snippets: list[str] | None = Field(
+        default=None,
+        description="The list of available snippets for the cost name",
+    )
+    income_snippets: list[str] | None = Field(
+        default=None,
+        description="The list of available snippets for the income name",
+    )
 
 
 class UserConfigurationUpdateRequestBody(PublicData):
@@ -24,6 +32,14 @@ class UserConfigurationUpdateRequestBody(PublicData):
     )
     default_cost_category_id: int | None = Field(
         default=None, description="Update the default_cost_category_id"
+    )
+    cost_snippets: list[str] | None = Field(
+        default=None,
+        description="The list of available snippets for the cost name",
+    )
+    income_snippets: list[str] | None = Field(
+        default=None,
+        description="The list of available snippets for the income name",
     )
 
 
@@ -52,6 +68,8 @@ class User(PublicData):
             id=instance.id,
             name=instance.name,
             configuration=UserConfiguration(
+                cost_snippets=instance.cost_snippets,
+                income_snippets=instance.income_snippets,
                 default_currency=(
                     Currency(
                         id=currency.id,
