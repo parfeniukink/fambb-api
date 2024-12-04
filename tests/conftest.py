@@ -44,7 +44,7 @@ def pytest_configure() -> None:
 # =====================================================================
 @pytest.fixture
 def app() -> FastAPI:
-    return factories.asgi_application(
+    return factories.asgi_app(
         debug=settings.debug,
         rest_routers=(
             rest.users.router,
