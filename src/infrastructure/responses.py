@@ -125,4 +125,4 @@ def get_offset_pagination_params(
             ...
     """
 
-    return OffsetPagination(context=context or 0, limit=limit or 0)
+    return OffsetPagination(context=context or 0, limit=limit or 10)
