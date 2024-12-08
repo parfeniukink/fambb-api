@@ -34,6 +34,7 @@ class Transaction(InternalData):
     value: int
     timestamp: date
     currency: Currency
+    user: str
 
 
 # ==================================================

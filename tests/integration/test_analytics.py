@@ -76,6 +76,7 @@ async def test_transactions_fetch(
     assert response1_data["left"] == 20
     assert response2_data["left"] == 10
     assert response3_data["left"] == 0
+    assert response3_data["left"] == 0
 
 
 @pytest.mark.use_db
