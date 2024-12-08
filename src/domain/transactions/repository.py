@@ -48,44 +48,60 @@ class TransactionRepository(database.Repository):
         """
 
         CurrencyAlias = aliased(database.Currency)
+        UserAlias = aliased(database.User)
 
         # select costs
-        cost_query = select(
-            database.Cost.id.label("id"),
-            database.Cost.name.label("name"),
-            database.Cost.value.label("value"),
-            database.Cost.timestamp.label("timestamp"),
-            func.cast("cost", String).label(  # type: ignore[arg-type]
-                "operation_type",
-            ),
-            CurrencyAlias,
-        ).join(CurrencyAlias, database.Cost.currency)
+        cost_query = (
+            select(
+                database.Cost.id.label("id"),
+                database.Cost.name.label("name"),
+                database.Cost.value.label("value"),
+                database.Cost.timestamp.label("timestamp"),
+                func.cast("cost", String).label(  # type: ignore[arg-type]
+                    "operation_type",
+                ),
+                CurrencyAlias,
+                UserAlias.name,
+            )
+            .join(CurrencyAlias, database.Cost.currency)
+            .join(UserAlias, database.Cost.user)
+        )
 
         # select incomes
-        income_query = select(
-            database.Income.id.label("id"),
-            database.Income.name.label("name"),
-            database.Income.value.label("value"),
-            database.Income.timestamp.label("timestamp"),
-            func.cast("income", String).label(  # type: ignore[arg-type]
-                "operation_type",
-            ),
-            CurrencyAlias,
-        ).join(CurrencyAlias, database.Income.currency)
+        income_query = (
+            select(
+                database.Income.id.label("id"),
+                database.Income.name.label("name"),
+                database.Income.value.label("value"),
+                database.Income.timestamp.label("timestamp"),
+                func.cast("income", String).label(  # type: ignore[arg-type]
+                    "operation_type",
+                ),
+                CurrencyAlias,
+                UserAlias.name,
+            )
+            .join(CurrencyAlias, database.Income.currency)
+            .join(UserAlias, database.Income.user)
+        )
 
         # select exchanges
-        exchange_query = select(
-            database.Exchange.id.label("id"),
-            func.cast("exchange", String).label(  # type: ignore[arg-type]
-                "name",
-            ),
-            database.Exchange.to_value.label("value"),
-            database.Exchange.timestamp.label("timestamp"),
-            func.cast("exchange", String).label(  # type: ignore[arg-type]
-                "operation_type",
-            ),
-            CurrencyAlias,
-        ).join(CurrencyAlias, database.Exchange.to_currency)
+        exchange_query = (
+            select(
+                database.Exchange.id.label("id"),
+                func.cast("exchange", String).label(  # type: ignore[arg-type]
+                    "name",
+                ),
+                database.Exchange.to_value.label("value"),
+                database.Exchange.timestamp.label("timestamp"),
+                func.cast("exchange", String).label(  # type: ignore[arg-type]
+                    "operation_type",
+                ),
+                CurrencyAlias,
+                UserAlias.name,
+            )
+            .join(CurrencyAlias, database.Exchange.to_currency)
+            .join(UserAlias, database.Exchange.user)
+        )
 
         # add currency filter if specified
         if currency_id is not None:
@@ -133,6 +149,7 @@ class TransactionRepository(database.Repository):
                         currency_sign,
                         _,  # currency equity
                         _currency_id,
+                        user_name,
                     ) = row
 
                     results.append(
@@ -147,6 +164,7 @@ class TransactionRepository(database.Repository):
                                 name=currency_name,
                                 sign=currency_sign,
                             ),
+                            user=user_name,
                         )
                     )
 
@@ -215,6 +233,7 @@ class TransactionRepository(database.Repository):
                     .options(
                         joinedload(database.Cost.currency),
                         joinedload(database.Cost.category),
+                        joinedload(database.Cost.user),
                     )
                 )
                 if not (item := results.scalars().one_or_none()):
@@ -281,6 +300,7 @@ class TransactionRepository(database.Repository):
                     .where(database.Income.id == id_)
                     .options(
                         joinedload(database.Income.currency),
+                        joinedload(database.Income.user),
                     )
                 )
                 if not (item := results.scalars().one_or_none()):
@@ -345,6 +365,7 @@ class TransactionRepository(database.Repository):
                     .options(
                         joinedload(database.Exchange.from_currency),
                         joinedload(database.Exchange.to_currency),
+                        joinedload(database.Exchange.user),
                     )
                 )
                 if not (item := results.scalars().one_or_none()):

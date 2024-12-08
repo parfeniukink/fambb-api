@@ -32,6 +32,7 @@ class Transaction(PublicData):
         ),
     )
     currency: str = Field(description="The sign of the currency")
+    user: str = Field(description="Transaction issuer")
 
     @functools.singledispatchmethod
     @classmethod
@@ -50,6 +51,7 @@ class Transaction(PublicData):
             value=domain.transactions.pretty_money(instance.value),
             timestamp=instance.timestamp,
             currency=instance.currency.sign,
+            user=instance.user,
         )
 
 
@@ -129,7 +131,8 @@ class Cost(PublicData):
     id: int = Field(description="Unique identifier in the system")
     name: str = Field(description="The name of the cost")
     value: float = Field(examples=[12.2, 650])
-    timestamp: date = Field(description=("The date of a transaction"))
+    timestamp: date = Field(description="The date of a transaction")
+    user: str = Field(description="The user representation")
     currency: Currency
     category: CostCategory
 
@@ -149,6 +152,7 @@ class Cost(PublicData):
             name=instance.name,
             value=domain.transactions.pretty_money(instance.value),
             timestamp=instance.timestamp,
+            user=instance.user.name,
             currency=Currency.model_validate(instance.currency),
             category=CostCategory.model_validate(instance.category),
         )
@@ -222,6 +226,7 @@ class Income(PublicData):
         description="Available 'source' for the income."
     )
     timestamp: date = Field(description=("The date of a transaction"))
+    user: str = Field(description="The user representation")
     currency: Currency
 
     @functools.singledispatchmethod
@@ -244,6 +249,7 @@ class Income(PublicData):
             value=domain.transactions.pretty_money(instance.value),
             source=cast(domain.transactions.IncomeSource, instance.source),
             timestamp=instance.timestamp,
+            user=instance.user.name,
             currency=Currency.model_validate(instance.currency),
         )
 
@@ -340,6 +346,7 @@ class Exchange(PublicData):
     from_value: float = Field(description="Given value")
     to_value: float = Field(description="Received value")
     timestamp: date = Field(description=("The date of a transaction"))
+    user: str = Field(description="The user representation")
     from_currency: Currency
     to_currency: Currency
 
@@ -359,6 +366,7 @@ class Exchange(PublicData):
             from_value=domain.transactions.pretty_money(instance.from_value),
             to_value=domain.transactions.pretty_money(instance.to_value),
             timestamp=instance.timestamp,
+            user=instance.user.name,
             from_currency=Currency.model_validate(instance.from_currency),
             to_currency=Currency.model_validate(instance.to_currency),
         )
