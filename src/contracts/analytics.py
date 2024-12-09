@@ -11,7 +11,7 @@ from typing import Literal
 from pydantic import Field, field_validator
 
 from src import domain
-from src.infrastructure import PublicData
+from src.infrastructure import IncomeSource, PublicData
 
 from .currency import Currency
 
@@ -49,7 +49,7 @@ class CostsAnalytics(PublicData):
 class IncomeBySource(PublicData):
     """Represents incomes for specific source."""
 
-    source: domain.transactions.IncomeSource = Field(
+    source: IncomeSource = Field(
         description="The source name", examples=["revenue"]
     )
     total: float = Field(description="The total for the selected source")
