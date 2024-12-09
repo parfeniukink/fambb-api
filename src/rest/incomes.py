@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, status
 
 from src import domain
 from src import operational as op
-from src.contracts import Income, IncomeCreateBody, IncomeUpdateBody
+from src.contracts import Currency, Income, IncomeCreateBody, IncomeUpdateBody
 from src.infrastructure import (
     OffsetPagination,
     Response,
@@ -91,11 +91,21 @@ async def update_income(
     if _value := body.value_in_cents:
         payload |= {"value": _value}
 
-    item: database.Income = await op.update_income(
+    instance: database.Income = await op.update_income(
         income_id=income_id, **payload
     )
 
-    return Response[Income](result=Income.model_validate(item))
+    return Response[Income](
+        result=Income(
+            id=instance.id,
+            name=instance.name,
+            value=instance.value,
+            source=instance.source,
+            currency=Currency.model_validate(instance.currency),
+            timestamp=instance.timestamp,
+            user=instance.user.name,
+        )
+    )
 
 
 @router.delete("/{income_id}", status_code=status.HTTP_204_NO_CONTENT)

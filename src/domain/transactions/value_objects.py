@@ -3,9 +3,9 @@ from datetime import date
 from pydantic import Field
 
 from src.domain.equity import Currency
-from src.infrastructure import InternalData
+from src.infrastructure import IncomeSource, InternalData
 
-from .types import IncomeSource, OperationType
+from .types import OperationType
 
 
 class Transaction(InternalData):

@@ -16,8 +16,8 @@ import functools
 from datetime import date
 from typing import TypeVar
 
-from sqlalchemy.dialects import postgresql
 from sqlalchemy import DATE, ForeignKey, Integer, MetaData, String, func
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -25,6 +25,8 @@ from sqlalchemy.orm import (
     relationship,
     validates,
 )
+
+from src.infrastructure.types import IncomeSource
 
 
 class Base(DeclarativeBase):
@@ -206,7 +208,7 @@ class Cost(Base, DefaultColumnsMixin):
     )
 
     @validates("value")
-    def validate_positive_value(self, key, address) -> int:
+    def validate_positive_value(self, _, address) -> int:
         if not isinstance(address, int):
             raise TypeError(
                 f"Received value is not valid integer. Type: {type(address)}"
@@ -245,13 +247,12 @@ class Income(Base, DefaultColumnsMixin):
     value: Mapped[int]
     timestamp: Mapped[date] = mapped_column(
         default=functools.partial(date.today),
-        onupdate=functools.partial(date.today),
         server_default=func.current_date(),
     )
-    source: Mapped[str] = mapped_column(index=True)
+    source: Mapped[IncomeSource] = mapped_column(index=True)
 
     @validates("value")
-    def validate_positive_value(self, key, address) -> int:
+    def validate_positive_value(self, _, address) -> int:
         if not isinstance(address, int):
             raise TypeError(
                 f"Received value is not valid integer. Type: {type(address)}"
@@ -297,7 +298,6 @@ class Exchange(Base, DefaultColumnsMixin):
     to_value: Mapped[int]
     timestamp: Mapped[date] = mapped_column(
         default=functools.partial(date.today),
-        onupdate=functools.partial(date.today),
         server_default=func.current_date(),
     )
 
@@ -322,7 +322,7 @@ class Exchange(Base, DefaultColumnsMixin):
     )
 
     @validates("from_value")
-    def validate_positive_from_value(self, key, address) -> int:
+    def validate_positive_from_value(self, _, address) -> int:
         if not isinstance(address, int):
             raise TypeError(
                 f"Received value is not valid integer. Type: {type(address)}"
@@ -334,7 +334,7 @@ class Exchange(Base, DefaultColumnsMixin):
             return address
 
     @validates("to_value")
-    def validate_positive_to_value(self, key, address) -> int:
+    def validate_positive_to_value(self, _, address) -> int:
         if not isinstance(address, int):
             raise TypeError(
                 f"Received value is not valid integer. Type: {type(address)}"
@@ -368,7 +368,7 @@ class CostShortcut(Base, DefaultColumnsMixin):
     )
 
     @validates("value")
-    def validate_positive_value(self, key, address) -> int | None:
+    def validate_positive_value(self, _, address) -> int | None:
         if address is None:
             return None
 

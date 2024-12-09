@@ -4,7 +4,7 @@ from datetime import date
 from typing import cast
 
 from src import domain
-from src.infrastructure import database, errors
+from src.infrastructure import IncomeSource, database, errors
 
 
 # ==================================================
@@ -95,6 +95,9 @@ async def update_cost(cost_id: int, **values) -> database.Cost:
     for attr in duplicates:
         del values[attr]
 
+    if not values:
+        raise errors.BadRequestError("nothing to update")
+
     tasks: list[Coroutine] = [
         transaction_repository.update_cost(cost, **values),
     ]
@@ -184,7 +187,7 @@ async def add_income(
     name: str,
     value: int,
     timestamp: date,
-    source: domain.transactions.IncomeSource,
+    source: IncomeSource,
     currency_id: int,
     user_id: int,
 ) -> database.Income:
@@ -244,6 +247,9 @@ async def update_income(income_id: int, **values) -> database.Income:
 
     for attr in duplicates:
         del values[attr]
+
+    if not values:
+        raise errors.BadRequestError("nothing to update")
 
     tasks: list[Coroutine] = [
         transaction_repository.update_income(income, **values),

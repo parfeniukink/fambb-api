@@ -5,7 +5,7 @@ import pytest
 from polyfactory.factories.sqlalchemy_factory import SQLAlchemyFactory
 
 from src import domain
-from src.infrastructure import database
+from src.infrastructure import IncomeSource, database
 
 
 class CostCandidateFactory(SQLAlchemyFactory[database.Cost]):
@@ -104,7 +104,7 @@ async def cost_factory(
 async def income_factory(
     john,
     currencies: list[database.Currency],
-    source: domain.transactions.IncomeSource = "revenue",
+    source: IncomeSource = "revenue",
 ) -> Callable:
     """
     params:

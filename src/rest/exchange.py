@@ -62,7 +62,7 @@ async def add_exchange(
         user_id=user.id,
     )
 
-    return Response[Exchange](result=Exchange.model_validate(item))
+    return Response[Exchange](result=Exchange.from_instance(item))
 
 
 @router.get("/{exchange_id}", status_code=status.HTTP_200_OK)

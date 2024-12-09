@@ -2,6 +2,7 @@ __all__ = (
     "ErrorDetail",
     "ErrorResponse",
     "ErrorResponseMulti",
+    "IncomeSource",
     "InternalData",
     "OffsetPagination",
     "PublicData",
@@ -32,3 +33,4 @@ from .responses import (
     _TPublicData,
     get_offset_pagination_params,
 )
+from .types import IncomeSource

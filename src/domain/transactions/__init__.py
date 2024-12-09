@@ -24,7 +24,6 @@ __all__ = (
     "CostsByCategory",
     "Exchange",
     "Income",
-    "IncomeSource",
     "IncomesAnalytics",
     "OperationType",
     "Transaction",
@@ -45,7 +44,7 @@ from .data_transformation import (
 )
 from .entities import Cost, CostCategory, Exchange, Income
 from .repository import TransactionRepository
-from .types import IncomeSource, OperationType
+from .types import OperationType
 from .value_objects import (
     CostsAnalytics,
     CostsByCategory,
