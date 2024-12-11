@@ -40,7 +40,7 @@ async def incomes(
         left = 0
 
     return ResponseMultiPaginated[Income](
-        result=[Income.model_validate(item) for item in items],
+        result=[Income.from_instance(item) for item in items],
         context=context,
         left=left,
     )
@@ -62,7 +62,7 @@ async def add_income(
         user_id=user.id,
     )
 
-    return Response[Income](result=Income.model_validate(item))
+    return Response[Income](result=Income.from_instance(item))
 
 
 @router.get("/{income_id}", status_code=status.HTTP_200_OK)

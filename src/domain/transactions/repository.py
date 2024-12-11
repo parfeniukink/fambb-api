@@ -134,7 +134,7 @@ class TransactionRepository(database.Repository):
             async with session.begin():
                 # calculate total
                 count_result = await session.execute(count_query)
-                if not (total := count_result.scalar()):
+                if (total := count_result.scalar()) is None:
                     raise errors.DatabaseError("Can't get the total of items")
 
                 result = await session.execute(paginated_query)
@@ -210,6 +210,7 @@ class TransactionRepository(database.Repository):
             .options(
                 joinedload(database.Cost.currency),
                 joinedload(database.Cost.category),
+                joinedload(database.Cost.user),
             )
             .order_by(database.Cost.timestamp)
         )
@@ -278,6 +279,7 @@ class TransactionRepository(database.Repository):
             select(database.Income)
             .options(
                 joinedload(database.Income.currency),
+                joinedload(database.Income.user),
             )
             .order_by(database.Income.timestamp)
         )
@@ -342,6 +344,7 @@ class TransactionRepository(database.Repository):
             .options(
                 joinedload(database.Exchange.from_currency),
                 joinedload(database.Exchange.to_currency),
+                joinedload(database.Exchange.user),
             )
             .order_by(database.Exchange.timestamp)
         )
