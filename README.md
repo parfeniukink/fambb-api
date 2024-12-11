@@ -10,3 +10,5 @@
 - settings
     - number of 'Last Transactions' in 'Home'
     - accent color
+- authorization
+    - if user credentials are not valid - return the WWW-Authorization HTTP header with detaild according to the RFC6750
