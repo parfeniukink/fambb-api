@@ -40,7 +40,7 @@ async def exchanges(
         left = 0
 
     return ResponseMultiPaginated[Exchange](
-        result=[Exchange.model_validate(item) for item in items],
+        result=[Exchange.from_instance(item) for item in items],
         context=context,
         left=left,
     )
