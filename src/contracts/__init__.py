@@ -20,7 +20,7 @@ __all__ = (
     "Transaction",
     "TransactionBasicAnalytics",
     "User",
-    "UserConfigurationUpdateRequestBody",
+    "UserConfigurationPartialUpdateRequestBody",
     "UserCreateRequestBody",
 )
 
@@ -44,6 +44,6 @@ from .transactions import (
 )
 from .users import (
     User,
-    UserConfigurationUpdateRequestBody,
+    UserConfigurationPartialUpdateRequestBody,
     UserCreateRequestBody,
 )

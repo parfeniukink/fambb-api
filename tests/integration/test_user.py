@@ -23,7 +23,7 @@ async def test_user_retrieve_anonymous(anonymous):
 async def test_user_update_configuration_anonymous(
     anonymous: httpx.AsyncClient,
 ):
-    response: httpx.Response = await anonymous.put(
+    response: httpx.Response = await anonymous.patch(
         "/users/configuration", json={}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -70,7 +70,7 @@ async def test_user_configuration_update(
     payload,
 ):
     repository = domain.UserRepository()
-    response: httpx.Response = await client.put(
+    response: httpx.Response = await client.patch(
         "/users/configuration",
         json=payload,
     )

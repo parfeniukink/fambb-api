@@ -15,7 +15,8 @@ class EquityRepository(database.Repository):
                     )
                 )
                 item: database.Currency = results.scalars().one()
-                return item
+
+        return item
 
     async def currencies(self) -> tuple[database.Currency, ...]:
         """select everything from 'currencies' table."""
@@ -27,7 +28,8 @@ class EquityRepository(database.Repository):
                         desc(database.Currency.id)
                     )
                 )
-                return tuple(result.scalars().all())
+
+        return tuple(result.scalars().all())
 
     async def add_currency(
         self, candidate: database.Currency

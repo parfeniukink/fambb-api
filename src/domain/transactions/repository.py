@@ -239,8 +239,7 @@ class TransactionRepository(database.Repository):
                 )
                 if not (item := results.scalars().one_or_none()):
                     raise errors.NotFoundError(f"Cost {id_} not found")
-                else:
-                    return item
+        return item
 
     async def add_cost(self, candidate: database.Cost) -> database.Cost:
         """add item to the 'costs' table."""
@@ -307,8 +306,7 @@ class TransactionRepository(database.Repository):
                 )
                 if not (item := results.scalars().one_or_none()):
                     raise errors.NotFoundError(f"Income {id_} not found")
-                else:
-                    return item
+        return item
 
     async def add_income(self, candidate: database.Income) -> database.Income:
         """add item to the 'incomes' table."""
@@ -373,8 +371,8 @@ class TransactionRepository(database.Repository):
                 )
                 if not (item := results.scalars().one_or_none()):
                     raise errors.NotFoundError(f"Exchange {id_} not found")
-                else:
-                    return item
+
+        return item
 
     async def add_exchange(
         self, candidate: database.Exchange
@@ -438,8 +436,8 @@ class TransactionRepository(database.Repository):
                     raise errors.NotFoundError(
                         f"Cost Shortcut {id_} not found"
                     )
-                else:
-                    return item
+
+        return item
 
     # ==================================================
     # analytics section

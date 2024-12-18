@@ -482,7 +482,6 @@ async def apply_cost_shortcut(
     """try to apply the cost shortcut."""
 
     repository = domain.transactions.TransactionRepository()
-
     shortcut: database.CostShortcut = await repository.cost_shortcut(
         user_id=user.id, id_=shortcut_id
     )
