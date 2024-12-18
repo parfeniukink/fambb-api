@@ -26,7 +26,7 @@ class UserConfiguration(PublicData):
     )
 
 
-class UserConfigurationUpdateRequestBody(PublicData):
+class UserConfigurationPartialUpdateRequestBody(PublicData):
     default_currency_id: int | None = Field(
         default=None, description="Update the default_currency_id"
     )

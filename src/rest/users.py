@@ -1,11 +1,17 @@
 from fastapi import APIRouter, Body, Depends
 
 from src import operational as op
-from src.contracts import User, UserConfigurationUpdateRequestBody
+from src.contracts import User, UserConfigurationPartialUpdateRequestBody
 from src.domain import users as domain
 from src.infrastructure import Response, database
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.get("/echo")
+async def echo() -> str:
+    message = "pong"
+    return message
 
 
 @router.get("")
@@ -18,12 +24,14 @@ async def user_retrieve(
     return response
 
 
-@router.put("/configuration")
-async def update_user_configuration(
+@router.patch("/configuration")
+async def parial_update_user_configuration(
     user: domain.User = Depends(op.authorize),
-    body: UserConfigurationUpdateRequestBody = Body(...),
+    body: UserConfigurationPartialUpdateRequestBody = Body(...),
 ) -> None:
     """Update the user configuration partially."""
+
+    # TODO: snippets should be updatable
 
     async with database.transaction():
         await domain.UserRepository().update_user_configuration(

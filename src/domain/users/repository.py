@@ -20,7 +20,8 @@ class UserRepository(database.Repository):
                     )
                 )
                 user: database.User = results.scalars().one()
-                return user
+
+        return user
 
     async def user_by_token(self, token: str) -> database.User:
         """search by ``token``."""
@@ -39,7 +40,8 @@ class UserRepository(database.Repository):
                     user: database.User = results.scalars().one()
                 except NoResultFound as error:
                     raise errors.NotFoundError("Can't find user") from error
-                return user
+
+        return user
 
     async def add_user(self, candidate: database.User) -> database.User:
         self.command.session.add(candidate)
