@@ -45,20 +45,31 @@ async def test_user_retrieve(john, client):
 
 
 @pytest.mark.parametrize(
-    "payload",
+    "payload_id,payload",
     [
-        {
-            "defaultCurrencyId": 1,
-            "defaultCostCategoryId": 2,
-        },
-        {
-            "defaultCurrencyId": None,
-            "defaultCostCategoryId": 1,
-        },
-        {
-            "defaultCurrencyId": None,
-            "defaultCostCategoryId": None,
-        },
+        (
+            1,
+            {
+                "defaultCurrencyId": 1,
+                "defaultCostCategoryId": 2,
+            },
+        ),
+        (
+            2,
+            {
+                "defaultCurrencyId": None,
+                "defaultCostCategoryId": 1,
+            },
+        ),
+        (
+            3,
+            {
+                "defaultCurrencyId": None,
+                "defaultCostCategoryId": None,
+                "costSnippets": ["Coffee", "Water"],
+                "incomeSnippets": ["Office", "Teaching"],
+            },
+        ),
     ],
 )
 @pytest.mark.use_db
@@ -67,12 +78,12 @@ async def test_user_configuration_update(
     client,
     currencies,
     cost_categories,
+    payload_id,
     payload,
 ):
     repository = domain.UserRepository()
     response: httpx.Response = await client.patch(
-        "/users/configuration",
-        json=payload,
+        "/users/configuration", json=payload
     )
     response_user: httpx.Response = await client.get("/users")
     configuration_raw_response = response_user.json()["result"][
@@ -85,18 +96,59 @@ async def test_user_configuration_update(
 
     assert response.status_code == status.HTTP_200_OK, response.json()
     assert users_total == 1
-    if (id_ := payload["defaultCurrencyId"]) is not None:
-        assert configuration_raw_response["defaultCurrency"]["id"] == id_
-        assert user.default_currency_id == id_
-    else:
-        assert configuration_raw_response["defaultCurrency"] is None
-        assert user.default_currency_id is None
-        assert user.default_currency is None
 
-    if (id_ := payload["defaultCostCategoryId"]) is not None:
-        assert configuration_raw_response["defaultCostCategory"]["id"] == id_
-        assert user.default_cost_category_id == id_
-    else:
-        assert configuration_raw_response["defaultCostCategory"] is None
-        assert user.default_cost_category_id is None
-        assert user.default_cost_category is None
+    if payload_id == 1:
+        assert (
+            user.default_currency_id
+            == configuration_raw_response["defaultCurrency"]["id"]
+            == payload["defaultCurrencyId"]
+        )
+        assert (
+            user.default_cost_category_id
+            == configuration_raw_response["defaultCostCategory"]["id"]
+            == payload["defaultCostCategoryId"]
+        )
+        assert user.cost_snippets is None
+        assert user.income_snippets is None
+    elif payload_id == 2:
+        assert (
+            user.default_currency_id
+            == configuration_raw_response["defaultCurrency"]
+            is None
+        )
+        assert (
+            user.default_cost_category_id
+            == configuration_raw_response["defaultCostCategory"]["id"]
+            == payload["defaultCostCategoryId"]
+        )
+        assert (
+            user.cost_snippets
+            == configuration_raw_response["costSnippets"]
+            is None
+        )
+        assert (
+            user.income_snippets
+            == configuration_raw_response["incomeSnippets"]
+            is None
+        )
+    elif payload_id == 3:
+        assert (
+            user.default_currency_id
+            == configuration_raw_response["defaultCurrency"]
+            is None
+        )
+        assert (
+            user.default_cost_category_id
+            == configuration_raw_response["defaultCostCategory"]
+            == None
+        )
+        assert (
+            user.cost_snippets
+            == configuration_raw_response["costSnippets"]
+            == ["Coffee", "Water"]
+        )
+        assert (
+            user.income_snippets
+            == configuration_raw_response["incomeSnippets"]
+            == ["Office", "Teaching"]
+        )
