@@ -140,7 +140,7 @@ async def test_user_configuration_update(
         assert (
             user.default_cost_category_id
             == configuration_raw_response["defaultCostCategory"]
-            == None
+            is None
         )
         assert (
             user.cost_snippets
