@@ -8,15 +8,16 @@ on:
     branches:
       - main
 
+env:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: family_budget
+  FBB__DATABASE__PORT: 35432
+  FBB__DATABASE__NAME: family_budget
+
 jobs:
   build:
     runs-on: self-hosted
-    environment:
-      - POSTGRES_USER: postgres
-      - POSTGRES_PASSWORD: postgres
-      - POSTGRES_DB: family_budget
-      - FBB__DATABASE__PORT: 35432
-      - FBB__DATABASE__NAME: family_budget
 
     strategy:
       matrix:
