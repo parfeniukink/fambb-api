@@ -11,6 +11,12 @@ on:
 jobs:
   build:
     runs-on: self-hosted
+    environment:
+      - POSTGRES_USER: postgres
+      - POSTGRES_PASSWORD: postgres
+      - POSTGRES_DB: family_budget
+      - FBB__DATABASE__PORT: 35432
+      - FBB__DATABASE__NAME: family_budget
 
     strategy:
       matrix:
@@ -20,11 +26,8 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: family_budget
         ports:
-          - 5432:5432
+          - 35432:5432
 
     steps:
       - uses: actions/checkout@v4
