@@ -61,4 +61,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Deploy to the same server
-        run: . ./scripts/deploy.sh
+        run: bash ./scripts/deploy.sh
