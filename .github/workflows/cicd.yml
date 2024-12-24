@@ -9,9 +9,6 @@ on:
       - main
 
 env:
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres
-  POSTGRES_DB: family_budget
   FBB__DATABASE__HOST: localhost
   FBB__DATABASE__PORT: 35432
   FBB__DATABASE__NAME: family_budget
@@ -29,6 +26,10 @@ jobs:
         image: postgres:16
         ports:
           - 35432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: family_budget
 
     steps:
       - uses: actions/checkout@v4
