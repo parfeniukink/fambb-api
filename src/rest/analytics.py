@@ -93,6 +93,13 @@ async def transaction_basic_analytics(
             alias="endDate",
         ),
     ] = None,
+    pattern: Annotated[
+        str | None,
+        Query(
+            description="The pattern to filter results",
+            alias="pattern",
+        ),
+    ] = None,
     _: domain.users.User = Depends(op.authorize),
 ) -> ResponseMulti[contracts.TransactionBasicAnalytics]:
     """Get the basic analytics of all kind of transactions.
@@ -117,15 +124,17 @@ async def transaction_basic_analytics(
             instances: tuple[
                 domain.transactions.TransactionsBasicAnalytics, ...
             ] = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
-                start_date=start_date, end_date=end_date
+                start_date=start_date, end_date=end_date, pattern=pattern
             )
+
+    elif pattern is not None:
+        # get instances by specified pattern
+        instances = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
+            pattern=pattern
+        )
     else:
         if any((start_date, end_date)):
             raise ValueError("The range requires both dates to be specified")
-        if period is None:
-            raise ValueError(
-                "Please specify dates range or period for the basic analytics"
-            )
         else:
             # get instances by period
             if period == "current-month":

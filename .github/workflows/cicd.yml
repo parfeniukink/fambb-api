@@ -62,5 +62,3 @@ jobs:
       - uses: actions/checkout@v4
       - name: Deploy to the same server
         run: bash ${{ secrets.FAMBB_API_DEPLOY_SCRIPT_PATH }}
-        env:
-          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}

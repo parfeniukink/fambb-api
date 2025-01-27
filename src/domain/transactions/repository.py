@@ -442,8 +442,12 @@ class TransactionRepository(database.Repository):
     # ==================================================
     # analytics section
     # ==================================================
-    async def transactions_basic_analytics(
-        self, /, start_date: date, end_date: date
+    async def transactions_basic_analytics(  # noqa: C901
+        self,
+        /,
+        pattern: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
     ) -> tuple[TransactionsBasicAnalytics, ...]:
         """build the transactions 'basic analytics' on the database level.
 
@@ -464,17 +468,40 @@ class TransactionRepository(database.Repository):
             to the `currency_id` of the related analytics block.
         """
 
-        # ==================================================
+        # validation
+        if not any((pattern, all((start_date, end_date)))):
+            raise errors.DatabaseError(
+                "Whether pattern or dates range "
+                "must be specified to get analytics"
+            )
+
+        # define filters
+        cost_filters = []
+        income_filters = []
+        exchange_filters = []
+        if start_date and end_date:
+            cost_filters.append(
+                database.Cost.timestamp.between(start_date, end_date)
+            )
+            income_filters.append(
+                database.Income.timestamp.between(start_date, end_date)
+            )
+            exchange_filters.append(
+                database.Exchange.timestamp.between(start_date, end_date)
+            )
+        if pattern:
+            cost_filters.append(database.Cost.name.ilike(f"%{pattern}%"))
+            income_filters.append(database.Income.name.ilike(f"%{pattern}%"))
+            # exclude if pattern is specified. no id == 0
+            exchange_filters.append(database.Exchange.id == 0)  # type: ignore
+
         # costs section
-        # ==================================================
         cost_totals_by_currency_query: Select = (
             select(
                 database.Cost.currency_id.label("currency_id"),
                 func.sum(database.Cost.value).label("total"),
             )
-            .where(
-                database.Cost.timestamp.between(start_date, end_date),
-            )
+            .where(*cost_filters)
             .group_by(database.Cost.currency_id)
             .order_by(database.Cost.currency_id)
         )
@@ -491,24 +518,18 @@ class TransactionRepository(database.Repository):
                 database.CostCategory,
                 database.Cost.category_id == database.CostCategory.id,
             )
-            .where(
-                database.Cost.timestamp.between(start_date, end_date),
-            )
+            .where(*cost_filters)
             .group_by(database.Cost.currency_id, database.CostCategory.id)
             .order_by(database.Cost.currency_id, database.CostCategory.id)
         )
 
-        # ==================================================
         # incomes section
-        # ==================================================
         income_totals_by_currency_query: Select = (
             select(
                 database.Income.currency_id.label("currency_id"),
                 func.sum(database.Income.value).label("total"),
             )
-            .where(
-                database.Income.timestamp.between(start_date, end_date),
-            )
+            .where(*income_filters)
             .group_by(database.Income.currency_id)
             .order_by(database.Income.currency_id)
         )
@@ -521,18 +542,15 @@ class TransactionRepository(database.Repository):
                 # custom calculation. the `sum` of all the incomes in the range
                 (func.sum(database.Income.value)).label("total"),
             )
-            .where(
-                database.Income.timestamp.between(start_date, end_date),
-            )
+            .where(*income_filters)
             .group_by(database.Income.currency_id, database.Income.source)
             .order_by(database.Income.currency_id, database.Income.source)
         )
 
+        # exchange section
         exchanges_query: Select = (
             select(database.Exchange)
-            .where(
-                database.Exchange.timestamp.between(start_date, end_date),
-            )
+            .where(*exchange_filters)
             .order_by(database.Exchange.timestamp)
         )
 
