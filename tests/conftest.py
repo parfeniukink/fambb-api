@@ -14,7 +14,7 @@ from sqlalchemy import NullPool
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.sql import text
 
-from src import domain, rest
+from src import domain, http
 from src.config import settings
 from src.infrastructure import database, errors, factories
 
@@ -47,12 +47,12 @@ def app() -> FastAPI:
     return factories.asgi_app(
         debug=settings.debug,
         rest_routers=(
-            rest.users.router,
-            rest.currencies.router,
-            rest.costs.router,
-            rest.incomes.router,
-            rest.exchange.router,
-            rest.analytics.router,
+            http.users_router,
+            http.currencies_router,
+            http.costs_router,
+            http.incomes_router,
+            http.exchange_router,
+            http.analytics_router,
         ),
         exception_handlers={
             ValueError: errors.value_error_handler,

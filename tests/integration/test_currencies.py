@@ -6,7 +6,7 @@ import httpx
 import pytest
 from fastapi import status
 
-from src import contracts
+from src import http
 from src.domain import equity as domain
 from src.infrastructure import database
 
@@ -23,7 +23,7 @@ async def test_currencies_list(
 
 @pytest.mark.use_db
 async def test_currency_creation(client: httpx.AsyncClient):
-    payload = contracts.CurrencyCreateBody(name="USD", sign="$").dict()
+    payload: dict = http.CurrencyCreateBody(name="USD", sign="$").model_dump()
     response: httpx.Response = await client.post("/currencies", json=payload)
 
     total_currencies: int = await domain.EquityRepository().count(

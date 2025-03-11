@@ -10,7 +10,7 @@ import httpx
 import pytest
 from fastapi import status
 
-from src import contracts, domain
+from src import domain, http
 from src.infrastructure import database
 
 
@@ -128,7 +128,7 @@ async def test_cost_update_safe(
     """test operations that should not change the equity."""
 
     cost, *_ = await cost_factory(n=1)
-    body = contracts.CostUpdateBody(
+    body = http.CostUpdateBody(
         name="".join((cost.name, "some salt")),
         category_id=2,  # `1` by default
         timestamp=cost.timestamp - timedelta(days=3),
