@@ -4,18 +4,6 @@ from fastapi import APIRouter, Body, Depends, status
 
 from src import domain
 from src import operational as op
-from ..contracts.transactions import (
-    Cost,
-    CostCategory,
-    CostCategoryCreateBody,
-    CostCreateBody,
-    CostUpdateBody,
-)
-from ..contracts.shortcuts import (
-    CostShortcut,
-    CostShortcutApply,
-    CostShortcutCreateBody,
-)
 from src.infrastructure import (
     OffsetPagination,
     Response,
@@ -23,6 +11,19 @@ from src.infrastructure import (
     ResponseMultiPaginated,
     database,
     get_offset_pagination_params,
+)
+
+from ..contracts.shortcuts import (
+    CostShortcut,
+    CostShortcutApply,
+    CostShortcutCreateBody,
+)
+from ..contracts.transactions import (
+    Cost,
+    CostCategory,
+    CostCategoryCreateBody,
+    CostCreateBody,
+    CostUpdateBody,
 )
 
 router = APIRouter(prefix="/costs", tags=["Transactions", "Costs"])

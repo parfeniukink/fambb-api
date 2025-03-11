@@ -12,7 +12,7 @@ from src.infrastructure import (
     get_offset_pagination_params,
 )
 
-from ..contracts import Income, IncomeUpdateBody, IncomeCreateBody, Currency
+from ..contracts import Currency, Income, IncomeCreateBody, IncomeUpdateBody
 
 router = APIRouter(prefix="/incomes", tags=["Transactions", "Incomes"])
 

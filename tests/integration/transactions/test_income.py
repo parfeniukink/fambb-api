@@ -9,7 +9,7 @@ import httpx
 import pytest
 from fastapi import status
 
-from src import http, domain
+from src import domain, http
 from src.infrastructure import database
 
 

@@ -4,12 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from src import domain
-from ..contracts.equity import Equity
-from ..contracts.analytics import (
-    AnalyticsPeriodQuery,
-    TransactionBasicAnalytics,
-)
-from ..contracts.transactions import Transaction
 from src import operational as op
 from src.infrastructure import (
     OffsetPagination,
@@ -18,6 +12,13 @@ from src.infrastructure import (
     dates,
     get_offset_pagination_params,
 )
+
+from ..contracts.analytics import (
+    AnalyticsPeriodQuery,
+    TransactionBasicAnalytics,
+)
+from ..contracts.equity import Equity
+from ..contracts.transactions import Transaction
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
