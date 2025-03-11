@@ -1,3 +1,17 @@
+"""
+this file is a part of infrastructure tier of the application.
+it is base on pydantic_settings engine to make it easy to work
+with environment variables (including ``.env`` file support).
+
+HOW TO WORK WITH SETTIGNS?
+1. focus on ``Settings`` class
+2. if you would like to change the ``debug`` parameter go to the ``.env``
+    file and add ``FBB__DEBUG``, since there is a prefix specified in 
+    ``model_config`` of that class
+3. if you would like to change the nested parameter - use next prfix as well:
+    ``FBB__DATABASE__NAME`` respectively
+"""
+
 __all__ = ("settings",)
 
 from typing import Literal

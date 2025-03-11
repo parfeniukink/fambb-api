@@ -16,7 +16,15 @@ import functools
 from datetime import date
 from typing import TypeVar
 
-from sqlalchemy import DATE, ForeignKey, Integer, MetaData, String, func
+from sqlalchemy import (
+    DATE,
+    Boolean,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    func,
+)
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -83,6 +91,9 @@ class User(Base, DefaultColumnsMixin):
     token: Mapped[str] = mapped_column(unique=True)
 
     # user configurations
+    show_equity: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="f"
+    )
     cost_snippets: Mapped[list[str] | None] = mapped_column(
         postgresql.ARRAY(String, dimensions=1), default=None
     )

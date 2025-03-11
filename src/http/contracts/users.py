@@ -10,6 +10,9 @@ from .transactions import CostCategory
 
 
 class UserConfiguration(PublicData):
+    show_equity: bool = Field(
+        default=False, description="Define if the equity is visible"
+    )
     default_currency: Currency | None = Field(
         default=None, description="A default currency costs and incomes"
     )
@@ -27,6 +30,9 @@ class UserConfiguration(PublicData):
 
 
 class UserConfigurationPartialUpdateRequestBody(PublicData):
+    show_equity: bool = Field(
+        default=False, description="Define if the equity is visible"
+    )
     default_currency_id: int | None = Field(
         default=None, description="Update the default_currency_id"
     )
@@ -68,6 +74,7 @@ class User(PublicData):
             id=instance.id,
             name=instance.name,
             configuration=UserConfiguration(
+                show_equity=instance.show_equity,
                 cost_snippets=instance.cost_snippets,
                 income_snippets=instance.income_snippets,
                 default_currency=(

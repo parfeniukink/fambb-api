@@ -14,6 +14,7 @@ from src.infrastructure import InternalData, database
 class UserConfiguration(InternalData):
     """User configuration is a part of a ``users`` table."""
 
+    show_equity: bool = False
     default_currency: Currency | None = None
     default_cost_category: CostCategory | None = None
     cost_snippets: tuple[str, ...] | None = None
@@ -43,6 +44,7 @@ class User(InternalData):
             name=instance.name,
             token=instance.token,
             configuration=UserConfiguration(
+                show_equity=instance.show_equity,
                 cost_snippets=(
                     tuple(instance.cost_snippets)
                     if instance.cost_snippets

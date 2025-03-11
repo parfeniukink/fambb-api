@@ -9,7 +9,7 @@ import httpx
 import pytest
 from fastapi import status
 
-from src import contracts, domain
+from src import http, domain
 from src.infrastructure import database
 
 
@@ -92,7 +92,7 @@ async def test_income_update_safe(
     """test operations that should not change the equity."""
 
     income, *_ = await income_factory(n=1)
-    body = contracts.IncomeUpdateBody(
+    body = http.IncomeUpdateBody(
         name="".join((income.name, "some salt")),
         timestamp=income.timestamp - timedelta(days=3),
     )

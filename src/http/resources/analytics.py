@@ -3,7 +3,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from src import contracts, domain
+from src import domain
+from ..contracts.equity import Equity
+from ..contracts.analytics import (
+    AnalyticsPeriodQuery,
+    TransactionBasicAnalytics,
+)
+from ..contracts.transactions import Transaction
 from src import operational as op
 from src.infrastructure import (
     OffsetPagination,
@@ -19,12 +25,12 @@ router = APIRouter(prefix="/analytics", tags=["Analytics"])
 @router.get("/equity")
 async def equity(
     _: domain.users.User = Depends(op.authorize),
-) -> ResponseMulti[contracts.Equity]:
-    """Expose the ``equity``, related to each currency."""
+) -> ResponseMulti[Equity]:
+    """expose the ``equity``, related to each currency."""
 
-    return ResponseMulti[contracts.Equity](
+    return ResponseMulti[Equity](
         result=[
-            contracts.Equity.from_instance(item)
+            Equity.from_instance(item)
             for item in await domain.equity.EquityRepository().currencies()
         ]
     )
@@ -41,12 +47,12 @@ async def transactions(
     ] = None,
     pagination: OffsetPagination = Depends(get_offset_pagination_params),
     _: domain.users.User = Depends(op.authorize),
-) -> ResponseMultiPaginated[contracts.Transaction]:
-    """Expose transactions. Includes costs, incomes and exchanges.
+) -> ResponseMultiPaginated[Transaction]:
+    """transactions list. includes costs, incomes and exchanges.
 
     Notes:
-        The returned ``total`` value is based on applied filters.
-        If the currency is specified - ``total`` might be changed
+        the returned ``total`` value is based on applied filters.
+        if the currency is specified - ``total`` might be changed
         so you can rely on data properly.
     """
 
@@ -66,8 +72,8 @@ async def transactions(
         context = 0
         left = 0
 
-    return ResponseMultiPaginated[contracts.Transaction](
-        result=[contracts.Transaction.from_instance(item) for item in items],
+    return ResponseMultiPaginated[Transaction](
+        result=[Transaction.from_instance(item) for item in items],
         context=context,
         left=left,
     )
@@ -76,48 +82,54 @@ async def transactions(
 @router.get("/basic")
 async def transaction_basic_analytics(
     period: Annotated[
-        contracts.AnalyticsPeriodQuery | None,
-        Query(description="Specified period instead of start and end dates"),
+        AnalyticsPeriodQuery | None,
+        Query(description="specified period instead of start and end dates"),
     ] = None,
     start_date: Annotated[
         date | None,
         Query(
-            description="The start date of transaction in the analytics",
+            description="the start date of transaction in the analytics",
             alias="startDate",
         ),
     ] = None,
     end_date: Annotated[
         date | None,
         Query(
-            description="The end date of transaction in the analytics",
+            description="the end date of transaction in the analytics",
             alias="endDate",
         ),
     ] = None,
     pattern: Annotated[
         str | None,
         Query(
-            description="The pattern to filter results",
+            description="the pattern to filter results",
             alias="pattern",
         ),
     ] = None,
     _: domain.users.User = Depends(op.authorize),
-) -> ResponseMulti[contracts.TransactionBasicAnalytics]:
-    """Get the basic analytics of all kind of transactions.
+) -> ResponseMulti[TransactionBasicAnalytics]:
+    """basic analytics that supports a set of some filters.
 
-    Workflow:
-        User can specify either start date & end date or the 'period'.
+    WORKFLOW:
+        user can specify either start date & end date or the 'period'.
+        user can specify the pattern which is NOT CASE-SENSITIVE to filter
+        by that name in cost name of income name.
 
-    Errors conditions:
-        - the 'period' and any 'date' are specified
-        - only one date is specified
-        - unrecognized period is specified
-        - nothing is specified
+    ERRORS CONDITIONS:
+        ``period`` and any ``date`` are specified
+        only one date is specified
+        unrecognized period is specified
+        nothing is specified
+
+    NOTES:
+        if the ``pattern`` is specified you WON'T see
+            EXCHANGES in your analytics.
     """
 
     if start_date is not None and end_date is not None:
         if period is not None:
             raise ValueError(
-                "You can't specify dates and period simultaneously"
+                "you can't specify dates and period simultaneously"
             )
         else:
             # get instances by specified start and end dates
@@ -134,7 +146,7 @@ async def transaction_basic_analytics(
         )
     else:
         if any((start_date, end_date)):
-            raise ValueError("The range requires both dates to be specified")
+            raise ValueError("the range requires both dates to be specified")
         else:
             # get instances by period
             if period == "current-month":
@@ -150,9 +162,9 @@ async def transaction_basic_analytics(
             else:
                 raise ValueError(f"Unavailable period: {period}")
 
-    return ResponseMulti[contracts.TransactionBasicAnalytics](
+    return ResponseMulti[TransactionBasicAnalytics](
         result=[
-            contracts.TransactionBasicAnalytics.from_instance(instance)
+            TransactionBasicAnalytics.from_instance(instance)
             for instance in instances
         ]
     )

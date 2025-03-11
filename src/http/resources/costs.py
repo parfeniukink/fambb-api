@@ -4,15 +4,17 @@ from fastapi import APIRouter, Body, Depends, status
 
 from src import domain
 from src import operational as op
-from src.contracts import (
+from ..contracts.transactions import (
     Cost,
     CostCategory,
     CostCategoryCreateBody,
     CostCreateBody,
+    CostUpdateBody,
+)
+from ..contracts.shortcuts import (
     CostShortcut,
     CostShortcutApply,
     CostShortcutCreateBody,
-    CostUpdateBody,
 )
 from src.infrastructure import (
     OffsetPagination,
@@ -34,7 +36,7 @@ router = APIRouter(prefix="/costs", tags=["Transactions", "Costs"])
 async def cost_categories(
     _=Depends(op.authorize),
 ) -> ResponseMulti[CostCategory]:
-    """return available cost categories from the database."""
+    """cost categories list."""
 
     return ResponseMulti[CostCategory](
         result=[
@@ -51,7 +53,7 @@ async def cost_category_create(
     _=Depends(op.authorize),
     schema: CostCategoryCreateBody = Body(...),
 ) -> Response[CostCategory]:
-    """create a new cost category."""
+    """create a cost category."""
 
     async with database.transaction():
         item: (
@@ -63,10 +65,6 @@ async def cost_category_create(
     return Response[CostCategory](result=CostCategory.model_validate(item))
 
 
-# ===========================================================
-# cost shortcuts section.
-# on top because of the FastAPI router dispatching hierarchy
-# ===========================================================
 @router.post(
     "/shortcuts",
     status_code=status.HTTP_201_CREATED,
@@ -76,7 +74,12 @@ async def cost_shortcut_create(
     user: domain.users.User = Depends(op.authorize),
     body: CostShortcutCreateBody = Body(...),
 ) -> Response[CostShortcut]:
-    """Create yet another 'Cost Shortcut'."""
+    """Create yet another 'Cost Shortcut'.
+
+    NOTES:
+        keep obove
+
+    """
 
     payload = body.model_dump(exclude_unset=True) | {
         "user": user,
@@ -91,7 +94,7 @@ async def cost_shortcut_create(
 async def cost_shortcuts(
     user: domain.users.User = Depends(op.authorize),
 ) -> ResponseMulti[CostShortcut]:
-    """Create yet another 'Cost Shortcut'."""
+    """create cost shortcut."""
 
     return ResponseMulti[CostShortcut](
         result=[
@@ -109,7 +112,7 @@ async def cost_shortcuts(
 async def cost_shortcut_delete(
     shortcut_id: int, user: domain.users.User = Depends(op.authorize)
 ) -> None:
-    """delete the existing eost shortcut."""
+    """delete existing cost shortcut."""
 
     await op.delete_cost_shortcut(user, shortcut_id)
 
@@ -124,7 +127,11 @@ async def cost_shortcut_apply(
     user: domain.users.User = Depends(op.authorize),
     body: CostShortcutApply | None = Body(default=None),
 ) -> Response[Cost]:
-    """delete the existing eost shortcut."""
+    """apply cost shortcut.
+
+    WORKFLOW:
+        1. validate HTTP Body
+    """
 
     cost: database.Cost = await op.apply_cost_shortcut(
         user,
@@ -173,7 +180,11 @@ async def add_cost(
     user: domain.users.User = Depends(op.authorize),
     body: CostCreateBody = Body(...),
 ) -> Response[Cost]:
-    """add cost. side effect: the equity is decreased."""
+    """add cost
+
+    SIDE EFFECT
+        equity is decreased
+    """
 
     item: database.Cost = await op.add_cost(
         name=body.name,
@@ -191,7 +202,7 @@ async def add_cost(
 async def get_cost(
     cost_id: int, _: domain.users.User = Depends(op.authorize)
 ) -> Response[Cost]:
-    """get an existing cost."""
+    """retrieve a cost."""
 
     async with database.transaction():
         cost: database.Cost = (
@@ -207,7 +218,11 @@ async def update_cost(
     _: domain.users.User = Depends(op.authorize),
     body: CostUpdateBody = Body(...),
 ) -> Response[Cost]:
-    """add cost. side effect: the equity is decreased."""
+    """modify cost.
+
+    SIDE EFFECT
+        equity is updated
+    """
 
     payload = body.model_dump(exclude_unset=True)
     if _value := body.value_in_cents:
@@ -223,6 +238,10 @@ async def delete_cost(
     cost_id: int,
     _: domain.users.User = Depends(op.authorize),
 ) -> None:
-    """delete cost. side effect: the equity is decreased."""
+    """delete cost
+
+    SIDE EFFECTS
+        equity is increase
+    """
 
     await op.delete_cost(cost_id=cost_id)

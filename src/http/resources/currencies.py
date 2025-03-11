@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Body, Depends, status
 
 from src import operational as op
-from src.contracts import Currency, CurrencyCreateBody
 from src.domain import equity as domain
 from src.infrastructure import Response, ResponseMulti, database
+
+from ..contracts import Currency, CurrencyCreateBody
 
 router = APIRouter(prefix="/currencies", tags=["Currencies"])
 

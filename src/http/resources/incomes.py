@@ -4,7 +4,6 @@ from fastapi import APIRouter, Body, Depends, status
 
 from src import domain
 from src import operational as op
-from src.contracts import Currency, Income, IncomeCreateBody, IncomeUpdateBody
 from src.infrastructure import (
     OffsetPagination,
     Response,
@@ -12,6 +11,8 @@ from src.infrastructure import (
     database,
     get_offset_pagination_params,
 )
+
+from ..contracts import Income, IncomeUpdateBody, IncomeCreateBody, Currency
 
 router = APIRouter(prefix="/incomes", tags=["Transactions", "Incomes"])
 
@@ -69,7 +70,7 @@ async def add_income(
 async def get_income(
     income_id: int, _: domain.users.User = Depends(op.authorize)
 ) -> Response[Income]:
-    """get income."""
+    """retrieve an income."""
 
     async with database.transaction():
         instance = await domain.transactions.TransactionRepository().income(
@@ -85,7 +86,11 @@ async def update_income(
     _: domain.users.User = Depends(op.authorize),
     body: IncomeUpdateBody = Body(...),
 ) -> Response[Income]:
-    """update income. side effect: equity updates."""
+    """modify income.
+
+    SIDE EFFECT
+        equity is updated
+    """
 
     payload = body.model_dump(exclude_unset=True)
     if _value := body.value_in_cents:
@@ -113,6 +118,10 @@ async def delete_income(
     income_id: int,
     _: domain.users.User = Depends(op.authorize),
 ) -> None:
-    """delete income. side effect: the equity is decreased."""
+    """delete income.
+
+    SIDE EFFECTS
+        equity is decreased
+    """
 
     await op.delete_income(income_id=income_id)

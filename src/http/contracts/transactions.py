@@ -296,48 +296,6 @@ class ExchangeCreateBody(PublicData, _TimestampValidationMixin):
         return value
 
 
-class ExchangeUpdateBody(PublicData, _TimestampValidationMixin):
-    """The request body to update the existing exchange."""
-
-    from_value: float | None = Field(default=None, description="Given value")
-    to_value: float | None = Field(default=None, description="Received value")
-    timestamp: date | None = Field(
-        default=None,
-        description="The date of a transaction",
-    )
-    from_currency_id: int | None = Field(
-        default=None, description="Internal currency system identifier"
-    )
-    to_currency_id: int | None = Field(
-        default=None, description="Internal currency system identifier"
-    )
-
-    @field_validator("from_value", "to_value", mode="before")
-    @classmethod
-    def _validate_money_values(cls, value: float | None) -> float | None:
-        """check if the value is convertable to cents."""
-
-        if value is None:
-            return value
-        else:
-            domain.transactions.cents_from_raw(value)
-            return value
-
-    @property
-    def to_value_in_cents(self) -> int | None:
-        with contextlib.suppress(ValueError):
-            return domain.transactions.cents_from_raw(self.to_value)
-
-        return None
-
-    @property
-    def from_value_in_cents(self) -> int | None:
-        with contextlib.suppress(ValueError):
-            return domain.transactions.cents_from_raw(self.from_value)
-
-        return None
-
-
 class Exchange(PublicData):
     """The public representation of an income."""
 

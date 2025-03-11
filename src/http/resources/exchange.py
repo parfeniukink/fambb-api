@@ -4,7 +4,6 @@ from fastapi import APIRouter, Body, Depends, status
 
 from src import domain
 from src import operational as op
-from src.contracts import Exchange, ExchangeCreateBody
 from src.infrastructure import (
     OffsetPagination,
     Response,
@@ -12,6 +11,8 @@ from src.infrastructure import (
     database,
     get_offset_pagination_params,
 )
+
+from ..contracts import Exchange, ExchangeCreateBody
 
 router = APIRouter(prefix="/exchange", tags=["Transactions", "Exchange"])
 
