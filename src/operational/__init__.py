@@ -24,13 +24,21 @@ __all__ = (
     "get_costs",
     "get_currency_exchanges",
     "get_incomes",
+    "notify_about_big_cost",
+    "notify_about_income",
     "update_cost",
     "update_income",
+    "user_notifications",
     "user_retrieve",
 )
 
 
 from .authorization import authorize
+from .notifications import (
+    notify_about_big_cost,
+    notify_about_income,
+    user_notifications,
+)
 from .transactions import (
     add_cost,
     add_cost_shortcut,

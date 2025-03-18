@@ -63,6 +63,8 @@ async def add_income(
         user_id=user.id,
     )
 
+    asyncio.create_task(op.notify_about_income(income=item))
+
     return Response[Income](result=Income.from_instance(item))
 
 

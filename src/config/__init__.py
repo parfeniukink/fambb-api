@@ -49,6 +49,12 @@ class DatabaseSettings(BaseModel):
         )
 
 
+class CacheSettings(BaseModel):
+    host: str = "cache"
+    port: int = 11211
+    pool: int = 2
+
+
 class CORSSettings(BaseModel):
     allow_origins: list[AnyHttpUrl | Literal["*"]] = ["*"]
     allow_methods: list[str] = ["*"]
@@ -83,6 +89,7 @@ class Settings(BaseSettings):
     cors: CORSSettings = CORSSettings()
     logging: LoggingSettings = LoggingSettings()
     database: DatabaseSettings = DatabaseSettings()
+    cache: CacheSettings = CacheSettings()
 
 
 settings = Settings()

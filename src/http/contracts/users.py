@@ -27,6 +27,14 @@ class UserConfiguration(PublicData):
         default=None,
         description="The list of available snippets for the income name",
     )
+    notify_cost_threshold: int | None = Field(
+        default=None,
+        description="The thrashhold for the value, to be notified about costs",
+    )
+    pagination_items: int = Field(
+        default=10,
+        description="A number of paginated items in transactions analytics",
+    )
 
 
 class UserConfigurationPartialUpdateRequestBody(PublicData):
@@ -41,11 +49,19 @@ class UserConfigurationPartialUpdateRequestBody(PublicData):
     )
     cost_snippets: list[str] | None = Field(
         default=None,
-        description="The list of available snippets for the cost name",
+        description="A list of available snippets for the cost name",
     )
     income_snippets: list[str] | None = Field(
         default=None,
-        description="The list of available snippets for the income name",
+        description="A list of available snippets for the income name",
+    )
+    notify_cost_threshold: int | None = Field(
+        default=None,
+        description="A thrashhold to be notified about others costs",
+    )
+    pagination_items: int | None = Field(
+        default=None,
+        description="A number of paginated items in transactions analytics",
     )
 
 
@@ -94,6 +110,7 @@ class User(PublicData):
                     if (cost_category := instance.default_cost_category)
                     else None
                 ),
+                notify_cost_threshold=instance.notify_cost_threshold,
             ),
         )
 

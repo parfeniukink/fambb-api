@@ -98,7 +98,7 @@ async def test_costs_fetch(client: httpx.AsyncClient, cost_factory):
 async def test_cost_add(
     client: httpx.AsyncClient, cost_categories, currencies
 ):
-    response = await client.post(
+    response: httpx.Response = await client.post(
         "/costs",
         json={
             "name": "PS5",

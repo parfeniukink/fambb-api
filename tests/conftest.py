@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from collections.abc import AsyncGenerator
+from unittest.mock import MagicMock
 
 import asyncpg
 import httpx
@@ -16,7 +17,8 @@ from sqlalchemy.sql import text
 
 from src import domain, http
 from src.config import settings
-from src.infrastructure import database, errors, factories
+from src.infrastructure import Cache, database, errors, factories
+from tests.mock import Cache as MockedCache
 
 
 def pytest_configure() -> None:
@@ -53,6 +55,7 @@ def app() -> FastAPI:
             http.incomes_router,
             http.exchange_router,
             http.analytics_router,
+            http.notifications_router,
         ),
         exception_handlers={
             ValueError: errors.value_error_handler,
@@ -72,8 +75,22 @@ async def john() -> domain.users.User:
     async with database.transaction() as session:
         user = await domain.users.UserRepository().add_user(
             candidate=database.User(
-                name="john",
-                token="41d917c7-464f-4056-b2de-1a6e2fbfd9e7",
+                name="john", token="41d917c7-464f-4056-b2de-1a6e2fbfd9e7"
+            )
+        )
+        await session.flush()  # get user id
+
+    return domain.users.User.from_instance(user)
+
+
+@pytest.fixture
+async def marry() -> domain.users.User:
+    """create default user 'Marry' for tests."""
+
+    async with database.transaction() as session:
+        user = await domain.users.UserRepository().add_user(
+            candidate=database.User(
+                name="marry", token="fda4b8f6-4bf3-43e2-b3a2-7c3905ee0af1"
             )
         )
         await session.flush()  # get user id
@@ -93,9 +110,26 @@ async def anonymous(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 async def client(
     app: FastAPI, john: domain.users.User
 ) -> AsyncGenerator[AsyncClient, None]:
-    """returns the authorized client."""
+    """return the default 'John' authorized client"""
 
     headers = {"Authorization": f"Bearer {john.token}"}
+
+    async with httpx.AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+        headers=headers,
+    ) as client:
+
+        yield client
+
+
+@pytest.fixture
+async def client_marry(
+    app: FastAPI, marry: domain.users.User
+) -> AsyncGenerator[AsyncClient, None]:
+    """return authorized client 'Marry'"""
+
+    headers = {"Authorization": f"Bearer {marry.token}"}
 
     async with httpx.AsyncClient(
         transport=ASGITransport(app=app),
@@ -106,7 +140,7 @@ async def client(
 
 
 # =====================================================================
-# database section
+# DATABASE SECTION
 # =====================================================================
 @pytest.yield_fixture(scope="session")
 def event_loop():
@@ -188,15 +222,29 @@ async def test_database_engine(
         )
 
 
+# =====================================================================
+# CACHE SECTION
+# =====================================================================
 @pytest.fixture(autouse=True)
-async def db(request, test_database_engine):
+def patch_cache_service(mocker) -> MagicMock:
+    """This fixture patches the cache service to use the in-memory
+    cache repository.
+    """
+
+    return mocker.patch.object(Cache, "__new__", return_value=MockedCache())
+
+
+# ==================================================
+# MARKERS
+# ==================================================
+@pytest.fixture(autouse=True)
+async def _db_marker(request, test_database_engine):
     """this fixture automatically creates and cleans database tables.
 
-    usage example:
-
-        @pytest.mark.use_db
-        async def test_a():
-            # some database interaction
+    USAGE
+        >>> @pytest.mark.use_db
+        >>> async def test_a():
+        >>>     # some database interaction
 
     """
 

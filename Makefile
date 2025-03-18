@@ -55,6 +55,14 @@ run.prod:
 test:
 	python -m pytest ./tests
 
+.PHONY: test.int
+test.int:
+	python -m pytest ./tests/integration
+
+.PHONY: test.unit
+test.unit:
+	python -m pytest ./tests/unit
+
 .PHONY: xtest
 xtest:
 	python -m pytest -n 4 ./tests

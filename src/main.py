@@ -32,7 +32,7 @@ from loguru import logger
 
 from src import http
 from src.config import settings
-from src.infrastructure import errors, factories, middleware
+from src.infrastructure import errors, factories, hooks, middleware
 
 logger.add(
     settings.logging.file,
@@ -65,9 +65,11 @@ app: FastAPI = factories.asgi_app(
         http.costs_router,
         http.incomes_router,
         http.exchange_router,
+        http.notifications_router,
     ),
     middlewares=(
         (CORSMiddleware, middleware.FASTAPI_CORS_MIDDLEWARE_OPTIONS),
     ),
     exception_handlers=exception_handlers,
+    lifespan=hooks.lifespan_event,
 )

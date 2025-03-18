@@ -57,18 +57,23 @@ async def test_user_retrieve(john, client):
         (
             2,
             {
-                "defaultCurrencyId": None,
                 "defaultCostCategoryId": 1,
             },
         ),
         (
             3,
             {
-                "defaultCurrencyId": None,
-                "defaultCostCategoryId": None,
                 "costSnippets": ["Coffee", "Water"],
                 "incomeSnippets": ["Office", "Teaching"],
             },
+        ),
+        (
+            4,
+            {"showEquity": True},
+        ),
+        (
+            5,
+            {"notifyCostThreshold": 100},
         ),
     ],
 )
@@ -110,6 +115,11 @@ async def test_user_configuration_update(
         )
         assert user.cost_snippets is None
         assert user.income_snippets is None
+        assert (
+            user.show_equity
+            is configuration_raw_response["showEquity"]
+            is False
+        )
     elif payload_id == 2:
         assert (
             user.default_currency_id
@@ -128,8 +138,13 @@ async def test_user_configuration_update(
         )
         assert (
             user.income_snippets
-            == configuration_raw_response["incomeSnippets"]
+            is configuration_raw_response["incomeSnippets"]
             is None
+        )
+        assert (
+            user.show_equity
+            is configuration_raw_response["showEquity"]
+            is False
         )
     elif payload_id == 3:
         assert (
@@ -151,4 +166,21 @@ async def test_user_configuration_update(
             user.income_snippets
             == configuration_raw_response["incomeSnippets"]
             == ["Office", "Teaching"]
+        )
+        assert (
+            user.show_equity
+            is configuration_raw_response["showEquity"]
+            is False
+        )
+    elif payload_id == 4:
+        assert (
+            user.show_equity
+            is configuration_raw_response["showEquity"]
+            is True
+        )
+    elif payload_id == 5:
+        assert (
+            user.notify_cost_threshold
+            == configuration_raw_response["notifyCostThreshold"]
+            == 100
         )

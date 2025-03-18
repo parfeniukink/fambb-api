@@ -183,8 +183,9 @@ async def add_cost(
 ) -> Response[Cost]:
     """add cost
 
-    SIDE EFFECT
+    SIDE EFFECTS
         equity is decreased
+        notification is added to the cache
     """
 
     item: database.Cost = await op.add_cost(
@@ -195,6 +196,7 @@ async def add_cost(
         currency_id=body.currency_id,
         category_id=body.category_id,
     )
+    asyncio.create_task(op.notify_about_big_cost(cost=item))
 
     return Response[Cost](result=Cost.from_instance(item))
 
@@ -206,11 +208,11 @@ async def get_cost(
     """retrieve a cost."""
 
     async with database.transaction():
-        cost: database.Cost = (
+        item: database.Cost = (
             await domain.transactions.TransactionRepository().cost(id_=cost_id)
         )
 
-    return Response[Cost](result=Cost.from_instance(cost))
+    return Response[Cost](result=Cost.from_instance(item))
 
 
 @router.patch("/{cost_id}", status_code=status.HTTP_200_OK)
@@ -230,6 +232,7 @@ async def update_cost(
         payload |= {"value": _value}
 
     item: database.Cost = await op.update_cost(cost_id=cost_id, **payload)
+    await op.notify_about_big_cost(cost=item)
 
     return Response[Cost](result=Cost.from_instance(item))
 

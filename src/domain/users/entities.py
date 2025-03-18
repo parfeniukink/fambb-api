@@ -20,6 +20,9 @@ class UserConfiguration(InternalData):
     cost_snippets: tuple[str, ...] | None = None
     income_snippets: tuple[str, ...] | None = None
 
+    last_notification: str | None = None
+    notify_cost_threshold: int | None = None
+
 
 class User(InternalData):
     """Extended user data object with configuration details."""
@@ -65,5 +68,7 @@ class User(InternalData):
                     if instance.default_cost_category
                     else None
                 ),
+                last_notification=instance.last_notification,
+                notify_cost_threshold=instance.notify_cost_threshold,
             ),
         )

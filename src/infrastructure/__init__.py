@@ -1,4 +1,5 @@
 __all__ = (
+    "Cache",
     "ErrorDetail",
     "ErrorResponse",
     "ErrorResponseMulti",
@@ -15,11 +16,13 @@ __all__ = (
     "errors",
     "factories",
     "get_offset_pagination_params",
+    "hooks",
     "middleware",
 )
 
 
-from . import database, dates, errors, factories, middleware
+from . import database, dates, errors, factories, hooks, middleware
+from .cache import Cache
 from .entities import InternalData
 from .responses import (
     ErrorDetail,

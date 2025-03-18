@@ -8,6 +8,7 @@ from .analytics import (
 )
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
+from .notifications import Notification
 from .shortcuts import CostShortcut, CostShortcutApply, CostShortcutCreateBody
 from .transactions import (
     Cost,

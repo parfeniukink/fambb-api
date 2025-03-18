@@ -36,19 +36,13 @@ class PublicData(BaseModel):
 _TPublicData = TypeVar("_TPublicData", bound=PublicData)
 
 
-class ResponseMultiPaginated(PublicData, Generic[_TPublicData]):
-    """Generic response model that consist multiple results,
-    paginated with cursor pagination.
-    """
+# =====================================================================
+# RESPONSES
+# =====================================================================
+class Response(PublicData, Generic[_TPublicData]):
+    """Generic response model that consist only one result."""
 
-    result: Sequence[_TPublicData]
-    context: int = Field(
-        description=(
-            "The user ID that should be used for the "
-            "next request to get proper pagination"
-        )
-    )
-    left: int = Field(description="How many items is left")
+    result: _TPublicData
 
 
 class ResponseMulti(PublicData, Generic[_TPublicData]):
@@ -57,14 +51,8 @@ class ResponseMulti(PublicData, Generic[_TPublicData]):
     result: Sequence[_TPublicData]
 
 
-class Response(PublicData, Generic[_TPublicData]):
-    """Generic response model that consist only one result."""
-
-    result: _TPublicData
-
-
 # =====================================================================
-# error responses
+# ERROR RESPONSES
 # =====================================================================
 class ErrorDetail(PublicData):
     """Error detail model."""
@@ -93,13 +81,28 @@ class ErrorResponseMulti(PublicData):
 
 
 # =====================================================================
-# pagination
+# PAGINATION
 # =====================================================================
-class OffsetPagination(PublicData):
-    """cursor pagination data class."""
+class ResponseMultiPaginated(PublicData, Generic[_TPublicData]):
+    """Generic response model that consist multiple results,
+    paginated with cursor pagination.
+    """
 
-    context: int = Field(description="The ID to start limiting")
-    limit: int = Field(description="Limit results total items")
+    result: Sequence[_TPublicData]
+    context: int = Field(
+        description=(
+            "the user ID that should be used for the "
+            "next request to get proper pagination"
+        )
+    )
+    left: int = Field(description="How many items is left")
+
+
+class OffsetPagination(PublicData):
+    """cursor pagination HTTP query parameters"""
+
+    context: int = Field(description="ID limiting start position")
+    limit: int = Field(description="limit total items in results")
 
 
 def get_offset_pagination_params(
