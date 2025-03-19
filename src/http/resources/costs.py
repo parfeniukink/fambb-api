@@ -232,7 +232,7 @@ async def update_cost(
         payload |= {"value": _value}
 
     item: database.Cost = await op.update_cost(cost_id=cost_id, **payload)
-    await op.notify_about_big_cost(cost=item)
+    asyncio.create_task(op.notify_about_big_cost(cost=item))
 
     return Response[Cost](result=Cost.from_instance(item))
 
@@ -248,4 +248,4 @@ async def delete_cost(
         equity is increase
     """
 
-    await op.delete_cost(cost_id=cost_id)
+    asyncio.create_task(op.delete_cost(cost_id=cost_id))

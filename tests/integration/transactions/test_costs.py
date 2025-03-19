@@ -234,8 +234,16 @@ async def test_cost_update_currency_and_value(
 async def test_cost_delete(
     client: httpx.AsyncClient, currencies, cost_factory
 ):
+    """
+    WORKFLOW
+    1. delete cost
+    2. wait for cost to be deleted in background
+    3. check database state
+    """
     cost, *_ = await cost_factory(n=1)
     response = await client.delete(f"/costs/{cost.id}")
+
+    await asyncio.sleep(0.1)
 
     currency = await domain.equity.EquityRepository().currency(
         id_=cost.currency_id
