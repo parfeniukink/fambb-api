@@ -232,6 +232,7 @@ async def update_cost(
         payload |= {"value": _value}
 
     item: database.Cost = await op.update_cost(cost_id=cost_id, **payload)
+
     asyncio.create_task(op.notify_about_big_cost(cost=item))
 
     return Response[Cost](result=Cost.from_instance(item))

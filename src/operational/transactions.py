@@ -81,7 +81,7 @@ async def update_cost(cost_id: int, **values) -> database.Cost:
     duplicates = set()
     transaction_repository = domain.transactions.TransactionRepository()
     equity_repository = domain.equity.EquityRepository()
-    cost = await transaction_repository.cost(id_=cost_id)
+    cost: database.Cost = await transaction_repository.cost(id_=cost_id)
 
     for attr, value in values.items():
         try:
@@ -126,10 +126,10 @@ async def update_cost(cost_id: int, **values) -> database.Cost:
                 )
             )
 
-    async with database.transaction():
+    async with database.transaction() as session:
         await asyncio.gather(*tasks)
 
-    return cost
+    return await transaction_repository.cost(id_=cost_id)
 
 
 async def delete_cost(cost_id: int) -> None:
