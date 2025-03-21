@@ -15,20 +15,21 @@ from tests.mock import Cache
 
 
 @pytest.mark.use_db
-async def test_user_notified_about_big_cost(
+async def test_user_NOTIFIED_about_big_cost(
     currencies, cost_categories, client, john, client_marry
 ):
     """
     WORKFLOW
         1. John update ``notify_cost_threshold`` configuration
-        2. Marry creates the cost with value above the `notify_cost_threshold`
+        2. Marry creates the cost with value ABOVE (greater)
+            the `notify_cost_threshold`
         3. wait for notification to be added to the cache in the background
-        4. check notification object is added to the cache
+        4. check notification object is ADDED to the cache
     """
 
     async with database.transaction():
         await UserRepository().update_user_configuration(
-            user_id=john.id, notify_cost_threshold=100  # cents
+            user_id=john.id, notify_cost_threshold=100
         )
 
     add_cost_response: httpx.Response = await client_marry.post(
@@ -50,6 +51,42 @@ async def test_user_notified_about_big_cost(
         notifications_response.status_code == status.HTTP_200_OK
     ), notifications_response.json()
     assert cache_len_after_creating_cost == 1, Cache._data
+    assert Cache._data == {}
+
+
+@pytest.mark.use_db
+async def test_user_NOT_NOTIFIED_about_big_cost(
+    currencies, cost_categories, client, john, client_marry
+):
+    """
+    WORKFLOW
+        1. John update ``notify_cost_threshold`` configuration
+        2. Marry creates the cost with value BELOW the `notify_cost_threshold`
+        4. check notification object is NOT ADDED to the cache
+    """
+
+    async with database.transaction():
+        await UserRepository().update_user_configuration(
+            user_id=john.id, notify_cost_threshold=20001
+        )
+
+    add_cost_response: httpx.Response = await client_marry.post(
+        "/costs",
+        json={"name": "PS5", "value": 200, "currencyId": 1, "categoryId": 1},
+    )
+
+    await asyncio.sleep(0.1)
+    john_notificaitons = Cache._data.get(f"fambb_notifications:{john.id}")
+
+    notifications_response = await client.get("/notifications")
+
+    assert (
+        add_cost_response.status_code == status.HTTP_201_CREATED
+    ), add_cost_response.json()
+    assert (
+        notifications_response.status_code == status.HTTP_200_OK
+    ), notifications_response.json()
+    assert john_notificaitons is None, john_notificaitons
     assert Cache._data == {}
 
 

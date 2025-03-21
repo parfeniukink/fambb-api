@@ -182,5 +182,8 @@ async def test_user_configuration_update(
         assert (
             user.notify_cost_threshold
             == configuration_raw_response["notifyCostThreshold"]
-            == 100
+            == 100_00
+        ), (
+            user.notify_cost_threshold,
+            configuration_raw_response["notifyCostThreshold"],
         )
