@@ -126,7 +126,7 @@ async def update_cost(cost_id: int, **values) -> database.Cost:
                 )
             )
 
-    async with database.transaction() as session:
+    async with database.transaction():
         await asyncio.gather(*tasks)
 
     return await transaction_repository.cost(id_=cost_id)

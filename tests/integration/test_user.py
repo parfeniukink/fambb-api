@@ -73,7 +73,7 @@ async def test_user_retrieve(john, client):
         ),
         (
             5,
-            {"notifyCostThreshold": 100},
+            {"notifyCostThreshold": 100.01},
         ),
     ],
 )
@@ -179,11 +179,5 @@ async def test_user_configuration_update(
             is True
         )
     elif payload_id == 5:
-        assert (
-            user.notify_cost_threshold
-            == configuration_raw_response["notifyCostThreshold"]
-            == 100_00
-        ), (
-            user.notify_cost_threshold,
-            configuration_raw_response["notifyCostThreshold"],
-        )
+        assert user.notify_cost_threshold == 100_01
+        assert configuration_raw_response["notifyCostThreshold"] == 100.01

@@ -9,7 +9,6 @@ import pytest
 from fastapi import status
 
 from src.domain.transactions import TransactionRepository
-from src.domain.users import UserRepository
 from src.infrastructure import database
 from tests.mock import Cache
 
@@ -27,10 +26,9 @@ async def test_user_NOTIFIED_about_big_cost(
         4. check notification object is ADDED to the cache
     """
 
-    async with database.transaction():
-        await UserRepository().update_user_configuration(
-            user_id=john.id, notify_cost_threshold=100
-        )
+    await client.patch(
+        "/users/configuration", json={"notify_cost_threshold": 199.9}
+    )
 
     add_cost_response: httpx.Response = await client_marry.post(
         "/costs",
@@ -65,10 +63,9 @@ async def test_user_NOT_NOTIFIED_about_big_cost(
         4. check notification object is NOT ADDED to the cache
     """
 
-    async with database.transaction():
-        await UserRepository().update_user_configuration(
-            user_id=john.id, notify_cost_threshold=20001
-        )
+    await client.patch(
+        "/users/configuration", json={"notify_cost_threshold": 200.01}
+    )
 
     add_cost_response: httpx.Response = await client_marry.post(
         "/costs",
@@ -104,8 +101,8 @@ async def test_user_notified_about_big_cost_after_update(
 
     async with database.transaction():
         _, cost = await asyncio.gather(
-            UserRepository().update_user_configuration(
-                user_id=john.id, notify_cost_threshold=200  # cents
+            client.patch(
+                "/users/configuration", json={"notify_cost_threshold": 200}
             ),
             TransactionRepository().add_cost(
                 database.Cost(

@@ -82,10 +82,10 @@ def timestamp_from_raw(value: Any, /, **_) -> date:
         )
 
 
-def pretty_money(value: int, /, **_) -> float:
+def pretty_money(value: Any, /, **_) -> float:
     """return the pretty float value with cents."""
 
-    if not isinstance(value, int):
+    if not isinstance(value, (int, float)):
         raise ValueError("Such operation is allowed only for integers")
     else:
         return round(value / 100, 2)

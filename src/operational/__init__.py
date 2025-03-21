@@ -30,6 +30,7 @@ __all__ = (
     "update_income",
     "user_notifications",
     "user_retrieve",
+    "user_update",
 )
 
 
@@ -56,4 +57,4 @@ from .transactions import (
     update_cost,
     update_income,
 )
-from .users import user_retrieve
+from .users import user_retrieve, user_update

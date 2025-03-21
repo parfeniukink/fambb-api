@@ -73,7 +73,7 @@ class UserRepository(database.Repository):
                     select(database.User)
                     .where(
                         database.User.id != cost.user_id,
-                        cost.value > database.User.notify_cost_threshold,
+                        cost.value >= database.User.notify_cost_threshold,
                     )
                     .options(
                         joinedload(database.User.default_currency),
@@ -88,14 +88,18 @@ class UserRepository(database.Repository):
         self.command.session.add(candidate)
         return candidate
 
-    async def update_user_configuration(self, user_id: int, **values) -> None:
+    async def update_user(
+        self, candidate: database.User, **values
+    ) -> database.User:
         """update user configuration fields."""
 
         query = (
             update(database.User)
-            .where(database.User.id == user_id)
+            .where(database.User.id == candidate.id)
             .values(values)
             .returning(database.User)
         )
 
         await self.command.session.execute(query)
+
+        return candidate
