@@ -86,6 +86,20 @@ async def test_basic_analytics_fetch(
     currencies,
     cost_categories,
 ):
+    """
+    create different transactions and check the response
+    for expected results.
+
+    EXAMPLE OF EXCHANGE TRANSACTION
+    1. 100.000 UAH -> 200.000 USD
+    2. 50.000 USD -> 25.000 UAH
+    3. 100.000 UAH -> 200.000 USD
+
+    CALCULATION FOR EXCHANGE TRANSACTIONS
+    UAH: -200.000 + 25.000 = -175.000 (exclude from calculation)
+    USD: +400.000 - 50.000 = +350.000 (include in calculation)
+    """
+
     first_currency, second_currency = currencies
     food_category, other_category = cost_categories
     today: date = date.today()
@@ -168,7 +182,7 @@ async def test_basic_analytics_fetch(
             user_id=john.id,
             from_currency_id=first_currency.id,
             to_currency_id=second_currency.id,
-            from_value=50_00,
+            from_value=50_00,  # skip for FIRST CURRENCY
             to_value=25_00,
             timestamp=yesterday,
         ),
@@ -221,7 +235,7 @@ async def test_basic_analytics_fetch(
                     ],
                     "total": 200.00,
                 },
-                "totalRatio": 61.5,
+                "totalRatio": 40,
                 "currency": {"id": 2, "name": "FOO", "sign": "#"},
                 "incomes": {
                     "sources": [

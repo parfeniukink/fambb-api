@@ -120,17 +120,21 @@ class TransactionsBasicAnalytics(InternalData):
             inbounds = sum of all the incomes totals
 
         workflow:
-            if inbounds is negative - 100% of ratio (all are costs)
+            if inbounds <=0, then ratio = 100% (all are costs)
         """
 
-        inbounds = self.incomes.total + self.from_exchanges
+        inbounds = (
+            (self.incomes.total + self.from_exchanges)
+            if self.from_exchanges > 0
+            else self.incomes.total
+        )
         outbounds = self.costs.total
 
         if inbounds <= 0:
             return 100.0
 
         try:
-            result = outbounds / inbounds * 100
+            result: float = outbounds / inbounds * 100
         except ZeroDivisionError:
             return 100.0
         else:
