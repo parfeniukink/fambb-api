@@ -26,6 +26,8 @@ __all__ = (
     "get_incomes",
     "notify_about_big_cost",
     "notify_about_income",
+    "transactions_basic_analytics",
+    "transactions_chart_analytics",
     "update_cost",
     "update_income",
     "user_notifications",
@@ -34,6 +36,10 @@ __all__ = (
 )
 
 
+from .analytics import (
+    transactions_basic_analytics,
+    transactions_chart_analytics,
+)
 from .authorization import authorize
 from .notifications import (
     notify_about_big_cost,

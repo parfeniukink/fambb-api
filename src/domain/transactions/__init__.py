@@ -18,6 +18,7 @@ also you can find the domain validation and other batteries in that package.
 """
 
 __all__ = (
+    "AnalyticsPeriod",
     "Cost",
     "CostCategory",
     "CostsAnalytics",
@@ -44,11 +45,12 @@ from .data_transformation import (
 )
 from .entities import Cost, CostCategory, Exchange, Income
 from .repository import TransactionRepository
-from .types import OperationType
 from .value_objects import (
+    AnalyticsPeriod,
     CostsAnalytics,
     CostsByCategory,
     IncomesAnalytics,
+    OperationType,
     Transaction,
     TransactionsBasicAnalytics,
 )

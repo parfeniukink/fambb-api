@@ -13,7 +13,6 @@ what HTTP-resources groups we have:
 """
 
 from .contracts import (
-    AnalyticsPeriodQuery,
     Cost,
     CostCategory,
     CostCategoryCreateBody,

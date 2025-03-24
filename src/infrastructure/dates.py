@@ -27,3 +27,9 @@ def get_previous_month_range() -> tuple[date, date]:
     ).date()
 
     return first_day, last_day
+
+
+def first_year_date():
+    """provide CUSTOM year OR return first date in the CURRENT year."""
+
+    return date(year=date.today().year, month=1, day=1)

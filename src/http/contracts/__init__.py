@@ -1,5 +1,4 @@
 from .analytics import (
-    AnalyticsPeriodQuery,
     CostsAnalytics,
     CostsByCategory,
     IncomeBySource,

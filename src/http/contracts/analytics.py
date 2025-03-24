@@ -6,7 +6,6 @@ for the specific dates range.
 
 import functools
 import operator
-from typing import Literal
 
 from pydantic import Field, field_validator
 
@@ -14,10 +13,6 @@ from src import domain
 from src.infrastructure import IncomeSource, PublicData
 
 from .currency import Currency
-
-# represents the available list of query strings that client
-# can specify instead of dates to get the basic analytics.
-AnalyticsPeriodQuery = Literal["current-month", "previous-month"]
 
 
 class CostsByCategory(PublicData):

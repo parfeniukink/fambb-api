@@ -13,12 +13,7 @@ from src.infrastructure import (
     get_offset_pagination_params,
 )
 
-from ..contracts.analytics import (
-    AnalyticsPeriodQuery,
-    TransactionBasicAnalytics,
-)
-from ..contracts.equity import Equity
-from ..contracts.transactions import Transaction
+from ..contracts import Equity, Transaction, TransactionBasicAnalytics
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -81,9 +76,9 @@ async def transactions(
 
 
 @router.get("/basic")
-async def transaction_basic_analytics(
+async def transaction_analytics_basic(
     period: Annotated[
-        AnalyticsPeriodQuery | None,
+        domain.transactions.AnalyticsPeriod | None,
         Query(description="specified period instead of start and end dates"),
     ] = None,
     start_date: Annotated[
@@ -127,45 +122,49 @@ async def transaction_basic_analytics(
             EXCHANGES in your analytics.
     """
 
-    if start_date is not None and end_date is not None:
-        if period is not None:
-            raise ValueError(
-                "you can't specify dates and period simultaneously"
-            )
-        else:
-            # get instances by specified start and end dates
-            instances: tuple[
-                domain.transactions.TransactionsBasicAnalytics, ...
-            ] = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
-                start_date=start_date, end_date=end_date, pattern=pattern
-            )
-
-    elif pattern is not None:
-        # get instances by specified pattern
-        instances = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
-            pattern=pattern
+    instances: tuple[domain.transactions.TransactionsBasicAnalytics, ...] = (
+        await op.transactions_basic_analytics(
+            period, start_date, end_date, pattern
         )
-    else:
-        if any((start_date, end_date)):
-            raise ValueError("the range requires both dates to be specified")
-        else:
-            # get instances by period
-            if period == "current-month":
-                instances = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
-                    start_date=dates.get_first_date_of_current_month(),
-                    end_date=date.today(),
-                )
-            elif period == "previous-month":
-                start_date, end_date = dates.get_previous_month_range()
-                instances = await domain.transactions.TransactionRepository().transactions_basic_analytics(  # noqa: E501
-                    start_date=start_date, end_date=end_date
-                )
-            else:
-                raise ValueError(f"Unavailable period: {period}")
+    )
 
     return ResponseMulti[TransactionBasicAnalytics](
         result=[
             TransactionBasicAnalytics.from_instance(instance)
             for instance in instances
         ]
+    )
+
+
+@router.get("/transactions/stream")
+async def transaction_stream(
+    start_date: Annotated[
+        date,
+        Query(
+            description=(
+                "the start date of transaction in the analytics. "
+                "default value is the first day of the current year"
+            ),
+            alias="startDate",
+            default_factory=dates.first_year_date,
+        ),
+    ],
+    end_date: Annotated[
+        date,
+        Query(
+            description="the end date of transaction in the analytics",
+            alias="endDate",
+            default_factory=date.today,
+        ),
+    ],
+    _: domain.users.User = Depends(op.authorize),
+) -> ResponseMulti[Transaction]:
+    """analytics charts for annual tracking. not implemented yet"""
+
+    instances: tuple[domain.transactions.Transaction, ...] = (
+        await op.transactions_chart_analytics(start_date, end_date)
+    )
+
+    return ResponseMulti[Transaction](
+        result=[Transaction.from_instance(instance) for instance in instances]
     )

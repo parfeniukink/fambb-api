@@ -1,11 +1,16 @@
 from datetime import date
+from typing import Literal
 
 from pydantic import Field
 
 from src.domain.equity import Currency
 from src.infrastructure import IncomeSource, InternalData
 
-from .types import OperationType
+# represents the available list of query strings that client
+# can specify instead of dates to get the basic analytics.
+AnalyticsPeriod = Literal["current-month", "previous-month"]
+
+OperationType = Literal["cost", "income", "exchange"]
 
 
 class Transaction(InternalData):
