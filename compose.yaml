@@ -1,12 +1,21 @@
 services:
   database:
-    image: postgres:16
+    image: postgres:17
     container_name: family-budget-database
     env_file: ".env"
     ports:
       - "${DOCKER_DATABASE_PORT_EXPOSE:-5432}:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
+
+  cache:
+    image: memcached
+    ports:
+      - "${DOCKER_CACHE_PORT_EXPOSE:-11211}:11211"
+    command:
+      - --conn-limit=1024
+      - --memory-limit=64
+      - --threads=2
 
   api:
     build:
@@ -17,6 +26,7 @@ services:
     env_file: .env
     depends_on:
       - database
+      - cache
     ports:
       - "${DOCKER_APP_PORT_EXPOSE:-8000}:8000"
     volumes:

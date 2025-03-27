@@ -52,7 +52,7 @@ jobs:
         run: python -m mypy --check-untyped-defs .
 
       - name: Run tests
-        run: python -m pytest -vvv -n 4 ./tests
+        run: python -m pytest ./tests
 
   deployment:
     needs: build

@@ -121,6 +121,9 @@ class TransactionsBasicAnalytics(InternalData):
 
         workflow:
             if inbounds <=0, then ratio = 100% (all are costs)
+            append ``from_exchanges`` to ``incomes.total`` only in case
+                the value > 0. otherwise it means selling money which
+                neven means that it is a real cost.
         """
 
         inbounds = (
