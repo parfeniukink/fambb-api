@@ -14,9 +14,7 @@ HOW TO WORK WITH SETTIGNS?
 
 __all__ = ("settings",)
 
-from typing import Literal
-
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -55,15 +53,6 @@ class CacheSettings(BaseModel):
     pool: int = 2
 
 
-class CORSSettings(BaseModel):
-    allow_origins: list[AnyHttpUrl | Literal["*"]] = ["*"]
-    allow_methods: list[str] = ["*"]
-    allow_headers: list[str] = ["*"]
-    allow_credentials: bool = True
-    expose_headers: list[str] = []
-    max_age: int = 600
-
-
 class LoggingSettings(BaseModel):
     """Configure the logging engine."""
 
@@ -86,7 +75,6 @@ class Settings(BaseSettings):
     )
 
     debug: bool = False
-    cors: CORSSettings = CORSSettings()
     logging: LoggingSettings = LoggingSettings()
     database: DatabaseSettings = DatabaseSettings()
     cache: CacheSettings = CacheSettings()
