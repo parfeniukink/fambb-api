@@ -53,6 +53,15 @@ class CacheSettings(BaseModel):
     pool: int = 2
 
 
+class CORSSettings(BaseModel):
+    allow_origins: list[str] = ["*"]
+    allow_methods: list[str] = ["*"]
+    allow_headers: list[str] = ["*"]
+    allow_credentials: bool = True
+    expose_headers: list[str] = []
+    max_age: int = 600
+
+
 class LoggingSettings(BaseModel):
     """Configure the logging engine."""
 
@@ -75,6 +84,7 @@ class Settings(BaseSettings):
     )
 
     debug: bool = False
+    cors: CORSSettings = CORSSettings()
     logging: LoggingSettings = LoggingSettings()
     database: DatabaseSettings = DatabaseSettings()
     cache: CacheSettings = CacheSettings()

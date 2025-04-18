@@ -38,7 +38,14 @@ migrate:
 	alembic upgrade head
 
 
-# Application entrypoint
+# Infrastructure Tier
+# -------------------------------------------------------------------------
+.PHONY: infra
+infra:
+	docker compose up -d database cache
+
+
+# Application Entrypoint
 # -------------------------------------------------------------------------
 .PHONY: run
 run:

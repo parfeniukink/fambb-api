@@ -32,6 +32,7 @@ async def equity(
     )
 
 
+# TODO Move to the ``resources/transactions.py``
 @router.get("/transactions")
 async def transactions(
     currency_id: Annotated[

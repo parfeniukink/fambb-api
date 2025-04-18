@@ -27,11 +27,12 @@ on the other hand user settings are not sharable for others.
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from src import http
 from src.config import settings
-from src.infrastructure import errors, factories, hooks
+from src.infrastructure import errors, factories, hooks, middleware
 
 logger.add(
     settings.logging.file,
@@ -66,7 +67,9 @@ app: FastAPI = factories.asgi_app(
         http.exchange_router,
         http.notifications_router,
     ),
-    middlewares=None,
+    middlewares=(
+        (CORSMiddleware, middleware.FASTAPI_CORS_MIDDLEWARE_OPTIONS),
+    ),
     exception_handlers=exception_handlers,
     lifespan=hooks.lifespan_event,
 )
