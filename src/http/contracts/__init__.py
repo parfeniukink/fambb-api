@@ -7,6 +7,14 @@ from .analytics import (
 )
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
+from .identity import (
+    AuthorizeRequestBody,
+    Identity,
+    User,
+    UserConfiguration,
+    UserConfigurationPartialUpdateRequestBody,
+    UserCreateRequestBody,
+)
 from .notifications import Notification
 from .shortcuts import CostShortcut, CostShortcutApply, CostShortcutCreateBody
 from .transactions import (
@@ -21,10 +29,4 @@ from .transactions import (
     IncomeCreateBody,
     IncomeUpdateBody,
     Transaction,
-)
-from .users import (
-    User,
-    UserConfiguration,
-    UserConfigurationPartialUpdateRequestBody,
-    UserCreateRequestBody,
 )
