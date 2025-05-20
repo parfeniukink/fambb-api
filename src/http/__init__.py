@@ -39,6 +39,6 @@ from .resources.analytics import router as analytics_router
 from .resources.costs import router as costs_router
 from .resources.currencies import router as currencies_router
 from .resources.exchange import router as exchange_router
+from .resources.identity import router as users_router
 from .resources.incomes import router as incomes_router
 from .resources.notifications import router as notifications_router
-from .resources.users import router as users_router

@@ -7,6 +7,9 @@ from .currency import Currency
 from .transactions import CostCategory
 
 
+# ─────────────────────────────────────────────────────────
+# USER
+# ─────────────────────────────────────────────────────────
 class UserConfiguration(PublicData):
     show_equity: bool = Field(
         default=False, description="Define if the equity is visible"
@@ -94,3 +97,30 @@ class User(PublicData):
     id: int
     name: str
     configuration: UserConfiguration = UserConfiguration()
+
+
+# ─────────────────────────────────────────────────────────
+# AUTHORIZATION
+# ─────────────────────────────────────────────────────────
+class AuthorizeRequestBody(PublicData):
+    """claim for access token with user credentials.
+
+    NOTES
+    -----
+    simplified flow is used to authorize the user.
+    login will be used.
+
+
+    FUTURE CHANGES
+    -----
+    use JWT with login/password
+    """
+
+    token: str = Field(description="User's unique token")
+
+
+class Identity(PublicData):
+    access_token: str = Field(
+        description="Currently just a unique token of the user"
+    )
+    user: User

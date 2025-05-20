@@ -2,6 +2,7 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from loguru import logger
 
 from src import domain
 from src import operational as op
@@ -69,6 +70,9 @@ async def transactions(
         context = 0
         left = 0
 
+    logger.debug(len(items))
+    logger.debug(context)
+    logger.debug(left)
     return ResponseMultiPaginated[Transaction](
         result=[Transaction.from_instance(item) for item in items],
         context=context,
