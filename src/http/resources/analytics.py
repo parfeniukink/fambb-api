@@ -70,9 +70,6 @@ async def transactions(
         context = 0
         left = 0
 
-    logger.debug(len(items))
-    logger.debug(context)
-    logger.debug(left)
     return ResponseMultiPaginated[Transaction](
         result=[Transaction.from_instance(item) for item in items],
         context=context,
@@ -112,19 +109,18 @@ async def transaction_analytics_basic(
     """basic analytics that supports a set of some filters.
 
     WORKFLOW:
-        user can specify either start date & end date or the 'period'.
-        user can specify the pattern which is NOT CASE-SENSITIVE to filter
-        by that name in cost name of income name.
+        - user can specify either start date & end date or the 'period'.
+        - user can specify the pattern which is NOT CASE-SENSITIVE to filter
+            by that 'pattern' in 'cost name' or 'income name'.
 
-    ERRORS CONDITIONS:
-        ``period`` and any ``date`` are specified
-        only one date is specified
-        unrecognized period is specified
-        nothing is specified
+    POSSIBLE ERRORS:
+        - nothing is specified
+        - 'period' and 'date' are specified
+        - only a single date is specified (no range)
+        - unrecognized period is specified
 
     NOTES:
-        if the ``pattern`` is specified you WON'T see
-            EXCHANGES in your analytics.
+        if the 'pattern' is specified you WON'T see EXCHANGES in your analytics
     """
 
     instances: tuple[domain.transactions.TransactionsBasicAnalytics, ...] = (

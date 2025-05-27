@@ -603,7 +603,7 @@ class TransactionRepository(database.Repository):
             _cost_totals_by_currency_and_category,
             key=operator.attrgetter("currency_id"),
         ):
-            results[currency_id].costs.by_category += [
+            results[currency_id].costs.categories += [
                 CostsByCategory(
                     name=category_name,
                     total=total,
@@ -617,7 +617,7 @@ class TransactionRepository(database.Repository):
             _income_totals_by_currency_and_source,
             key=operator.attrgetter("currency_id"),
         ):
-            results[currency_id].incomes.by_source += [
+            results[currency_id].incomes.sources += [
                 (IncomesBySource(source=source, total=total))
                 for _, source, total in items
             ]

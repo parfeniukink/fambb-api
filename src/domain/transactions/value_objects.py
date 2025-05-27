@@ -50,6 +50,7 @@ class CostsByCategory(InternalData):
     args:
         ``name`` - the name of the cost category
         ``total`` - the total for the selected category
+        ``ratio`` - total / all costs total
     """
 
     name: str
@@ -64,7 +65,7 @@ class CostsAnalytics(InternalData):
         ``total`` - sum of all the categories costs
     """
 
-    by_category: list[CostsByCategory] = Field(default_factory=list)
+    categories: list[CostsByCategory] = Field(default_factory=list)
     total: int = 0
 
 
@@ -94,7 +95,7 @@ class IncomesAnalytics(InternalData):
     """
 
     total: int = 0
-    by_source: list[IncomesBySource] = Field(default_factory=list)
+    sources: list[IncomesBySource] = Field(default_factory=list)
 
 
 class TransactionsBasicAnalytics(InternalData):
