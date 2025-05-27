@@ -1,7 +1,7 @@
 from .analytics import (
     CostsAnalytics,
     CostsByCategory,
-    IncomeBySource,
+    IncomesBySource,
     IncomesAnalytics,
     TransactionBasicAnalytics,
 )

@@ -1,7 +1,8 @@
 """
-module with analytics contracts. basically it represents some analytics
-by calculating values of all the transactions, saved in the database
-for the specific dates range.
+module with analytics contracts.
+
+basically it represents some analytics by calculating values
+of all the transactions, saved in the database for the specific dates range.
 """
 
 import functools
@@ -41,7 +42,7 @@ class CostsAnalytics(PublicData):
     categories: list[CostsByCategory]
 
 
-class IncomeBySource(PublicData):
+class IncomesBySource(PublicData):
     """Represents incomes for specific source."""
 
     source: IncomeSource = Field(
@@ -52,7 +53,7 @@ class IncomeBySource(PublicData):
 
 class IncomesAnalytics(PublicData):
     total: float = Field(description="The total number of all incomes")
-    sources: list[IncomeBySource] = Field(default_factory=list)
+    sources: list[IncomesBySource] = Field(default_factory=list)
 
 
 class TransactionBasicAnalytics(PublicData):
@@ -94,7 +95,7 @@ class TransactionBasicAnalytics(PublicData):
                     ratio=item.ratio,
                 )
                 for item in sorted(
-                    instance.costs.by_category,
+                    instance.costs.categories,
                     key=operator.attrgetter("ratio"),
                     reverse=True,
                 )
@@ -104,11 +105,11 @@ class TransactionBasicAnalytics(PublicData):
         incomes_analytics = IncomesAnalytics(
             total=domain.transactions.pretty_money(instance.incomes.total),
             sources=[
-                IncomeBySource(
+                IncomesBySource(
                     source=item.source,
                     total=domain.transactions.pretty_money(item.total),
                 )
-                for item in instance.incomes.by_source
+                for item in instance.incomes.sources
             ],
         )
 
