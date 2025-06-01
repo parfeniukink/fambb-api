@@ -47,6 +47,7 @@ class TransactionRepository(database.Repository):
         in the internal representation.
         """
 
+        CostCategoryAlias = aliased(database.CostCategory)
         CurrencyAlias = aliased(database.Currency)
         UserAlias = aliased(database.User)
 
@@ -55,6 +56,9 @@ class TransactionRepository(database.Repository):
             select(
                 database.Cost.id.label("id"),
                 database.Cost.name.label("name"),
+                CostCategoryAlias.name.label(  # type: ignore[arg-type]
+                    "icon",
+                ),
                 database.Cost.value.label("value"),
                 database.Cost.timestamp.label("timestamp"),
                 func.cast("cost", String).label(  # type: ignore[arg-type]
@@ -64,6 +68,7 @@ class TransactionRepository(database.Repository):
                 UserAlias.name,
             )
             .join(CurrencyAlias, database.Cost.currency)
+            .join(CostCategoryAlias, database.Cost.category)
             .join(UserAlias, database.Cost.user)
         )
 
@@ -72,6 +77,9 @@ class TransactionRepository(database.Repository):
             select(
                 database.Income.id.label("id"),
                 database.Income.name.label("name"),
+                func.cast("🤑", String).label(  # type: ignore[arg-type]
+                    "icon",
+                ),
                 database.Income.value.label("value"),
                 database.Income.timestamp.label("timestamp"),
                 func.cast("income", String).label(  # type: ignore[arg-type]
@@ -90,6 +98,9 @@ class TransactionRepository(database.Repository):
                 database.Exchange.id.label("id"),
                 func.cast("exchange", String).label(  # type: ignore[arg-type]
                     "name",
+                ),
+                func.cast("💱", String).label(  # type: ignore[arg-type]
+                    "icon",
                 ),
                 database.Exchange.to_value.label("value"),
                 database.Exchange.timestamp.label("timestamp"),
@@ -142,6 +153,7 @@ class TransactionRepository(database.Repository):
                     (
                         id_,
                         name,
+                        icon,
                         value,
                         timestamp,
                         operation_type,
@@ -156,6 +168,7 @@ class TransactionRepository(database.Repository):
                         Transaction(
                             id=id_,
                             name=name,
+                            icon=icon,
                             value=value,
                             timestamp=timestamp,
                             operation=operation_type,

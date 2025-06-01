@@ -20,7 +20,7 @@ services:
   api:
     build:
       context: .
-      target: dev
+      target: prod
     image: family-budget
     container_name: family-budget-api
     env_file: .env

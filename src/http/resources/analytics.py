@@ -2,7 +2,6 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from loguru import logger
 
 from src import domain
 from src import operational as op
@@ -33,7 +32,8 @@ async def equity(
     )
 
 
-# TODO Move to the ``resources/transactions.py``
+# todo: move to the ``resources/transactions.py``
+# reason: probably not the part of the analytics block at all
 @router.get("/transactions")
 async def transactions(
     currency_id: Annotated[

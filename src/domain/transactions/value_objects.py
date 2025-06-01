@@ -20,6 +20,9 @@ class Transaction(InternalData):
     params:
         ``id`` the id of the cost or income or exchange.
         ``currency`` stands for the 'currency sign'. Ex: $, etc.
+        ``icon`` is just a sign of an transaction.
+                for costs - first character of category
+                for incomes and exchanges - specific characters.
 
     notes:
         for the``exchange`` type of operation, the ``currency`` belongs
@@ -35,6 +38,7 @@ class Transaction(InternalData):
 
     id: int
     operation: OperationType
+    icon: str
     name: str
     value: int
     timestamp: date

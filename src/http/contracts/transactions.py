@@ -24,6 +24,9 @@ class Transaction(PublicData):
         description="The type of the operation"
     )
     name: str = Field(description="The name of the transaction")
+    icon: str = Field(
+        description="The icon of the transaction", min_length=1, max_length=1
+    )
     value: float = Field(description="The amount with cents")
     timestamp: date = Field(
         description=(
@@ -47,6 +50,7 @@ class Transaction(PublicData):
             id=instance.id,
             operation=instance.operation,
             name=instance.name,
+            icon=instance.icon[0],
             value=domain.transactions.pretty_money(instance.value),
             timestamp=instance.timestamp,
             currency=instance.currency.sign,

@@ -15,6 +15,8 @@ from src.infrastructure import IncomeSource, PublicData
 
 from .currency import Currency
 
+TEST = 12
+
 
 class CostsByCategory(PublicData):
     """Represents expences for specific cost categories."""
@@ -79,6 +81,7 @@ class TransactionBasicAnalytics(PublicData):
     @functools.singledispatchmethod
     @classmethod
     def from_instance(cls, instance) -> "TransactionBasicAnalytics":
+
         raise NotImplementedError(
             f"Can not get {cls.__name__} from {type(instance)} type"
         )

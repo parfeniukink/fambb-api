@@ -50,6 +50,7 @@ async def test_transactions_fetch(
         "/analytics/transactions",
         params={"context": response1_data["context"]},
     )
+
     response2_data = response2.json()
     response3: httpx.Response = await client.get(
         "/analytics/transactions",

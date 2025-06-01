@@ -1,4 +1,4 @@
-FROM python:3.12.6-slim as base
+FROM python:3.12.6-slim AS base
 
 # configure python
 ENV PYTHONUNBUFFERED=1
@@ -18,7 +18,7 @@ COPY ./ ./
 
 
 # DEV IMAGE
-from base as dev
+FROM base AS dev
 
 ENV UVICORN_HOST=0.0.0.0
 ENV UVICORN_PORT=8000
@@ -32,7 +32,9 @@ CMD ["-m", "uvicorn", "src.main:app"]
 
 
 # PRODUCTION IMAGE
-from base as prod
+FROM base AS prod
+
+ENV GUNICORN_ARGS=0.0.0.0
 
 RUN pip install -r requirements/main.txt
 EXPOSE 8000
