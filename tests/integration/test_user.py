@@ -16,7 +16,7 @@ from src.infrastructure import database
 # tests for not authorized
 # ==================================================
 async def test_user_retrieve_anonymous(anonymous):
-    response: httpx.Response = await anonymous.get("/users")
+    response: httpx.Response = await anonymous.get("/identity/users")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -24,7 +24,7 @@ async def test_user_update_configuration_anonymous(
     anonymous: httpx.AsyncClient,
 ):
     response: httpx.Response = await anonymous.patch(
-        "/users/configuration", json={}
+        "/identity/users/configuration", json={}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -34,7 +34,7 @@ async def test_user_update_configuration_anonymous(
 # ==================================================
 @pytest.mark.use_db
 async def test_user_retrieve(john, client):
-    response: httpx.Response = await client.get("/users")
+    response: httpx.Response = await client.get("/identity/users")
     result: dict = response.json()["result"]
     users_total = await domain.UserRepository().count(database.User)
 
@@ -88,9 +88,9 @@ async def test_user_configuration_update(
 ):
     repository = domain.UserRepository()
     response: httpx.Response = await client.patch(
-        "/users/configuration", json=payload
+        "/identity/users/configuration", json=payload
     )
-    response_user: httpx.Response = await client.get("/users")
+    response_user: httpx.Response = await client.get("/identity/users")
     configuration_raw_response = response_user.json()["result"][
         "configuration"
     ]

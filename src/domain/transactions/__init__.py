@@ -31,6 +31,7 @@ __all__ = (
     "Transaction",
     "TransactionRepository",
     "TransactionsBasicAnalytics",
+    "TransactionsFilter",
     "as_cents",
     "cents_from_raw",
     "pretty_money",
@@ -53,4 +54,5 @@ from .value_objects import (
     OperationType,
     Transaction,
     TransactionsBasicAnalytics,
+    TransactionsFilter,
 )

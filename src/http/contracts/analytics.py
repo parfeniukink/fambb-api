@@ -21,6 +21,7 @@ TEST = 12
 class CostsByCategory(PublicData):
     """Represents expences for specific cost categories."""
 
+    id: int = Field(description="The ID of the category", examples=[1, 2, 3])
     name: str = Field(
         description="The name of the category", examples=["💸 Taxes"]
     )
@@ -93,6 +94,7 @@ class TransactionBasicAnalytics(PublicData):
             total=domain.transactions.pretty_money(instance.costs.total),
             categories=[
                 CostsByCategory(
+                    id=item.id,
                     name=item.name,
                     total=domain.transactions.pretty_money(item.total),
                     ratio=item.ratio,

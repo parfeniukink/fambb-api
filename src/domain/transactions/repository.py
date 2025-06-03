@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import aliased, joinedload
 
 from src.domain.equity import Currency
-from src.infrastructure import database, errors
+from src.infrastructure import database, dates, errors
 
 from .entities import CostCategory
 from .value_objects import (
@@ -26,6 +26,7 @@ from .value_objects import (
     IncomesBySource,
     Transaction,
     TransactionsBasicAnalytics,
+    TransactionsFilter,
 )
 
 
@@ -40,8 +41,11 @@ class TransactionRepository(database.Repository):
     # ==================================================
     # unified || aggregated section
     # ==================================================
-    async def transactions(
-        self, /, currency_id: int | None, **kwargs
+    async def transactions(  # noqa: C901 (too complex function)
+        self,
+        /,
+        filter: TransactionsFilter = TransactionsFilter(),
+        **pagination_kwargs,
     ) -> tuple[tuple[Transaction, ...], int]:
         """get all the items from 'costs', 'incomes', 'exchanges' tables
         in the internal representation.
@@ -56,9 +60,7 @@ class TransactionRepository(database.Repository):
             select(
                 database.Cost.id.label("id"),
                 database.Cost.name.label("name"),
-                CostCategoryAlias.name.label(  # type: ignore[arg-type]
-                    "icon",
-                ),
+                CostCategoryAlias.name.label("icon"),
                 database.Cost.value.label("value"),
                 database.Cost.timestamp.label("timestamp"),
                 func.cast("cost", String).label(  # type: ignore[arg-type]
@@ -115,27 +117,72 @@ class TransactionRepository(database.Repository):
         )
 
         # add currency filter if specified
-        if currency_id is not None:
+        if filter.currency_id is not None:
             cost_query = cost_query.where(
-                database.Cost.currency_id == currency_id
+                database.Cost.currency_id == filter.currency_id
             )
             income_query = income_query.where(
-                database.Income.currency_id == currency_id
+                database.Income.currency_id == filter.currency_id
             )
             exchange_query = exchange_query.where(
-                database.Exchange.to_currency_id == currency_id
+                database.Exchange.to_currency_id == filter.currency_id
+            )
+
+        # add timesatmp filter if specified
+        if filter.period or (filter.start_date and filter.end_date):
+            if filter.period == "current-month":
+                _start_date: date = dates.get_first_date_of_current_month()
+                _end_date: date = date.today()
+            elif filter.period == "previous-month":
+                _start_date, _end_date = dates.get_previous_month_range()
+            elif filter.start_date and filter.end_date:
+                _start_date = filter.start_date
+                _end_date = filter.end_date
+            else:
+                raise ValueError("Invalid dates range filter")
+
+            cost_query = cost_query.where(
+                database.Cost.timestamp.between(_start_date, _end_date)
+            )
+            income_query = income_query.where(
+                database.Income.timestamp.between(_start_date, _end_date)
+            )
+            exchange_query = exchange_query.where(
+                database.Exchange.timestamp.between(_start_date, _end_date)
+            )
+
+        if filter.cost_category_id is not None:
+            cost_query = cost_query.where(
+                database.Cost.category_id == filter.cost_category_id
             )
 
         # combine all the queries using UNION ALL
-        union_query = (
-            union_all(cost_query, income_query, exchange_query)
+        # apply operation filter if needed
+        if filter.operation is None:
+            queries: tuple[Select, ...] = (
+                cost_query,
+                income_query,
+                exchange_query,
+            )
+        else:
+            if filter.operation == "cost":
+                queries = (cost_query,)
+            elif filter.operation == "income":
+                queries = (income_query,)
+            elif filter.operation == "exchange":
+                queries = (exchange_query,)
+
+        final_query = (
+            union_all(*queries)
             .order_by(desc("timestamp"))
             .order_by(desc("id"))
         )
 
-        paginated_query = self._add_pagination_filters(union_query, **kwargs)
+        paginated_query = self._add_pagination_filters(
+            final_query, **pagination_kwargs
+        )
         count_query = select(func.count()).select_from(
-            union_query,  # type: ignore[arg-type]
+            final_query,  # type: ignore[arg-type]
         )
 
         results: list[Transaction] = []
@@ -523,6 +570,7 @@ class TransactionRepository(database.Repository):
             select(
                 # cost && cost category
                 database.Cost.currency_id.label("currency_id"),
+                database.CostCategory.id.label("category_id"),
                 database.CostCategory.name.label("category_name"),
                 # custom calculation. the `sum` of all the costs in the range
                 (func.sum(database.Cost.value)).label("total"),
@@ -618,11 +666,12 @@ class TransactionRepository(database.Repository):
         ):
             results[currency_id].costs.categories += [
                 CostsByCategory(
+                    id=category_id,
                     name=category_name,
                     total=total,
                     ratio=total / results[currency_id].costs.total * 100,
                 )
-                for _, category_name, total in items
+                for _, category_id, category_name, total in items
             ]
 
         # update incomes sources totals

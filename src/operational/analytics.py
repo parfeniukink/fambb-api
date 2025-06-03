@@ -1,6 +1,7 @@
 """
-this module includes high-level operations to deal with transactions
-analytics. instead of putting this to the ``./transactions.py``
+this module includes high-level operations to deal with transactions analytics.
+
+instead of putting this to the ``./transactions.py``
 this is separated to have cleaner code.
 """
 

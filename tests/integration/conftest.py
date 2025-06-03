@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Callable
+from datetime import date, datetime
 
 import pytest
 from polyfactory.factories.sqlalchemy_factory import SQLAlchemyFactory
@@ -22,6 +23,16 @@ class ExchangeCandidateFactory(SQLAlchemyFactory[database.Exchange]):
 
 class CostShortcutCandidateFactory(SQLAlchemyFactory[database.CostShortcut]):
     __model__ = database.CostShortcut
+
+
+@pytest.fixture
+def today() -> date:
+    return date.today()
+
+
+@pytest.fixture
+def DATE_FORMAT() -> str:
+    return "%Y-%m-%d"
 
 
 @pytest.fixture
@@ -73,15 +84,21 @@ async def cost_factory(
         ``n`` - stands for number of generaget items.
     """
 
-    currency = currencies[0]
-    category = cost_categories[0]
+    default_currency = currencies[0]
+    default_category = cost_categories[0]
 
-    async def inner(n=1) -> list[database.Cost]:
+    async def inner(
+        n=1,
+        timestamp: datetime | None = None,
+        category_id: int | None = None,
+        currency_id: int | None = None,
+    ) -> list[database.Cost]:
         candidates = (
             CostCandidateFactory.build(
                 user_id=john.id,
-                currency_id=currency.id,
-                category_id=category.id,
+                currency_id=currency_id or default_currency.id,
+                category_id=category_id or default_category.id,
+                timestamp=timestamp,
             )
             for _ in range(n)
         )
@@ -107,16 +124,23 @@ async def income_factory(
     source: IncomeSource = "revenue",
 ) -> Callable:
     """
-    params:
-        ``n`` - stands for number of generaget items.
+    PARAMS:
+        ``n`` - stands for number of generaget items
+        ``timestamp`` - stands for creation date
     """
 
     currency = currencies[0]
 
-    async def inner(n=1) -> list[database.Income]:
+    async def inner(
+        n: int = 1,
+        timestamp: datetime | None = None,
+    ) -> list[database.Income]:
         candidates = (
             IncomeCandidateFactory.build(
-                user_id=john.id, currency_id=currency.id, source=source
+                user_id=john.id,
+                currency_id=currency.id,
+                source=source,
+                timestamp=timestamp,
             )
             for _ in range(n)
         )

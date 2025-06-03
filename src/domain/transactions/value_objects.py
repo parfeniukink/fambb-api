@@ -1,7 +1,7 @@
 from datetime import date
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from src.domain.equity import Currency
 from src.infrastructure import IncomeSource, InternalData
@@ -46,17 +46,50 @@ class Transaction(InternalData):
     user: str
 
 
+class TransactionsFilter(InternalData):
+    """this class is used to encapsulate filters for transactions fetching.
+
+    ARGS:
+        - currency_id
+        - cost_category_id
+        - start_date
+        - end_date
+        - period
+        - operation
+    """
+
+    currency_id: int | None = None
+    cost_category_id: int | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    period: AnalyticsPeriod | None = None
+    operation: OperationType | None = None
+
+    @model_validator(mode="after")
+    def validate_dates_range(self) -> Self:
+        dates_range_specified: bool = bool(self.start_date and self.end_date)
+
+        if dates_range_specified and self.period:
+            raise ValueError("You can NOT specify DATES RANGE and PERIOD")
+
+        # todo: add more validation
+
+        return self
+
+
 # ==================================================
 # analytics section
 # ==================================================
 class CostsByCategory(InternalData):
     """
     args:
+        ``id`` - the ID of the cost category
         ``name`` - the name of the cost category
         ``total`` - the total for the selected category
         ``ratio`` - total / all costs total
     """
 
+    id: int
     name: str
     total: int
     ratio: float

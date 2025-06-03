@@ -13,7 +13,12 @@ from src.infrastructure import (
     get_offset_pagination_params,
 )
 
-from ..contracts import Equity, Transaction, TransactionBasicAnalytics
+from ..contracts import (
+    Equity,
+    Transaction,
+    TransactionBasicAnalytics,
+    get_transactions_detail_filter,
+)
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -33,16 +38,12 @@ async def equity(
 
 
 # todo: move to the ``resources/transactions.py``
-# reason: probably not the part of the analytics block at all
+#       reason: probably not the part of the analytics block at all
 @router.get("/transactions")
 async def transactions(
-    currency_id: Annotated[
-        int | None,
-        Query(
-            description="Filter by currency id. Skip to ignore.",
-            alias="currencyId",
-        ),
-    ] = None,
+    filter: domain.transactions.TransactionsFilter = Depends(
+        get_transactions_detail_filter
+    ),
     pagination: OffsetPagination = Depends(get_offset_pagination_params),
     _: domain.users.User = Depends(op.authorize),
 ) -> ResponseMultiPaginated[Transaction]:
@@ -52,15 +53,15 @@ async def transactions(
         the returned ``total`` value is based on applied filters.
         if the currency is specified - ``total`` might be changed
         so you can rely on data properly.
+
+        if the ``cost_category_id`` is provided - pagination is skipped
     """
 
     (
         items,
         total,
     ) = await domain.transactions.TransactionRepository().transactions(
-        currency_id=currency_id,
-        offset=pagination.context,
-        limit=pagination.limit,
+        filter=filter, offset=pagination.context, limit=pagination.limit
     )
 
     if items:

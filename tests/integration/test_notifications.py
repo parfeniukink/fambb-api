@@ -27,7 +27,7 @@ async def test_user_NOTIFIED_about_big_cost(
     """
 
     await client.patch(
-        "/users/configuration", json={"notify_cost_threshold": 199.9}
+        "/identity/users/configuration", json={"notifyCostThreshold": 199.9}
     )
 
     add_cost_response: httpx.Response = await client_marry.post(
@@ -64,7 +64,7 @@ async def test_user_NOT_NOTIFIED_about_big_cost(
     """
 
     await client.patch(
-        "/users/configuration", json={"notify_cost_threshold": 200.01}
+        "/identity/users/configuration", json={"notifyCostThreshold": 200.01}
     )
 
     add_cost_response: httpx.Response = await client_marry.post(
@@ -102,7 +102,8 @@ async def test_user_notified_about_big_cost_after_update(
     async with database.transaction():
         _, cost = await asyncio.gather(
             client.patch(
-                "/users/configuration", json={"notify_cost_threshold": 200}
+                "/identity/users/configuration",
+                json={"notify_cost_threshold": 200},
             ),
             TransactionRepository().add_cost(
                 database.Cost(

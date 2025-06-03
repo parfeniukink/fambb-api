@@ -4,6 +4,7 @@ test analytics.
 
 import asyncio
 from datetime import date, timedelta
+from typing import Final
 
 import httpx
 import pytest
@@ -232,11 +233,16 @@ async def test_basic_analytics_fetch(
             {
                 "costs": {
                     "categories": [
-                        {"name": "Food", "total": 200.00, "ratio": 100.0},
+                        {
+                            "id": 1,
+                            "name": "Food",
+                            "total": 200.00,
+                            "ratio": 100.0,
+                        },
                     ],
                     "total": 200.00,
                 },
-                "totalRatio": 40,
+                "totalRatio": 40.0,
                 "currency": {"id": 2, "name": "FOO", "sign": "#"},
                 "incomes": {
                     "sources": [
@@ -249,8 +255,18 @@ async def test_basic_analytics_fetch(
             {
                 "costs": {
                     "categories": [
-                        {"name": "Food", "total": 100.00, "ratio": 50.0},
-                        {"name": "Other", "total": 100.00, "ratio": 50.0},
+                        {
+                            "id": 1,
+                            "name": "Food",
+                            "total": 100.00,
+                            "ratio": 50.0,
+                        },
+                        {
+                            "id": 2,
+                            "name": "Other",
+                            "total": 100.00,
+                            "ratio": 50.0,
+                        },
                     ],
                     "total": 200.00,
                 },
@@ -264,3 +280,45 @@ async def test_basic_analytics_fetch(
             },
         ],
     }
+
+
+@pytest.mark.use_db
+async def test_transactions_fetch_advanced_filters(
+    client: httpx.AsyncClient,
+    today: date,
+    DATE_FORMAT: str,
+    cost_factory,
+    income_factory,
+    cost_categories: list[database.CostCategory],
+):
+    """
+    1. create costs with 'too far' creation date
+    2. create 'last made' costs
+    3. fetch with filters to exclude 'too far' costs
+
+    NOTES
+    by default (in pytest fixture) the first item is used (where index=0)
+
+    """
+
+    await cost_factory(n=10, timestamp=today - timedelta(days=100))
+    await cost_factory(n=10, timestamp=today - timedelta(days=30))
+    await income_factory(n=5, timestamp=today - timedelta(days=30))
+
+    # define query strings
+    start_date_qs: Final = (today - timedelta(days=40)).strftime(DATE_FORMAT)
+    end_date_qs: Final = today.strftime(DATE_FORMAT)
+
+    url = (
+        "/analytics/transactions?"
+        f"startDate={start_date_qs}&"
+        f"endDate={end_date_qs}&"
+        f"category={cost_categories[0].id}"
+    )
+
+    response: httpx.Response = await client.get(url)
+    response_data: dict = response.json()
+
+    assert response.status_code == status.HTTP_200_OK, response_data
+    assert len(response_data["result"]) == 10, response_data
+    assert response_data["left"] == 5, response_data

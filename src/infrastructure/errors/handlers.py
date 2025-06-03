@@ -21,7 +21,7 @@ from ..responses import (
     ErrorResponseMulti,
     ErrorType,
 )
-from .exceptions import AuthenticationError, BaseError
+from .exceptions import BaseError
 
 
 def fastapi_to_internal_error_mapper(value: str) -> ErrorType:

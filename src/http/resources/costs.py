@@ -67,9 +67,7 @@ async def cost_category_create(
 
 
 @router.post(
-    "/shortcuts",
-    status_code=status.HTTP_201_CREATED,
-    tags=["Transactions", "Shortcuts"],
+    "/shortcuts", status_code=status.HTTP_201_CREATED, tags=["Shortcuts"]
 )
 async def cost_shortcut_create(
     user: domain.users.User = Depends(op.authorize),
@@ -91,7 +89,7 @@ async def cost_shortcut_create(
     return Response[CostShortcut](result=CostShortcut.from_instance(item))
 
 
-@router.get("/shortcuts", tags=["Transactions", "Shortcuts"])
+@router.get("/shortcuts", tags=["Shortcuts"])
 async def cost_shortcuts(
     user: domain.users.User = Depends(op.authorize),
 ) -> ResponseMulti[CostShortcut]:
@@ -108,7 +106,7 @@ async def cost_shortcuts(
 @router.delete(
     "/shortcuts/{shortcut_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Transactions", "Shortcuts"],
+    tags=["Shortcuts"],
 )
 async def cost_shortcut_delete(
     shortcut_id: int, user: domain.users.User = Depends(op.authorize)
@@ -121,7 +119,7 @@ async def cost_shortcut_delete(
 @router.post(
     "/shortcuts/{shortcut_id}",
     status_code=status.HTTP_201_CREATED,
-    tags=["Transactions", "Shortcuts"],
+    tags=["Shortcuts"],
 )
 async def cost_shortcut_apply(
     shortcut_id: int,
