@@ -88,18 +88,19 @@ class UserRepository(database.Repository):
         self.command.session.add(candidate)
         return candidate
 
-    async def update_user(
-        self, candidate: database.User, **values
-    ) -> database.User:
-        """update user configuration fields."""
+    async def update_user(self, id_: int, **values) -> None:
+        """update user configuration fields.
+
+        IMPROVEMENTS
+        1. ``query = query.returning(database.User)``
+        2. ``self.command.session.execute``
+        3. pass ``candidate`` instead of user id (kind of 'select for update')
+        4. todo: add availability for the query descriptor to get
+                 the SESSION that is created in ``database.transaction()``
+        """
 
         query = (
-            update(database.User)
-            .where(database.User.id == candidate.id)
-            .values(values)
-            .returning(database.User)
+            update(database.User).where(database.User.id == id_).values(values)
         )
 
         await self.command.session.execute(query)
-
-        return candidate
