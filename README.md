@@ -19,7 +19,7 @@ I need a REST API to manage user settings, shared finances (transactions), obser
   - number of `last transactions`
   - exclude `categories` from costs calculations
 - authorization
-  - if user credentials are not valid - return the WWW-Authorization HTTP header with detaild according to the RFC6750
+  - if user credentials are not valid - return the WWW-Authorization HTTP header with details according to the RFC6750
   - use JWT for security
 
 # DEV SETUP
@@ -49,4 +49,16 @@ make install
 virtualenv --python python3 venv
 source venv/bin/activate
 pip install -r requirements/main.txt
+```
+
+# SPECIFIC CONTEXT
+
+## Broken `pip-compile` For Generation With Hashes
+
+reference: https://github.com/jazzband/pip-tools/issues/2176
+
+solution:
+
+```shell
+pip install "pip<25"
 ```

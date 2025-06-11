@@ -89,5 +89,8 @@ class Settings(BaseSettings):
     database: DatabaseSettings = DatabaseSettings()
     cache: CacheSettings = CacheSettings()
 
+    # INTEGRATIONS
+    sentry_dsn: str | None = None
+
 
 settings = Settings()

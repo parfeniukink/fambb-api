@@ -7,6 +7,10 @@ the overall structure is inspired by DDD (Eric Evans):
         ↓ contracts (data structures)
     ↓ operational (application tier)
     ↓ domain (business model tier)
+    ↓ integrations (infrastructure tier)
+        ↓ openai
+        ↓ monobank
+        ↓ privatbank
     ↓ infrastructure (infrastructure tier)
         ↓ database (ORM, tables)
         ↓ config (global configuration)
@@ -25,10 +29,15 @@ so each of them can see the transactions themselves, analytics and equity.
 on the other hand user settings are not sharable for others.
 """
 
+import sentry_sdk
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.loguru import LoguruIntegration
+from starlette.middleware import _MiddlewareClass
 
 from src import http
 from src.config import settings
@@ -49,12 +58,44 @@ exception_handlers = (
         RequestValidationError: errors.unprocessable_entity_error_handler,
         HTTPException: errors.fastapi_http_exception_handler,
         NotImplementedError: errors.not_implemented_error_handler,
-        Exception: errors.unhandled_error_handler,
         errors.BaseError: errors.base_error_handler,
+        BaseException: errors.unhandled_error_handler,
     }
     if settings.debug is False
     else {}
 )
+
+middlewares: list[tuple[type[_MiddlewareClass], dict]] = [
+    (CORSMiddleware, middleware.FASTAPI_CORS_MIDDLEWARE_OPTIONS),
+]
+
+if settings.sentry_dsn:
+    breakpoint()  # TODO: remove:w
+
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        # add data like request headers and IP for users
+        # https://docs.sentry.io/platforms/python/data-management/data-collected/
+        send_default_pii=True,
+        # 1.0 to capture 100% of transactions for tracing
+        traces_sample_rate=0.1,
+        # 1.0 to profile 100% of profile sessions
+        profile_session_sample_rate=0.5,
+        # "trace" to automatically run the profiler
+        # on when there is an active transaction
+        profile_lifecycle="trace",
+        attach_stacktrace=True,
+        environment="development" if settings.debug else "production",
+        integrations=[
+            FastApiIntegration(),
+            LoguruIntegration(),
+        ],
+    )
+
+    middlewares.append((SentryAsgiMiddleware, {}))
+
+    logger.success("Sentry initialized")
+
 
 app: FastAPI = factories.asgi_app(
     debug=settings.debug,
@@ -62,14 +103,13 @@ app: FastAPI = factories.asgi_app(
         http.users_router,
         http.currencies_router,
         http.analytics_router,
+        http.transactions_router,
         http.costs_router,
         http.incomes_router,
         http.exchange_router,
         http.notifications_router,
     ),
-    middlewares=(
-        (CORSMiddleware, middleware.FASTAPI_CORS_MIDDLEWARE_OPTIONS),
-    ),
+    middlewares=middlewares,
     exception_handlers=exception_handlers,
     lifespan=hooks.lifespan_event,
 )
