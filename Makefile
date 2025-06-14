@@ -60,7 +60,7 @@ run.prod:
 # -------------------------------------------------------------------------
 .PHONY: test
 test:
-	python -m pytest ./tests
+	python -m pytest -q -r p ./tests
 
 .PHONY: test.int
 test.int:

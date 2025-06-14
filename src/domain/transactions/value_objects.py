@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Literal, Self
+from typing import Literal
 
 from pydantic import Field, model_validator
 
@@ -66,7 +66,7 @@ class TransactionsFilter(InternalData):
     operation: OperationType | None = None
 
     @model_validator(mode="after")
-    def validate_dates_range(self) -> Self:
+    def validate_dates_range(self):
         dates_range_specified: bool = bool(self.start_date and self.end_date)
 
         if dates_range_specified and self.period:

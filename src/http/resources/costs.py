@@ -126,19 +126,18 @@ async def cost_shortcut_apply(
     user: domain.users.User = Depends(op.authorize),
     body: CostShortcutApply | None = Body(default=None),
 ) -> Response[Cost]:
-    """apply cost shortcut.
+    """apply cost shortcut."""
 
-    WORKFLOW:
-        1. validate HTTP Body
-    """
-
-    cost: database.Cost = await op.apply_cost_shortcut(
+    item: database.Cost = await op.apply_cost_shortcut(
         user,
         shortcut_id,
         value=domain.transactions.cents_from_raw(body.value) if body else None,
     )
 
-    return Response[Cost](result=Cost.from_instance(cost))
+    asyncio.create_task(op.notify_about_big_cost(cost=item))
+    # await op.notify_about_big_cost(cost=item)
+
+    return Response[Cost](result=Cost.from_instance(item))
 
 
 # ===========================================================

@@ -42,3 +42,4 @@ from .resources.exchange import router as exchange_router
 from .resources.identity import router as users_router
 from .resources.incomes import router as incomes_router
 from .resources.notifications import router as notifications_router
+from .resources.transactions import router as transactions_router

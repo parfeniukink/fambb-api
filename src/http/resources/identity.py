@@ -35,7 +35,7 @@ async def user_retrieve(
 ) -> Response[User]:
     """retrieve current user information information."""
 
-    return Response[User](result=User.model_validate(user))
+    return Response[User](result=User.from_instance(user))
 
 
 @router.patch("/users/configuration")

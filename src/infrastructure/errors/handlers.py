@@ -7,6 +7,7 @@ todo:
  - [ ] add handler for invalid `Literal` query parameters
 """
 
+import sentry_sdk
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -15,6 +16,8 @@ from loguru import logger
 from starlette import status
 from starlette.requests import Request
 
+from src.config import settings
+
 from ..responses import (
     ErrorDetail,
     ErrorResponse,
@@ -22,6 +25,11 @@ from ..responses import (
     ErrorType,
 )
 from .exceptions import BaseError
+
+
+def sentry_error_traceback(error: BaseException):
+    if settings.sentry_dsn:
+        sentry_sdk.capture_exception(error)
 
 
 def fastapi_to_internal_error_mapper(value: str) -> ErrorType:
@@ -64,6 +72,7 @@ def unprocessable_entity_error_handler(
     )
     logger.debug(error.errors()[0]["type"])
     logger.error(response.model_dump(by_alias=True))
+    sentry_error_traceback(error)
 
     return JSONResponse(
         content=jsonable_encoder(response.model_dump(by_alias=True)),
@@ -74,6 +83,7 @@ def unprocessable_entity_error_handler(
 def value_error_handler(_: Request, error: ValueError) -> JSONResponse:
     response = ErrorResponse(message=str(error))
     logger.error(response.model_dump(by_alias=True))
+    sentry_error_traceback(error)
 
     return JSONResponse(
         content=jsonable_encoder(response.model_dump(by_alias=True)),
@@ -88,7 +98,7 @@ def fastapi_http_exception_handler(
 
     response = ErrorResponse(message=error.detail)
     logger.error(response.model_dump(by_alias=True))
-
+    sentry_error_traceback(error)
     return JSONResponse(
         content=response.model_dump(by_alias=True),
         status_code=error.status_code,
@@ -101,6 +111,7 @@ def not_implemented_error_handler(
     """This function is called if the NotImplementedError was raised."""
     response = ErrorResponse(message=str(error) or "⚠️ Work in progress")
     logger.error(response.model_dump(by_alias=True))
+    sentry_error_traceback(error)
 
     return JSONResponse(
         content=response.model_dump(by_alias=True),
@@ -114,10 +125,11 @@ def database_error_handler(
     """This function is called if the NotImplementedError was raised."""
     response = ErrorResponse(message="Database error occurred")
     logger.error(error)
+    sentry_error_traceback(error)
 
     return JSONResponse(
         content=response.model_dump(by_alias=True),
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 
 
@@ -128,6 +140,7 @@ def base_error_handler(_: Request, error: BaseError) -> JSONResponse:
 
     response = ErrorResponse(message=str(error))
     logger.error(response.model_dump(by_alias=True))
+    sentry_error_traceback(error)
 
     return JSONResponse(
         response.model_dump(by_alias=True),
@@ -138,6 +151,7 @@ def base_error_handler(_: Request, error: BaseError) -> JSONResponse:
 def unhandled_error_handler(_: Request, error: Exception) -> JSONResponse:
     response = ErrorResponse(message=str(error))
     logger.error(response.model_dump(by_alias=True))
+    sentry_error_traceback(error)
 
     return JSONResponse(
         response.model_dump(by_alias=True),

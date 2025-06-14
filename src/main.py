@@ -59,7 +59,7 @@ exception_handlers = (
         HTTPException: errors.fastapi_http_exception_handler,
         NotImplementedError: errors.not_implemented_error_handler,
         errors.BaseError: errors.base_error_handler,
-        BaseException: errors.unhandled_error_handler,
+        Exception: errors.unhandled_error_handler,
     }
     if settings.debug is False
     else {}
@@ -69,9 +69,8 @@ middlewares: list[tuple[type[_MiddlewareClass], dict]] = [
     (CORSMiddleware, middleware.FASTAPI_CORS_MIDDLEWARE_OPTIONS),
 ]
 
-if settings.sentry_dsn:
-    breakpoint()  # TODO: remove:w
 
+if settings.sentry_dsn and settings.debug is False:
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
         # add data like request headers and IP for users

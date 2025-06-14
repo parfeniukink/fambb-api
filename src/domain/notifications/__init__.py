@@ -9,7 +9,8 @@ FEATURES
 - news, suggestions forming using LLM
 """
 
-__all__ = ("Notification", "Notifications")
+__all__ = ("Notification", "Notifications", "notify")
 
 
 from .entities import Notification, Notifications
+from .services import notify

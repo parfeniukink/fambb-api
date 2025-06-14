@@ -1,3 +1,5 @@
+import functools
+
 from pydantic import Field, field_validator
 
 from src import domain
@@ -40,6 +42,31 @@ class UserConfiguration(PublicData):
         description="A number of paginated items in transactions analytics",
     )
 
+    monobank_api_key_is_set: bool = Field(
+        default=False,
+        description=(
+            "Monobank API Key is not exposed. "
+            "You can only see that it is set"
+        ),
+    )
+
+    @functools.singledispatchmethod
+    @classmethod
+    def from_instance(cls, instance) -> "UserConfiguration":
+        raise NotImplementedError(
+            f"Can not get {cls.__name__} from {type(instance)} type"
+        )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: domain.users.UserConfiguration):
+        return cls(
+            monobank_api_key_is_set=(
+                True if instance.monobank_api_key else False
+            ),
+            **instance.model_dump(),
+        )
+
     @field_validator("notify_cost_threshold", mode="after")
     @classmethod
     def notify_cost_threshold_prettify(
@@ -77,6 +104,10 @@ class UserConfigurationPartialUpdateRequestBody(PublicData):
         default=None,
         description="A number of paginated items in transactions analytics",
     )
+    monobank_api_key: str | None = Field(
+        default=None,
+        description="Monobank API Key. https://api.monobank.ua/index.html",
+    )
 
     @field_validator("notify_cost_threshold", mode="after")
     @classmethod
@@ -97,6 +128,24 @@ class User(PublicData):
     id: int
     name: str
     configuration: UserConfiguration = UserConfiguration()
+
+    @functools.singledispatchmethod
+    @classmethod
+    def from_instance(cls, instance) -> "User":
+        raise NotImplementedError(
+            f"Can not get {cls.__name__} from {type(instance)} type"
+        )
+
+    @from_instance.register
+    @classmethod
+    def _(cls, instance: domain.users.User):
+        return cls(
+            id=instance.id,
+            name=instance.name,
+            configuration=UserConfiguration.from_instance(
+                instance.configuration
+            ),
+        )
 
 
 # ─────────────────────────────────────────────────────────

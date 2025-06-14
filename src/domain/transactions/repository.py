@@ -230,7 +230,7 @@ class TransactionRepository(database.Repository):
 
         return tuple(results), total
 
-    async def delete(self, table, candidate_id) -> None:
+    async def delete(self, table, candidate_id: int) -> None:
         """delete some specific trasaction from the specified table."""
 
         query = delete(table).where(getattr(table, "id") == candidate_id)

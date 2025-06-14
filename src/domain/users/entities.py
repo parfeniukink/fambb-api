@@ -23,6 +23,8 @@ class UserConfiguration(InternalData):
     last_notification: str | None = None
     notify_cost_threshold: int | None = None
 
+    monobank_api_key: str | None = None
+
 
 class User(InternalData):
     """Extended user data object with configuration details."""
@@ -70,5 +72,6 @@ class User(InternalData):
                 ),
                 last_notification=instance.last_notification,
                 notify_cost_threshold=instance.notify_cost_threshold,
+                monobank_api_key=instance.monobank_api_key,
             ),
         )

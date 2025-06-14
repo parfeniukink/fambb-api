@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import asyncpg
 import httpx
 import pytest
+import respx
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from httpx import ASGITransport, AsyncClient
@@ -49,13 +50,14 @@ def app() -> FastAPI:
     return factories.asgi_app(
         debug=settings.debug,
         rest_routers=(
-            http.users_router,
-            http.currencies_router,
-            http.costs_router,
-            http.incomes_router,
-            http.exchange_router,
             http.analytics_router,
+            http.costs_router,
+            http.currencies_router,
+            http.exchange_router,
+            http.incomes_router,
             http.notifications_router,
+            http.transactions_router,
+            http.users_router,
         ),
         exception_handlers={
             ValueError: errors.value_error_handler,
@@ -232,6 +234,12 @@ def patch_cache_service(mocker) -> MagicMock:
     """
 
     return mocker.patch.object(Cache, "__new__", return_value=MockedCache())
+
+
+@pytest.fixture(autouse=True)
+def _mock_httpx_requests():
+    with respx.mock(assert_all_mocked=True):
+        yield
 
 
 # ==================================================

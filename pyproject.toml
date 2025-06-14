@@ -13,6 +13,7 @@ dependencies = [
     "alembic~=1.13",  # migrations tool
     "arq~=0.25",  # async job queues in python on redis
     "asyncpg~=0.30.0",  # async PostgreSQL driver
+    "datadog~=0.51.0",  # events monitoring
     "fastapi~=0.112",  # web framework
     "gunicorn~=21.2",  # application web server (better workers experience)
     "httpx~=0.27.2",  # http client
@@ -36,6 +37,7 @@ dev = [
     "pytest-xdist[psutil]~=3.6.1",  # run tests in separate processes
     "pytest~=8.2.2",  # testing framework
     "respx~=0.22.0",  # mock httpx requests and http core libraries
+    "ipdb~=0.13.13",  # debugger 
 ]
 
 

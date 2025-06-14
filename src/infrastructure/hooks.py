@@ -44,7 +44,7 @@ async def check_cache_connection() -> None:
 
 
 @asynccontextmanager
-async def lifespan_event(app: FastAPI):
+async def lifespan_event(_: FastAPI):
     """the startup and shutdown application event"""
 
     await asyncio.gather(

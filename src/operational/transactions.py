@@ -8,7 +8,7 @@ from src.infrastructure import IncomeSource, database, errors
 
 
 # ==================================================
-# costs section
+# COSTS SECTION
 # ==================================================
 async def get_costs(
     limit: int,
@@ -160,7 +160,7 @@ async def delete_cost(cost_id: int) -> None:
 
 
 # ==================================================
-# incomes section
+# INCOMES SECTION
 # ==================================================
 async def get_incomes(
     limit: int,
@@ -314,7 +314,7 @@ async def delete_income(income_id: int):
 
 
 # ==================================================
-# currency exchange section
+# CURRENCY EXCHANGE SECTION
 # ==================================================
 async def get_currency_exchanges(
     limit: int,
@@ -419,7 +419,7 @@ async def delete_currency_exchange(item_id: int) -> None:
 
 
 # ==================================================
-# shortcuts section
+# SHORTCUTS SECTION
 # ==================================================
 async def add_cost_shortcut(
     user: domain.users.User,
@@ -468,7 +468,8 @@ async def get_cost_shortcuts(
 
 
 async def delete_cost_shortcut(_: domain.users.User, shortcut_id: int) -> None:
-    # TODO: add permission restriction
+
+    # todo: add restriction by user ownership
 
     async with database.transaction():
         await domain.transactions.TransactionRepository().delete(
@@ -499,3 +500,40 @@ async def apply_cost_shortcut(
         )
 
     return await repository.cost(id_=cost.id)
+
+
+# ==================================================
+# INTEGRATIONS SECTION
+# ==================================================
+async def sync_transactions_from_monobank(user: domain.users.User) -> None:
+    """
+    FLOW:
+        1. Check if Monobank API Key exists in the database for the User
+        2. try to Load Last Transactions from the Monobank API
+        3. Exclude a set of Existing Transactions (using LLM)
+        4. Store Transactions in the internal database
+
+    NOTES
+        - Currency Exchange type of Transaction can not be synchronized
+        - this logic is ran from `asyncio.create_task` so user is notified
+            from the 'Notifications Queue' but NOT from the Response
+    """
+
+    if user.configuration.monobank_api_key is None:
+        raise errors.BadRequestError(
+            "Please set the Monobank API key for such operation"
+        )
+
+    # mono_transactions: monobank.MonobankTransactionsResponse = (
+    #     await monobank.fetch_last_transactions(
+    #         user.configuration.monobank_api_key
+    #     )
+    # )
+
+    # internal_transactions = (
+    #     domain.transactions.TransactionRepository().transactions(
+    #         filter=domain.transactions.TransactionsFilter()
+    #     )
+    # )
+
+    raise NotImplementedError("Monobank is not integrated yet")

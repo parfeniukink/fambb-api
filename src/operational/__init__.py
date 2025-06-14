@@ -27,6 +27,8 @@ __all__ = (
     "get_incomes",
     "notify_about_big_cost",
     "notify_about_income",
+    "notify_about_worker",
+    "sync_transactions_from_monobank",
     "transactions_basic_analytics",
     "transactions_chart_analytics",
     "update_cost",
@@ -45,6 +47,7 @@ from .authorization import authorize, authorize_with_token
 from .notifications import (
     notify_about_big_cost,
     notify_about_income,
+    notify_about_worker,
     user_notifications,
 )
 from .transactions import (
@@ -61,6 +64,7 @@ from .transactions import (
     get_costs,
     get_currency_exchanges,
     get_incomes,
+    sync_transactions_from_monobank,
     update_cost,
     update_income,
 )
