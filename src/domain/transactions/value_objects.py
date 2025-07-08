@@ -58,12 +58,41 @@ class TransactionsFilter(InternalData):
         - operation
     """
 
-    currency_id: int | None = None
-    cost_category_id: int | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    period: AnalyticsPeriod | None = None
-    operation: OperationType | None = None
+    currency_id: int | None = Field(
+        default=None,
+        description="Available Currency ID to filter",
+    )
+    cost_category_id: int | None = Field(
+        default=None,
+        description="Available Cost Category ID to filter",
+    )
+    start_date: int | None = Field(
+        default=None,
+        description=(
+            "The date of the first transaction to analyize. "
+            "Can't be used with `period`"
+        ),
+    )
+    end_date: int | None = Field(
+        default=None,
+        description=(
+            "The date of the last transaction to analyize. "
+            "Can't be used with `period`"
+        ),
+    )
+    period: AnalyticsPeriod | None = Field(
+        default=None,
+        description=(
+            "The period (range) of the transactions to analyize. "
+            "Can't be used with `start_date` or `end_date`"
+        ),
+    )
+    operation: OperationType | None = Field(
+        default=None,
+        description=(
+            "Filter by operation. If ommited all operations will be selected"
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_dates_range(self):

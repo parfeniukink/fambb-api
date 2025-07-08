@@ -5,6 +5,7 @@ from typing import cast
 
 from src import domain
 from src.infrastructure import IncomeSource, database, errors
+from src.integrations import monobank
 
 
 # ==================================================
@@ -502,38 +503,56 @@ async def apply_cost_shortcut(
     return await repository.cost(id_=cost.id)
 
 
-# ==================================================
-# INTEGRATIONS SECTION
-# ==================================================
-async def sync_transactions_from_monobank(user: domain.users.User) -> None:
+async def sync_transactions_from_monobank(
+    user: domain.users.User,
+) -> list[domain.transactions.Transaction]:
     """
     FLOW:
-        1. Check if Monobank API Key exists in the database for the User
+        1. check if Monobank API Key exists in the database for the User
         2. try to Load Last Transactions from the Monobank API
-        3. Exclude a set of Existing Transactions (using LLM)
-        4. Store Transactions in the internal database
+        3. exclude a set of existing Transactions (from database)
+        4. store not existing Transactions in the internal database
+        5. build Cost candidates and save them to the database
+        6. return transactions
 
     NOTES
-        - Currency Exchange type of Transaction can not be synchronized
-        - this logic is ran from `asyncio.create_task` so user is notified
-            from the 'Notifications Queue' but NOT from the Response
+        - Income and Currency Exchange type of Transaction
+            can NOT be synchronized
     """
 
-    if user.configuration.monobank_api_key is None:
-        raise errors.BadRequestError(
-            "Please set the Monobank API key for such operation"
+    monobank_metadata: domain.users.BankMetadata = user.get_bank_metadata(
+        "monobank"
+    )
+    if not monobank_metadata.api_key:
+        raise errors.BadRequestError("Monobank API Key is not set")
+
+    # mono response with transactions in a specified range
+    mono_response: monobank.MonobankTransactionsResponse = (
+        await monobank.fetch_last_transactions(monobank_metadata.api_key)
+    )
+
+    # history of processed transactions
+    history: set[str] = (
+        monobank_metadata.transactions_history
+        if monobank_metadata.transactions_history
+        else set()
+    )
+    costs_candidates: list[database.Cost] = []
+
+    for item in mono_response.transactions:
+        if item.id not in history:
+            history.add(item.id)
+
+            # TODO: create ``Cost`` candidates according to all the candidates
+            # TODO: make LLM call to get the payload for Cost creation
+
+            payload = service
+            costs_candidates.append(database.Cost(**payload))
+
+    # update history with new transactions
+    async with database.transaction():
+        await domain.users.UserRepository().update_bank_transactions_history(
+            user.id, "monobank", history
         )
 
-    # mono_transactions: monobank.MonobankTransactionsResponse = (
-    #     await monobank.fetch_last_transactions(
-    #         user.configuration.monobank_api_key
-    #     )
-    # )
-
-    # internal_transactions = (
-    #     domain.transactions.TransactionRepository().transactions(
-    #         filter=domain.transactions.TransactionsFilter()
-    #     )
-    # )
-
-    raise NotImplementedError("Monobank is not integrated yet")
+    raise NotImplementedError("Sync with Monobank is NOT implemented yet")

@@ -43,6 +43,7 @@ from typing import Final
 import httpx
 from pydantic import Field, RootModel
 
+from src.config import settings
 from src.infrastructure import PublicData
 
 BASE_URL: Final = "https://api.monobank.ua"
@@ -85,7 +86,7 @@ async def fetch_last_transactions(
 ) -> MonobankTransactionsResponse:
 
     now = datetime.now()
-    yesterday = now - timedelta(days=1)
+    first_day = now - timedelta(days=settings.bank_transactions_sync_days)
 
     headers: dict[str, str] = {
         "X-Token": api_key,
@@ -100,11 +101,12 @@ async def fetch_last_transactions(
         client_info = ClientInfoResponse(**client_info_response.json())
         all_transactions = []
 
+        # search transactions in all accounts
         for acc in client_info.accounts:
             statement_url = (
                 f"{STATEMENTS_URL}"
                 f"/{acc.id}"
-                f"/{int(now.timestamp())}/{int(yesterday.timestamp())}"
+                f"/{int(now.timestamp())}/{int(first_day.timestamp())}"
             )
             statement_response = await client.get(
                 str(statement_url), headers=headers
@@ -116,6 +118,5 @@ async def fetch_last_transactions(
                 all_transactions.extend(txs.root)
 
     return MonobankTransactionsResponse(
-        accounts=client_info.accounts,
-        transactions=all_transactions,
+        accounts=client_info.accounts, transactions=all_transactions
     )

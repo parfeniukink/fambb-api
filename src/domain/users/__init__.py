@@ -7,10 +7,11 @@ as 'configuration' fields.
 """
 
 __all__ = (
+    "BankMetadata",
     "User",
     "UserConfiguration",
     "UserRepository",
 )
 
-from .entities import User, UserConfiguration
+from .entities import BankMetadata, User, UserConfiguration
 from .repository import UserRepository

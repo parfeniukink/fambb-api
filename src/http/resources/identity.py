@@ -8,7 +8,7 @@ from ..contracts.identity import (
     AuthorizeRequestBody,
     Identity,
     User,
-    UserConfigurationPartialUpdateRequestBody,
+    UserPartialUpdateRequestBody,
 )
 
 router = APIRouter(prefix="/identity", tags=["Identity"])
@@ -39,9 +39,9 @@ async def user_retrieve(
 
 
 @router.patch("/users/configuration")
-async def parial_update_user_configuration(
+async def parial_update_user(
     user: domain.User = Depends(op.authorize),
-    body: UserConfigurationPartialUpdateRequestBody = Body(...),
+    body: UserPartialUpdateRequestBody = Body(...),
 ) -> Response[User]:
     """update the user configuration partially."""
 
@@ -49,4 +49,4 @@ async def parial_update_user_configuration(
         user, **body.model_dump(exclude_unset=True)
     )
 
-    return Response[User](result=User.model_validate(instance))
+    return Response[User](result=User.from_instance(instance))

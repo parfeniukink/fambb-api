@@ -1,5 +1,6 @@
 __all__ = (
     "Base",
+    "BankMetadata",
     "Cost",
     "CostCategory",
     "CostShortcut",
@@ -16,6 +17,7 @@ __all__ = (
 from .cqs import transaction
 from .repository import Repository
 from .tables import (
+    BankMetadata,
     Base,
     Cost,
     CostCategory,

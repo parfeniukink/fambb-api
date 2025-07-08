@@ -1,4 +1,5 @@
 import asyncio
+import random
 from datetime import date, timedelta
 
 import httpx
@@ -6,7 +7,7 @@ import pytest
 from fastapi import status
 
 from src import domain
-from src.infrastructure import database
+from src.infrastructure import IncomeSource, database
 from tests.integration.conftest import (
     CostCandidateFactory,
     ExchangeCandidateFactory,
@@ -219,3 +220,79 @@ async def test_basic_analytics_fetch(
             },
         ],
     }
+
+
+@pytest.mark.use_db
+async def test_ai_analytics(
+    john: domain.users.User,
+    client: httpx.AsyncClient,
+    currencies: list[domain.equity.Currency],
+    cost_categories: list[domain.transactions.CostCategory],
+):
+    currencies_choices = tuple(c.id for c in currencies)
+    categories_choices = tuple(c.id for c in cost_categories)
+    today = date.today()
+    date_choices = (
+        today,
+        today - timedelta(days=1),
+        today - timedelta(days=10),
+    )
+    sources_choices: tuple[IncomeSource, ...] = (
+        "revenue",
+        "gift",
+        "debt",
+        "other",
+    )
+    breakpoint()  # TODO: remove
+
+    # prepare data
+    cost_candidates: list[database.Cost] = CostCandidateFactory.batch(
+        size=10,
+        user_id=john.id,
+        currency_id=random.choice(currencies_choices),
+        category_id=random.choice(categories_choices),
+        timestamp=random.choice(date_choices),
+    )
+
+    income_candidates: list[database.Income] = IncomeCandidateFactory.batch(
+        size=3,
+        user_id=john.id,
+        currency_id=random.choice(currencies_choices),
+        source=random.choice(sources_choices),
+        timestamp=random.choice(date_choices),
+    )
+
+    exchange_candidates: list[database.Exchange] = (
+        ExchangeCandidateFactory.batch(
+            size=2,
+            user_id=john.id,
+            from_currency_id=currencies_choices[1],
+            to_currency_id=currencies_choices[0],
+            timestamp=random.choice(date_choices),
+        )
+    )
+
+    breakpoint()  # TODO: remove
+
+    async with database.transaction() as session:
+        cost_create_tasks = (
+            domain.transactions.TransactionRepository().add_cost(candidate)
+            for candidate in cost_candidates
+        )
+        income_create_tasks = (
+            domain.transactions.TransactionRepository().add_income(candidate)
+            for candidate in income_candidates
+        )
+        exchange_create_tasks = (
+            domain.transactions.TransactionRepository().add_exchange(candidate)
+            for candidate in exchange_candidates
+        )
+
+        await asyncio.gather(
+            *cost_create_tasks, *income_create_tasks, *exchange_create_tasks
+        )
+        await session.flush()
+
+    response = await client.post("/analytics/ai")
+
+    assert response.status_code == 200

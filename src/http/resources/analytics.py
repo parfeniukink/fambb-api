@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, Query
 
 from src import domain
 from src import operational as op
-from src.infrastructure import ResponseMulti
+from src.infrastructure import Response, ResponseMulti
 
-from ..contracts import Equity, TransactionBasicAnalytics
+from ..contracts import AIAnalytics, Equity, TransactionBasicAnalytics
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -84,3 +84,14 @@ async def transaction_analytics_basic(
             for instance in instances
         ]
     )
+
+
+@router.get("/ai")
+async def analytics_chat(
+    prompt: Annotated[str, Query(description="LLM prompt", alias="prompt")],
+    _: domain.users.User = Depends(op.authorize),
+) -> Response[AIAnalytics]:
+    """Claim the analytics using AI (LLM call)."""
+
+    inference: str = await op.ai_analytics(prompt)
+    return Response[AIAnalytics](result=AIAnalytics(inference=inference))

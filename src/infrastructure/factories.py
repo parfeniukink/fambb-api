@@ -1,13 +1,13 @@
 from typing import Iterable
 
 from fastapi import APIRouter, FastAPI
-from starlette.middleware import _MiddlewareClass
+from starlette.middleware import _MiddlewareFactory
 
 
 def asgi_app(
     *_,
     rest_routers: Iterable[APIRouter],
-    middlewares: Iterable[tuple[type[_MiddlewareClass], dict]] | None = None,
+    middlewares: Iterable[tuple[_MiddlewareFactory, dict]] | None = None,
     **kwargs,
 ) -> FastAPI:
     # initialize the base fastapi application

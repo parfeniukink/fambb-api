@@ -13,6 +13,7 @@ __all__ = (
     "add_cost",
     "add_cost_shortcut",
     "add_income",
+    "ai_analytics",
     "apply_cost_shortcut",
     "authorize",
     "authorize_with_token",
@@ -40,6 +41,7 @@ __all__ = (
 
 
 from .analytics import (
+    ai_analytics,
     transactions_basic_analytics,
     transactions_chart_analytics,
 )

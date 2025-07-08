@@ -13,7 +13,11 @@ from src.infrastructure import (
     get_offset_pagination_params,
 )
 
-from ..contracts import Transaction, get_transactions_detail_filter
+from ..contracts import (
+    CostCreateBody,
+    Transaction,
+    get_transactions_detail_filter,
+)
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -92,14 +96,22 @@ async def transaction_stream(
     )
 
 
-@router.post(
-    "/integrations/monobank/sync", status_code=status.HTTP_204_NO_CONTENT
-)
+# ─────────────────────────────────────────────────────────
+# INTEGRATION WITH BANKS
+#
+# AVAILABLE BANKS
+#   - Monobank
+# ─────────────────────────────────────────────────────────
+@router.post("/integrations/monobank/sync", status_code=status.HTTP_200_OK)
 async def monobank_sync_transactions(
     user: domain.users.User = Depends(op.authorize),
-) -> None:
-    """
-    Sync last day transactions from monobank with internal database.
-    """
+) -> ResponseMulti[Transaction]:
+    """sync last N-days transactions from monobank with internal database"""
 
-    raise NotImplementedError("Monobank Integration is not ready yet")
+    transactions: list[domain.transactions.Transaction] = (
+        await op.sync_transactions_from_monobank(user)
+    )
+
+    return ResponseMulti[Transaction](
+        result=[Transaction.from_instance(item) for item in transactions]
+    )

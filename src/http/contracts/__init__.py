@@ -1,5 +1,6 @@
 from ._query_params import TransactionsFilter, get_transactions_detail_filter
 from .analytics import (
+    AIAnalytics,
     CostsAnalytics,
     CostsByCategory,
     IncomesAnalytics,
@@ -13,7 +14,7 @@ from .identity import (
     Identity,
     User,
     UserConfiguration,
-    UserConfigurationPartialUpdateRequestBody,
+    UserPartialUpdateRequestBody,
     UserCreateRequestBody,
 )
 from .notifications import Notification

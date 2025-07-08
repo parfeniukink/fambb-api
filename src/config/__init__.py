@@ -40,7 +40,7 @@ class DatabaseSettings(BaseModel):
         """returns the url to the default database."""
 
         return (
-            f"{self.driver}://"
+            f"postgres://"
             f"{self.user}:{self.password}@"
             f"{self.host}:{self.port}/"
             f"postgres"
@@ -90,7 +90,12 @@ class Settings(BaseSettings):
     cache: CacheSettings = CacheSettings()
 
     # INTEGRATIONS
+
+    # Sentry DSN address for access
     sentry_dsn: str | None = None
+
+    # define how many days to track for syncing transactions
+    bank_transactions_sync_days: int = 7
 
 
 settings = Settings()
