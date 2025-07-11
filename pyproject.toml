@@ -96,7 +96,7 @@ follow_imports = 'silent'
 
 
 [tool.pytest.ini_options]
-addopts = '-s -x -q'
+addopts = '-s -q'
 cache_dir = '/tmp'
 asyncio_mode = 'auto'
 asyncio_default_fixture_loop_scope = "session"

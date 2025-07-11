@@ -243,7 +243,7 @@ async def test_ai_analytics(
         "debt",
         "other",
     )
-    breakpoint()  # TODO: remove
+    # breakpoint()  # TODO: remove
 
     # prepare data
     cost_candidates: list[database.Cost] = CostCandidateFactory.batch(
@@ -272,7 +272,7 @@ async def test_ai_analytics(
         )
     )
 
-    breakpoint()  # TODO: remove
+    # breakpoint()  # TODO: remove
 
     async with database.transaction() as session:
         cost_create_tasks = (

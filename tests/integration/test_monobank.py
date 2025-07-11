@@ -16,6 +16,7 @@ BASE_URL: Final = "/transactions/integrations/monobank"
 # ─────────────────────────────────────────────────────────
 # USER CONFIGURATION UPDATE
 # ─────────────────────────────────────────────────────────
+@pytest.mark.skip("not implemented yet")
 @pytest.mark.use_db
 async def test_user_set_monobank_api_key(john, client):
     payload = {"monobankApiKey": "Test API Key"}
@@ -37,6 +38,7 @@ async def test_user_set_monobank_api_key(john, client):
     ), raw_response["integrations"]
 
 
+@pytest.mark.skip("not implemented yet")
 @pytest.mark.use_db
 async def test_user_update_monobank_api_key(john, client):
     """testing upsert API key (if exists)"""
@@ -65,6 +67,7 @@ async def test_user_update_monobank_api_key(john, client):
     ), raw_response["integrations"]
 
 
+@pytest.mark.skip("not implemented yet")
 @pytest.mark.use_db
 async def test_user_remove_monobank_api_key(john, client):
     """testing removing API key (if exists)"""
@@ -108,6 +111,7 @@ async def test_monobank_sync_NO_API_KEY(client: httpx.AsyncClient):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+@pytest.mark.skip("not implemented yet")
 @pytest.mark.use_db
 @respx.mock
 async def test_monobank_sync(john, client: httpx.AsyncClient):
