@@ -15,8 +15,6 @@ from src.infrastructure import IncomeSource, PublicData
 
 from .currency import Currency
 
-TEST = 12
-
 
 class CostsByCategory(PublicData):
     """Represents expences for specific cost categories."""
@@ -127,3 +125,9 @@ class TransactionBasicAnalytics(PublicData):
             ),
             total_ratio=instance.total_ratio,
         )
+
+
+class AIAnalytics(PublicData):
+    """Includes an inference, produced by LLM."""
+
+    inference: str = Field(description="Inference, produced by LLM")

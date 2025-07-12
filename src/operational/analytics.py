@@ -57,6 +57,22 @@ async def transactions_basic_analytics(
     return instances
 
 
+async def ai_analytics(prompt: str) -> str:
+    """Generate Analytics with LLM.
+
+    FLOW
+    1. LLM call to build filters to fetch transactions for context
+    2. query transactions from database with filters
+    3. build LLM call to get an inference about these transactions
+    """
+
+    # 
+
+    return "some analytics"
+
+    
+
+
 async def transactions_chart_analytics(
     start_date: date, end_date: date
 ) -> tuple[domain.Transaction, ...]:

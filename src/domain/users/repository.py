@@ -1,10 +1,11 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 
 from sqlalchemy import Result, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
-from src.infrastructure import database, errors
+from src.infrastructure import Bank, database, errors
 
 
 class UserRepository(database.Repository):
@@ -17,8 +18,9 @@ class UserRepository(database.Repository):
                     select(database.User)
                     .where(database.User.id == id_)
                     .options(
-                        joinedload(database.User.default_currency),
-                        joinedload(database.User.default_cost_category),
+                        selectinload(database.User.default_currency),
+                        selectinload(database.User.default_cost_category),
+                        selectinload(database.User.bank_metadata),
                     )
                 )
                 user: database.User = results.scalars().one()
@@ -34,8 +36,8 @@ class UserRepository(database.Repository):
                     select(database.User)
                     .where(database.User.id != id_)
                     .options(
-                        joinedload(database.User.default_currency),
-                        joinedload(database.User.default_cost_category),
+                        selectinload(database.User.default_currency),
+                        selectinload(database.User.default_cost_category),
                     )
                 )
                 user: database.User = results.scalars().one()
@@ -51,8 +53,9 @@ class UserRepository(database.Repository):
                     select(database.User)
                     .where(database.User.token == token)
                     .options(
-                        joinedload(database.User.default_currency),
-                        joinedload(database.User.default_cost_category),
+                        selectinload(database.User.default_currency),
+                        selectinload(database.User.default_cost_category),
+                        selectinload(database.User.bank_metadata),
                     )
                 )
                 try:
@@ -68,24 +71,25 @@ class UserRepository(database.Repository):
         """exclude current user from the search. select users by threshold."""
 
         async with self.query.session as session:
-            async with session.begin():
-                results: Result = await session.execute(
-                    select(database.User)
-                    .where(
-                        database.User.id != cost.user_id,
-                        cost.value >= database.User.notify_cost_threshold,
-                    )
-                    .options(
-                        joinedload(database.User.default_currency),
-                        joinedload(database.User.default_cost_category),
-                    )
+            results: Result = await session.execute(
+                select(database.User)
+                .where(
+                    database.User.id != cost.user_id,
+                    cost.value >= database.User.notify_cost_threshold,
                 )
+                .options(
+                    selectinload(database.User.default_currency),
+                    selectinload(database.User.default_cost_category),
+                )
+            )
 
-                for item in results.scalars():
-                    yield item
+            for item in results.scalars():
+                yield item
 
     async def add_user(self, candidate: database.User) -> database.User:
         self.command.session.add(candidate)
+        await self.command.session.flush()
+
         return candidate
 
     async def update_user(self, id_: int, **values) -> None:
@@ -101,6 +105,34 @@ class UserRepository(database.Repository):
 
         query = (
             update(database.User).where(database.User.id == id_).values(values)
+        )
+
+        await self.command.session.execute(query)
+
+    async def set_api_key(
+        self, user_id: int, bank: Bank, api_key: str
+    ) -> None:
+
+        query = (
+            insert(database.BankMetadata)
+            .values(user_id=user_id, bank=bank, api_key=api_key)
+            .on_conflict_do_update(
+                index_elements=["user_id", "bank"], set_={"api_key": api_key}
+            )
+        )
+
+        await self.command.session.execute(query)
+
+    async def update_bank_transactions_history(
+        self, user_id: int, bank: Bank, history: set[str]
+    ) -> None:
+        query = (
+            update(database.BankMetadata)
+            .where(
+                database.BankMetadata.user_id == user_id,
+                database.BankMetadata.bank == bank,
+            )
+            .values(transactions_history=history)
         )
 
         await self.command.session.execute(query)

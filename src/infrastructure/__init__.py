@@ -1,4 +1,5 @@
 __all__ = (
+    "Bank",
     "Cache",
     "ErrorDetail",
     "ErrorResponse",
@@ -36,4 +37,4 @@ from .responses import (
     _TPublicData,
     get_offset_pagination_params,
 )
-from .types import IncomeSource
+from .types import IncomeSource, Bank

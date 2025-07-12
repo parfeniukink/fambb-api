@@ -1,11 +1,10 @@
-import asyncio
 import logging
 import os
 from collections.abc import AsyncGenerator
 from unittest.mock import MagicMock
 
-import asyncpg
 import httpx
+import psycopg2
 import pytest
 import respx
 from fastapi import FastAPI, HTTPException
@@ -42,6 +41,57 @@ def pytest_configure() -> None:
         logger.disable("src.operational")
 
 
+@pytest.hookimpl
+def pytest_sessionstart(session):
+    worker = os.getenv("PYTEST_XDIST_WORKER", "main")
+    settings.database.name = f"family_budget_test_{worker}"
+
+    # Ensure DB Exists
+    conn = psycopg2.connect(settings.database.default_database_url)
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM pg_database WHERE datname=%s", (settings.database.name,)
+    )
+
+    if not cur.fetchone():
+        cur.execute(f'CREATE DATABASE "{settings.database.name}"')
+        print(f"Database {settings.database.name} is created")
+
+    cur.close()
+    conn.close()
+
+
+@pytest.fixture(autouse=True)
+async def reset_database(request):
+    """
+    USAGE
+
+        @pytest.mark.use_db
+        async def test_foo():
+            assert ...
+
+    NOTES
+
+    in the `pyproject.toml` file next settings must be specified:
+        - asyncio_default_fixture_loop_scope = "session"
+        - asyncio_default_test_loop_scope = "session"
+
+    it ensures that we use
+
+    """
+
+    if request.node.get_closest_marker("use_db"):
+        engine: AsyncEngine = create_async_engine(
+            settings.database.url, echo=False, poolclass=NullPool
+        )
+
+        async with engine.begin() as conn:
+            await conn.run_sync(database.Base.metadata.drop_all)
+            await conn.run_sync(database.Base.metadata.create_all)
+            await conn.execute(text("COMMIT"))
+
+
 # =====================================================================
 # application fixtures
 # =====================================================================
@@ -74,13 +124,16 @@ def app() -> FastAPI:
 async def john() -> domain.users.User:
     """create default user 'John' for tests."""
 
-    async with database.transaction() as session:
-        user = await domain.users.UserRepository().add_user(
+    repo = domain.users.UserRepository()
+
+    async with database.transaction():
+        candidate: database.User = await repo.add_user(
             candidate=database.User(
                 name="john", token="41d917c7-464f-4056-b2de-1a6e2fbfd9e7"
             )
         )
-        await session.flush()  # get user id
+
+    user: database.User = await repo.user_by_id(candidate.id)
 
     return domain.users.User.from_instance(user)
 
@@ -89,13 +142,16 @@ async def john() -> domain.users.User:
 async def marry() -> domain.users.User:
     """create default user 'Marry' for tests."""
 
-    async with database.transaction() as session:
-        user = await domain.users.UserRepository().add_user(
+    repo = domain.users.UserRepository()
+
+    async with database.transaction():
+        candidate: database.User = await repo.add_user(
             candidate=database.User(
                 name="marry", token="fda4b8f6-4bf3-43e2-b3a2-7c3905ee0af1"
             )
         )
-        await session.flush()  # get user id
+
+    user: database.User = await repo.user_by_id(candidate.id)
 
     return domain.users.User.from_instance(user)
 
@@ -104,7 +160,9 @@ async def marry() -> domain.users.User:
 async def anonymous(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
     """Returns the client without the authorized user."""
 
-    async with AsyncClient(app=app, base_url="http://testserver") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
         yield client
 
 
@@ -121,7 +179,6 @@ async def client(
         base_url="http://testserver",
         headers=headers,
     ) as client:
-
         yield client
 
 
@@ -142,89 +199,6 @@ async def client_marry(
 
 
 # =====================================================================
-# DATABASE SECTION
-# =====================================================================
-@pytest.yield_fixture(scope="session")
-def event_loop():
-    """fix a lot of shit..."""
-
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def _auto_patch_database_name(session_mocker) -> None:
-    """adjust the database name.
-
-    notes:
-        if the xdist package is used the database name will be updated with
-        the worker ``id`` that comes from the ``PYTEST_XDIST_WORKER`` env.
-    """
-
-    xdist_worker_name: str = os.getenv("PYTEST_XDIST_WORKER", "main")
-    session_mocker.patch(
-        "src.config.settings.database.name",
-        f"family_budget_test_{xdist_worker_name}",
-    )
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def test_database_engine(
-    _auto_patch_database_name,
-) -> AsyncGenerator[AsyncEngine, None]:
-    """create the test database if not exists and then drop it.
-    the database test name is overridden in pyproject.toml.
-
-    worker id comes from the pytest-xdist. this about creating temporary
-    databases base on the worker id information in order to make
-    testing more efficient.
-    """
-
-    test_database_engine: AsyncEngine = create_async_engine(
-        settings.database.url,
-        poolclass=NullPool,
-    )
-    default_database_engine: AsyncEngine = create_async_engine(
-        settings.database.default_database_url,
-        poolclass=NullPool,
-    )
-
-    try:
-        # Try to connect to the test database
-        async with test_database_engine.connect() as conn:
-            await conn.close()
-    except asyncpg.exceptions.InvalidCatalogNameError:
-        # Connect to the default database and create the test database
-        async with default_database_engine.connect() as conn:
-            # https://docs.sqlalchemy.org/en/20/core/connections.html#setting-transaction-isolation-levels-including-dbapi-autocommit  # noqa: E501
-            await conn.execution_options(isolation_level="AUTOCOMMIT")
-            await conn.execute(
-                text(f"CREATE DATABASE {settings.database.name}")
-            )
-            await conn.execute(text("COMMIT"))
-
-    except ConnectionRefusedError:
-        raise SystemExit(
-            "Database connection refused. "
-            "Please check if the database is running."
-        )
-
-    await default_database_engine.dispose()
-
-    yield test_database_engine
-
-    async with default_database_engine.connect() as conn:
-        # Revoke connect privileges from all users
-        await conn.execute(
-            text(
-                f"REVOKE CONNECT ON DATABASE "
-                f"{settings.database.name} FROM PUBLIC"
-            )
-        )
-
-
-# =====================================================================
 # CACHE SECTION
 # =====================================================================
 @pytest.fixture(autouse=True)
@@ -240,30 +214,3 @@ def patch_cache_service(mocker) -> MagicMock:
 def _mock_httpx_requests():
     with respx.mock(assert_all_mocked=True):
         yield
-
-
-# ==================================================
-# MARKERS
-# ==================================================
-@pytest.fixture(autouse=True)
-async def _db_marker(request, test_database_engine):
-    """this fixture automatically creates and cleans database tables.
-
-    USAGE
-        >>> @pytest.mark.use_db
-        >>> async def test_a():
-        >>>     # some database interaction
-
-    """
-
-    if request.node.get_closest_marker("use_db") is None:
-        yield
-    else:
-        async with test_database_engine.connect() as conn:
-            await conn.run_sync(database.Base.metadata.drop_all)
-            await conn.run_sync(database.Base.metadata.create_all)
-            await conn.execute(text("COMMIT"))
-
-        yield
-
-        await test_database_engine.dispose()

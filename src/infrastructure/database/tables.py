@@ -23,6 +23,7 @@ from sqlalchemy import (
     Integer,
     MetaData,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects import postgresql
@@ -34,7 +35,7 @@ from sqlalchemy.orm import (
     validates,
 )
 
-from src.infrastructure.types import IncomeSource
+from src.infrastructure.types import Bank, IncomeSource
 
 
 class Base(DeclarativeBase):
@@ -66,6 +67,9 @@ class DefaultColumnsMixin:
     id: Mapped[int] = mapped_column(primary_key=True)
 
 
+# ─────────────────────────────────────────────────────────
+# IDENTITY
+# ─────────────────────────────────────────────────────────
 class User(Base, DefaultColumnsMixin):
     """table includes 'USERS'.
 
@@ -119,11 +123,6 @@ class User(Base, DefaultColumnsMixin):
         default=None, server_default=None
     )
 
-    # integrations
-    monobank_api_key: Mapped[str | None] = mapped_column(
-        default=None, server_default=None
-    )
-
     # joined tables
     default_currency: "Mapped[Currency]" = relationship(
         viewonly=True, lazy="select", foreign_keys=[default_currency_id]
@@ -131,7 +130,6 @@ class User(Base, DefaultColumnsMixin):
     default_cost_category: "Mapped[CostCategory]" = relationship(
         viewonly=True, lazy="select", foreign_keys=[default_cost_category_id]
     )
-
     costs: "Mapped[list[Cost]]" = relationship(
         "Cost", viewonly=True, uselist=True
     )
@@ -144,8 +142,14 @@ class User(Base, DefaultColumnsMixin):
     exchanges: "Mapped[list[Exchange]]" = relationship(
         "Exchange", viewonly=True, uselist=True
     )
+    bank_metadata: "Mapped[list[BankMetadata]]" = relationship(
+        "BankMetadata", viewonly=True, uselist=True
+    )
 
 
+# ─────────────────────────────────────────────────────────
+# TRANSACTIONS
+# ─────────────────────────────────────────────────────────
 class Currency(Base, DefaultColumnsMixin):
     """table includes 'equity and currencies'.
 
@@ -217,22 +221,22 @@ class Cost(Base, DefaultColumnsMixin):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT")
     )
+    user: Mapped[User] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[user_id]
+    )
+
     category_id: Mapped[int] = mapped_column(
         ForeignKey("cost_categories.id", ondelete="RESTRICT")
     )
-    currency_id: Mapped[int] = mapped_column(
-        ForeignKey("currencies.id", ondelete="RESTRICT")
-    )
-
-    # joined tables
     category: Mapped[CostCategory] = relationship(
         viewonly=True, lazy="select", foreign_keys=[category_id]
     )
+
+    currency_id: Mapped[int] = mapped_column(
+        ForeignKey("currencies.id", ondelete="RESTRICT")
+    )
     currency: Mapped[Currency] = relationship(
         viewonly=True, lazy="select", foreign_keys=[currency_id]
-    )
-    user: Mapped[User] = relationship(
-        viewonly=True, lazy="select", foreign_keys=[user_id]
     )
 
     @validates("value")
@@ -395,34 +399,70 @@ class CostShortcut(Base, DefaultColumnsMixin):
         server_default=func.CURRENT_TIMESTAMP(),
     )
 
-    @validates("value")
-    def validate_positive_value(self, _, address) -> int | None:
-        if address is None:
-            return None
-
-        if not isinstance(address, int):
-            raise TypeError(
-                f"Received value is not valid integer. Type: {type(address)}"
-            )
-
-        if address < 0:
-            raise ValueError("Cost value must be >= 0")
-        else:
-            return address
-
     currency_id: Mapped[int] = mapped_column(
         ForeignKey("currencies.id", ondelete="RESTRICT")
     )
-    category_id: Mapped[int] = mapped_column(
-        ForeignKey("cost_categories.id", ondelete="RESTRICT")
-    )
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="RESTRICT")
-    )
-
     currency: Mapped[Currency] = relationship(
         viewonly=True, lazy="select", foreign_keys=[currency_id]
     )
+
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("cost_categories.id", ondelete="RESTRICT")
+    )
     category: Mapped[CostCategory] = relationship(
         viewonly=True, lazy="select", foreign_keys=[category_id]
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    user: Mapped[User] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[user_id]
+    )
+
+    @validates("value")
+    def validate_positive_value(self, _, value) -> int | None:
+        if value is None:
+            return None
+
+        if not isinstance(value, int):
+            raise TypeError(
+                f"Received value is not valid integer. Type: {type(value)}"
+            )
+
+        if value < 0:
+            raise ValueError("Cost value must be >= 0")
+        else:
+            return value
+
+
+# ─────────────────────────────────────────────────────────
+# INTEGRATIONS
+# ─────────────────────────────────────────────────────────
+class BankMetadata(Base, DefaultColumnsMixin):
+    """Integrations metadata.
+
+    ARGS
+    ``bank`` - represents the bank name
+    ``api_key`` - access key to work with Bank API
+    ``transactions_history`` - is used to track what transactions have
+                                 been processed by 'synchronization' engine
+    """
+
+    __tablename__ = "bank_metadata"
+    __table_args__ = (UniqueConstraint("user_id", "bank"),)
+
+    bank: Mapped[Bank] = mapped_column()
+    api_key: Mapped[str | None] = mapped_column(
+        default=None, server_default=None
+    )
+    transactions_history: Mapped[list[str] | None] = mapped_column(
+        postgresql.ARRAY(String, dimensions=1), default=None
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    user: Mapped[User] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[user_id]
     )

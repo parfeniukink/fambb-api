@@ -4,6 +4,7 @@ from pydantic import Field, field_validator
 
 from src import domain
 from src.infrastructure import PublicData
+from src.infrastructure.types import Bank
 
 from .currency import Currency
 from .transactions import CostCategory
@@ -42,31 +43,6 @@ class UserConfiguration(PublicData):
         description="A number of paginated items in transactions analytics",
     )
 
-    monobank_api_key_is_set: bool = Field(
-        default=False,
-        description=(
-            "Monobank API Key is not exposed. "
-            "You can only see that it is set"
-        ),
-    )
-
-    @functools.singledispatchmethod
-    @classmethod
-    def from_instance(cls, instance) -> "UserConfiguration":
-        raise NotImplementedError(
-            f"Can not get {cls.__name__} from {type(instance)} type"
-        )
-
-    @from_instance.register
-    @classmethod
-    def _(cls, instance: domain.users.UserConfiguration):
-        return cls(
-            monobank_api_key_is_set=(
-                True if instance.monobank_api_key else False
-            ),
-            **instance.model_dump(),
-        )
-
     @field_validator("notify_cost_threshold", mode="after")
     @classmethod
     def notify_cost_threshold_prettify(
@@ -78,7 +54,9 @@ class UserConfiguration(PublicData):
             return value
 
 
-class UserConfigurationPartialUpdateRequestBody(PublicData):
+class UserPartialUpdateRequestBody(PublicData):
+    """aggregated structure to update all the settings, related to the user"""
+
     show_equity: bool = Field(
         default=False, description="Define if the equity is visible"
     )
@@ -124,10 +102,21 @@ class UserCreateRequestBody(PublicData):
     name: str
 
 
+class UserIntegrations(PublicData):
+    monobank_api_key_is_set: bool = Field(
+        default=False,
+        description=(
+            "Defines if Monobank API Key is set for the user. "
+            "Look ``HTTP PATCH /identity/users/configuration``"
+        ),
+    )
+
+
 class User(PublicData):
     id: int
     name: str
     configuration: UserConfiguration = UserConfiguration()
+    integrations: UserIntegrations = UserIntegrations()
 
     @functools.singledispatchmethod
     @classmethod
@@ -139,11 +128,21 @@ class User(PublicData):
     @from_instance.register
     @classmethod
     def _(cls, instance: domain.users.User):
+        integrations: dict[Bank, domain.users.BankMetadata] = {
+            item.bank: item for item in instance.bank_metadata
+        }
+
+        # extract metadata for each bank provider
+        monobank_metadata = integrations.get("monobank", None)
+
         return cls(
-            id=instance.id,
-            name=instance.name,
-            configuration=UserConfiguration.from_instance(
-                instance.configuration
+            **instance.model_dump(),
+            integrations=UserIntegrations(
+                monobank_api_key_is_set=(
+                    True
+                    if (monobank_metadata and monobank_metadata.api_key)
+                    else False
+                )
             ),
         )
 

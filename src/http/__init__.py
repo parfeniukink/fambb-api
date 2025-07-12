@@ -32,8 +32,8 @@ from .contracts import (
     Transaction,
     TransactionBasicAnalytics,
     User,
-    UserConfigurationPartialUpdateRequestBody,
     UserCreateRequestBody,
+    UserPartialUpdateRequestBody,
 )
 from .resources.analytics import router as analytics_router
 from .resources.costs import router as costs_router

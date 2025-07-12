@@ -36,7 +36,9 @@ async def test_user_update_configuration_anonymous(
 async def test_user_retrieve(john, client):
     response: httpx.Response = await client.get("/identity/users")
     result: dict = response.json()["result"]
-    users_total = await domain.UserRepository().count(database.User)
+
+    async with database.transaction():
+        users_total = await domain.UserRepository().count(database.User)
 
     assert response.status_code == status.HTTP_200_OK
     assert result["id"] == john.id
@@ -176,30 +178,3 @@ async def test_user_configuration_update(
     elif payload_id == 5:
         assert user.notify_cost_threshold == 100_01
         assert configuration_raw_response["notifyCostThreshold"] == 100.01
-
-
-@pytest.mark.use_db
-async def test_user_update_monobank_api_key(john: domain.User, client):
-    payload = {"monobankApiKey": "Test API Key"}
-    response: httpx.Response = await client.patch(
-        "/identity/users/configuration", json=payload
-    )
-
-    response_user: httpx.Response = await client.get("/identity/users")
-    configuration_raw_response = response_user.json()["result"][
-        "configuration"
-    ]
-
-    database_user: database.User = await domain.UserRepository().user_by_id(
-        john.id
-    )
-    assert response.status_code == status.HTTP_200_OK, response.json()
-    assert john.configuration.monobank_api_key is None
-
-    assert (
-        configuration_raw_response.get("monobankApiKeyIsSet") is True
-    ), configuration_raw_response
-    assert (
-        configuration_raw_response.get("monobankApiKey") is None
-    ), configuration_raw_response
-    assert database_user.monobank_api_key == payload["monobankApiKey"]

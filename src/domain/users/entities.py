@@ -6,9 +6,11 @@ notes:
 
 import functools
 
+from pydantic import Field
+
 from src.domain.equity import Currency
 from src.domain.transactions import CostCategory
-from src.infrastructure import InternalData, database
+from src.infrastructure import Bank, InternalData, database, errors
 
 
 class UserConfiguration(InternalData):
@@ -19,11 +21,13 @@ class UserConfiguration(InternalData):
     default_cost_category: CostCategory | None = None
     cost_snippets: tuple[str, ...] | None = None
     income_snippets: tuple[str, ...] | None = None
-
-    last_notification: str | None = None
     notify_cost_threshold: int | None = None
 
-    monobank_api_key: str | None = None
+
+class BankMetadata(InternalData):
+    bank: Bank
+    api_key: str | None = None
+    transactions_history: set[str] | None = None
 
 
 class User(InternalData):
@@ -33,6 +37,7 @@ class User(InternalData):
     name: str
     token: str
     configuration: UserConfiguration
+    bank_metadata: list[BankMetadata] = Field(default_factory=list)
 
     @functools.singledispatchmethod
     @classmethod
@@ -70,8 +75,17 @@ class User(InternalData):
                     if instance.default_cost_category
                     else None
                 ),
-                last_notification=instance.last_notification,
                 notify_cost_threshold=instance.notify_cost_threshold,
-                monobank_api_key=instance.monobank_api_key,
             ),
+            bank_metadata=[],  # todo: implement
+        )
+
+    def get_bank_metadata(self, bank: Bank) -> BankMetadata:
+        for item in self.bank_metadata:
+            if item.bank == bank:
+                return item
+
+        raise errors.BadRequestError(
+            f"{bank.capitalize()} Metadata is not set. More on "
+            "`HTTP PATCH /identity/users/configuration`"
         )
