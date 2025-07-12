@@ -27,12 +27,19 @@ class CostShortcutCreateBody(PublicData, _ValueValidationMixin):
         return None
 
 
+class CostShortcutUI(PublicData):
+    """UI preferences for the CostShortcut instance."""
+
+    position_index: int
+
+
 class CostShortcut(PublicData):
     id: int
     name: str = Field(description="The name of the cost")
     value: float | None = Field(default=None, examples=[12.2, 650, None])
     currency: Currency
     category: CostCategory
+    ui: CostShortcutUI
 
     @functools.singledispatchmethod
     @classmethod
@@ -54,6 +61,9 @@ class CostShortcut(PublicData):
             ),
             currency=Currency.model_validate(instance.currency),
             category=CostCategory.model_validate(instance.category),
+            ui=CostShortcutUI(
+                position_index=instance.ui_position_index,
+            ),
         )
 
 

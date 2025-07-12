@@ -37,7 +37,6 @@ from loguru import logger
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.loguru import LoguruIntegration
-from starlette.middleware import _MiddlewareClass
 
 from src import http
 from src.config import settings
@@ -65,7 +64,7 @@ exception_handlers = (
     else {}
 )
 
-middlewares: list[tuple[type[_MiddlewareClass], dict]] = [
+middlewares: list[tuple] = [
     (CORSMiddleware, middleware.FASTAPI_CORS_MIDDLEWARE_OPTIONS),
 ]
 

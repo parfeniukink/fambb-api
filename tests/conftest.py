@@ -104,7 +104,9 @@ async def marry() -> domain.users.User:
 async def anonymous(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
     """Returns the client without the authorized user."""
 
-    async with AsyncClient(app=app, base_url="http://testserver") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
         yield client
 
 

@@ -395,6 +395,29 @@ class CostShortcut(Base, DefaultColumnsMixin):
         server_default=func.CURRENT_TIMESTAMP(),
     )
 
+    # UI fields
+    ui_position_index: Mapped[int | None] = mapped_column(default=None)
+
+    # Relations
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    user: Mapped[User] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[user_id]
+    )
+    currency_id: Mapped[int] = mapped_column(
+        ForeignKey("currencies.id", ondelete="RESTRICT")
+    )
+    currency: Mapped[Currency] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[currency_id]
+    )
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("cost_categories.id", ondelete="RESTRICT")
+    )
+    category: Mapped[CostCategory] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[category_id]
+    )
+
     @validates("value")
     def validate_positive_value(self, _, address) -> int | None:
         if address is None:
@@ -409,20 +432,3 @@ class CostShortcut(Base, DefaultColumnsMixin):
             raise ValueError("Cost value must be >= 0")
         else:
             return address
-
-    currency_id: Mapped[int] = mapped_column(
-        ForeignKey("currencies.id", ondelete="RESTRICT")
-    )
-    category_id: Mapped[int] = mapped_column(
-        ForeignKey("cost_categories.id", ondelete="RESTRICT")
-    )
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="RESTRICT")
-    )
-
-    currency: Mapped[Currency] = relationship(
-        viewonly=True, lazy="select", foreign_keys=[currency_id]
-    )
-    category: Mapped[CostCategory] = relationship(
-        viewonly=True, lazy="select", foreign_keys=[category_id]
-    )

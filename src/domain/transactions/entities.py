@@ -67,18 +67,3 @@ class Exchange(InternalData):
     user_id: int
     from_currency: Currency
     to_currency: Currency
-
-
-# ==================================================
-# shortcuts  section
-# ==================================================
-class CostShortcut(InternalData):
-    """a shortcut to create a cost."""
-
-    id: int
-    name: str
-    value: int | None = None
-
-    user_id: int
-    currency: Currency
-    category: CostCategory
