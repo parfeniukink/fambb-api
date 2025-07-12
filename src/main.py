@@ -88,6 +88,9 @@ if settings.sentry_dsn and settings.debug is False:
             FastApiIntegration(),
             LoguruIntegration(),
         ],
+        _experiments={
+            "enable_logs": True,
+        },
     )
 
     middlewares.append((SentryAsgiMiddleware, {}))
