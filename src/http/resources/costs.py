@@ -73,12 +73,7 @@ async def cost_shortcut_create(
     user: domain.users.User = Depends(op.authorize),
     body: CostShortcutCreateBody = Body(...),
 ) -> Response[CostShortcut]:
-    """Create yet another 'Cost Shortcut'.
-
-    NOTES:
-        keep obove
-
-    """
+    """Create yet another 'Cost Shortcut'."""
 
     payload = body.model_dump(exclude_unset=True) | {
         "user": user,

@@ -222,8 +222,9 @@ async def cost_shortcut_factory(
                 currency_id=currency.id,
                 category_id=category.id,
                 value=value,
+                ui_position_index=ui_index_position,
             )
-            for _ in range(n)
+            for ui_index_position in range(1, n + 1)
         )
 
         async with database.transaction() as session:

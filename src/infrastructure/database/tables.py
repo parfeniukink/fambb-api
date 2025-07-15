@@ -384,6 +384,7 @@ class CostShortcut(Base, DefaultColumnsMixin):
         ``category_id`` - cost category id
         ``currency_id`` - operation currency
         ``user_id`` - creator
+        ``ui_position_index`` - UI position (main screen / shortcuts screen)
     """
 
     __tablename__ = "cost_shortcuts"

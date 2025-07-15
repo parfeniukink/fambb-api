@@ -42,38 +42,55 @@ async def test_cost_shortcut_delete_anonymous(anonymous: httpx.AsyncClient):
     "payload",
     [
         {
-            "name": "PS5",
+            "name": "Water",
             "value": 100,
             "currencyId": 1,
             "categoryId": 1,
         },
         {
             # with no value
-            "name": "PS5",
-            "currencyId": 1,
-            "categoryId": 1,
+            "name": "Billing",
+            "currencyId": 2,
+            "categoryId": 2,
         },
     ],
 )
 async def test_cost_shortcut_create(
     client: httpx.AsyncClient, cost_categories, currencies, payload
 ):
-    response = await client.post(
-        "/costs/shortcuts",
-        json=payload,
-    )
-
+    response = await client.post("/costs/shortcuts", json=payload)
     total = await domain.transactions.TransactionRepository().count(
         database.CostShortcut
     )
+    raw_response: dict = response.json()["result"]
 
-    assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert total == 1
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
     assert (
         received_value == 100.0
-        if (received_value := response.json()["result"]["value"])
+        if (received_value := raw_response["value"])
         else True  # check if the value is specified
     ), received_value
+    assert raw_response["ui"]["positionIndex"] == 1
+
+
+@pytest.mark.use_db
+async def test_cost_shortcut_create_multiple(
+    client: httpx.AsyncClient, cost_categories, currencies
+):
+    """test different ``ui_position_index`` values."""
+
+    payload = {"name": "Water", "categoryId": 1, "currencyId": 2}
+
+    await client.post("/costs/shortcuts", json=payload)
+    response = await client.post("/costs/shortcuts", json=payload)
+    total = await domain.transactions.TransactionRepository().count(
+        database.CostShortcut
+    )
+    raw_response: dict = response.json()["result"]
+
+    assert total == 2, response.json()
+    assert raw_response["ui"]["positionIndex"] == 2
 
 
 @pytest.mark.use_db

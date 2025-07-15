@@ -474,6 +474,22 @@ class TransactionRepository(database.Repository):
         self.command.session.add(candidate)
         return candidate
 
+    async def last_cost_shortcut(self, user_id: int) -> database.CostShortcut:
+        query: Select = (
+            select(database.CostShortcut)
+            .where(database.CostShortcut.user_id == user_id)
+            .order_by(desc(database.CostShortcut.ui_position_index))
+            .limit(1)
+        )
+
+        async with self.query.session as session:
+            async with session.begin():
+                result: Result = await session.execute(query)
+                if (shortcut := result.scalar_one_or_none()) is None:
+                    raise errors.NotFoundError("No shortcuts for user")
+                else:
+                    return shortcut
+
     async def cost_shortcut(
         self, user_id: int, id_: int
     ) -> database.CostShortcut:
