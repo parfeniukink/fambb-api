@@ -146,13 +146,13 @@ async def client_marry(
 # =====================================================================
 # DATABASE SECTION
 # =====================================================================
-@pytest.yield_fixture(scope="session")
-def event_loop():
-    """fix a lot of shit..."""
-
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
+# WARNING: deprecated
+# @pytest.yield_fixture(scope="session")
+# def event_loop():
+#     """fix a lot of shit..."""
+#     loop = asyncio.new_event_loop()
+#     yield loop
+#     loop.close()
 
 
 @pytest.fixture(scope="session", autouse=True)
