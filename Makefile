@@ -60,15 +60,7 @@ run.prod:
 # -------------------------------------------------------------------------
 .PHONY: test
 test:
-	python -m pytest -q -r p ./tests
-
-.PHONY: test.int
-test.int:
-	python -m pytest ./tests/integration
-
-.PHONY: test.unit
-test.unit:
-	python -m pytest ./tests/unit
+	python -m pytest ./tests
 
 .PHONY: xtest
 xtest:
@@ -77,8 +69,8 @@ xtest:
 
 # Code quality
 # -------------------------------------------------------------------------
-.PHONY: quality
-quality:
+.PHONY: fix quality
+fix quality:
 	python -m black .
 	python -m isort .
 
