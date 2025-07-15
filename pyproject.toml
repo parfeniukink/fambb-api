@@ -96,7 +96,7 @@ follow_imports = 'silent'
 
 
 [tool.pytest.ini_options]
-addopts = '-s -vvv -x'
+addopts = '-sqx'
 cache_dir = '/tmp'
 asyncio_mode = 'auto'
 python_files = 'test_*.py'
@@ -109,8 +109,8 @@ filterwarnings = [
 markers = [
     "use_db: recreate database tables for this test from the scratch"
 ]
-# to avoid `PytestDeprecationWarning` of `pytest_asyncio` plugin
-asyncio_default_fixture_loop_scope = "function"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 
 # ************************************************
