@@ -29,7 +29,7 @@ def pytest_configure() -> None:
             logging output and gives only clean pytest output.
     """
 
-    if os.getenv("PYTEST__LOGGING", "") == "off":
+    if settings.pytest_logging == "off":
         # Disable logs
         logging.disable(
             logging.CRITICAL

@@ -14,9 +14,12 @@ from src.infrastructure import (
 
 from ..contracts import Currency, Income, IncomeCreateBody, IncomeUpdateBody
 
-router = APIRouter(prefix="/incomes", tags=["Transactions", "Incomes"])
+router = APIRouter(
+    prefix="/transactions/incomes", tags=["Transactions", "Incomes"]
+)
 
 
+# WARNING: deprecated
 @router.get("")
 async def incomes(
     user: domain.users.User = Depends(op.authorize),

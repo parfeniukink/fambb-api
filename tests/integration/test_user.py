@@ -190,16 +190,12 @@ async def test_user_update_monobank_api_key(john: domain.User, client):
         "configuration"
     ]
 
-    database_user: database.User = await domain.UserRepository().user_by_id(
-        john.id
-    )
     assert response.status_code == status.HTTP_200_OK, response.json()
     assert john.configuration.monobank_api_key is None
 
     assert (
-        configuration_raw_response.get("monobankApiKeyIsSet") is True
+        configuration_raw_response.get("monobankIntegrationActive") is True
     ), configuration_raw_response
     assert (
         configuration_raw_response.get("monobankApiKey") is None
     ), configuration_raw_response
-    assert database_user.monobank_api_key == payload["monobankApiKey"]

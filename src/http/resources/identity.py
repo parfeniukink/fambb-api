@@ -23,9 +23,7 @@ async def authorize(
     user: domain.User = await op.authorize_with_token(body.token)
 
     return Response[Identity](
-        result=Identity(
-            user=User.model_validate(user), access_token=user.token
-        )
+        result=Identity(user=User.from_instance(user), access_token=user.token)
     )
 
 
@@ -49,4 +47,4 @@ async def parial_update_user_configuration(
         user, **body.model_dump(exclude_unset=True)
     )
 
-    return Response[User](result=User.model_validate(instance))
+    return Response[User](result=User.from_instance(instance))

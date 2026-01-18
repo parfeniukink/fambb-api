@@ -11,6 +11,13 @@ from src.domain.transactions import (
 
 
 def get_transactions_detail_filter(
+    only_mine: Annotated[
+        bool,
+        Query(
+            description="Filter by current user",
+            alias="onlyMine",
+        ),
+    ] = False,
     currency_id: Annotated[
         int | None,
         Query(
@@ -53,6 +60,10 @@ def get_transactions_detail_filter(
         OperationType | None,
         Query(description="the type of the operation. skip to ommit"),
     ] = None,
+    pattern: Annotated[
+        str | None,
+        Query(description="the lookup pattern in lowercase"),
+    ] = None,
 ) -> TransactionsFilter:
     """FastAPI HTTP GET query params.
 
@@ -74,4 +85,6 @@ def get_transactions_detail_filter(
         start_date=start_date,
         end_date=end_date,
         operation=operation,
+        pattern=pattern,
+        only_mine=only_mine,
     )

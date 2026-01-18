@@ -87,7 +87,7 @@ class CostCreateBody(
     category_id: int
 
     @property
-    def value_in_cents(self):
+    def value_in_cents(self) -> int:
         return domain.transactions.cents_from_raw(self.value)
 
 

@@ -17,6 +17,7 @@ from ..contracts.shortcuts import (
     CostShortcut,
     CostShortcutApply,
     CostShortcutCreateBody,
+    ReorderPositionsRequestBody,
 )
 from ..contracts.transactions import (
     Cost,
@@ -26,7 +27,9 @@ from ..contracts.transactions import (
     CostUpdateBody,
 )
 
-router = APIRouter(prefix="/costs", tags=["Transactions", "Costs"])
+router = APIRouter(
+    prefix="/transactions/costs", tags=["Transactions", "Costs"]
+)
 
 
 # ===========================================================
@@ -135,9 +138,24 @@ async def cost_shortcut_apply(
     return Response[Cost](result=Cost.from_instance(item))
 
 
+@router.put("/shortcuts/positions", status_code=status.HTTP_204_NO_CONTENT)
+async def update_cost_shortcuts(
+    items: list[ReorderPositionsRequestBody] = Body(...),
+    user: domain.users.User = Depends(op.authorize),
+) -> None:
+    """Bulk update cost shortcuts by id"""
+
+    async with database.transaction():
+        await domain.transactions.TransactionRepository().cost_shortcut_update_positions(  # noqa: F501
+            user_id=user.id,
+            values=[item.model_dump() for item in items],
+        )
+
+
 # ===========================================================
 # cost section
 # ===========================================================
+# WARNING: Deprecated
 @router.get("", status_code=status.HTTP_200_OK)
 async def costs(
     user: domain.users.User = Depends(op.authorize),

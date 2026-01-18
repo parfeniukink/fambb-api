@@ -1,0 +1,32 @@
+{
+  "exclude": [
+    "**/DS_Store",
+    "**/.git",
+    "**/.github",
+    "**/.mypy_cache",
+    "**/.*",
+    "**/__pycache__",
+    "**/build",
+    "**/dist",
+    "**/requirements",
+    "**/venv"
+  ],
+  "include": ["src"],
+
+  "typeCheckingMode": "basic",
+
+  "reportMissingImports": "error",
+  "reportMissingTypeStubs": "none",
+  "reportUnusedImport": "error",
+  "reportUndefinedVariable": "error",
+
+  "useLibraryCodeForTypes": false,
+  "analyzeUnannotatedFunctions": false,
+
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Darwin",
+
+  "executionEnvironments": [
+    { "root": ".", "pythonVersion": "3.13", "pythonPlatform": "Darwin" }
+  ]
+}

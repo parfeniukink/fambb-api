@@ -26,7 +26,7 @@ async def equity(
     )
 
 
-@router.get("/basic")
+@router.get("/transactions/basic")
 async def transaction_analytics_basic(
     period: Annotated[
         domain.transactions.AnalyticsPeriod | None,

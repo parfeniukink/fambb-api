@@ -25,7 +25,7 @@ async def check_database_connection() -> None:
         ) from error
     else:
         version: str = await connection.fetchval("SELECT version();")
-        logger.success(f"postgresql v{version} is connected")
+        logger.success(f"{version} is connected")
         await connection.close()
 
 
@@ -36,7 +36,7 @@ async def check_cache_connection() -> None:
         version: bytes = await client.version()
     except ConnectionRefusedError as error:
         raise SystemExit(
-            "can not connect to the cache. check if ``memcached`` is running"
+            "cannot connect to the cache. check if ``memcached`` is running"
         ) from error
     else:
         logger.success(f"Memcached v{version.decode()} is connected")

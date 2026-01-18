@@ -1,15 +1,13 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query
 
 from src import domain
 from src import operational as op
 from src.infrastructure import (
     OffsetPagination,
-    ResponseMulti,
     ResponseMultiPaginated,
-    dates,
     get_offset_pagination_params,
 )
 
@@ -24,7 +22,7 @@ async def transactions(
         get_transactions_detail_filter
     ),
     pagination: OffsetPagination = Depends(get_offset_pagination_params),
-    _: domain.users.User = Depends(op.authorize),
+    user: domain.users.User = Depends(op.authorize),
 ) -> ResponseMultiPaginated[Transaction]:
     """transactions list. includes costs, incomes and exchanges.
 
@@ -40,7 +38,10 @@ async def transactions(
         items,
         total,
     ) = await domain.transactions.TransactionRepository().transactions(
-        filter=filter, offset=pagination.context, limit=pagination.limit
+        user=user,
+        filter=filter,
+        offset=pagination.context,
+        limit=pagination.limit,
     )
 
     if items:
@@ -57,9 +58,8 @@ async def transactions(
     )
 
 
-# note: mock endpoint (not used at all)
-@router.get("/stream")
-async def transaction_stream(
+@router.post("/lookup-missing")
+async def lookup_missing_transactions(
     start_date: Annotated[
         date,
         Query(
@@ -68,7 +68,6 @@ async def transaction_stream(
                 "default value is the first day of the current year"
             ),
             alias="startDate",
-            default_factory=dates.first_year_date,
         ),
     ],
     end_date: Annotated[
@@ -76,30 +75,12 @@ async def transaction_stream(
         Query(
             description="the end date of transaction in the analytics",
             alias="endDate",
-            default_factory=date.today,
         ),
     ],
-    _: domain.users.User = Depends(op.authorize),
-) -> ResponseMulti[Transaction]:
-    """analytics charts for annual tracking. not implemented yet"""
-
-    instances: tuple[domain.transactions.Transaction, ...] = (
-        await op.transactions_chart_analytics(start_date, end_date)
-    )
-
-    return ResponseMulti[Transaction](
-        result=[Transaction.from_instance(instance) for instance in instances]
-    )
-
-
-@router.post(
-    "/integrations/monobank/sync", status_code=status.HTTP_204_NO_CONTENT
-)
-async def monobank_sync_transactions(
     user: domain.users.User = Depends(op.authorize),
 ) -> None:
-    """
-    Sync last day transactions from monobank with internal database.
+    """Looking for missing transactions
+    with all available banks integrations.
     """
 
-    raise NotImplementedError("Monobank Integration is not ready yet")
+    await op.lookup_missing_transactions(user, start_date, end_date)

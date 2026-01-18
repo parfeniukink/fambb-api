@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Literal
+from typing import Literal, Self
 
 from pydantic import Field, model_validator
 
@@ -47,26 +47,32 @@ class Transaction(InternalData):
 
 
 class TransactionsFilter(InternalData):
-    """this class is used to encapsulate filters for transactions fetching.
+    """This class is used to encapsulate filters for transactions fetching.
 
-    ARGS:
-        - currency_id
-        - cost_category_id
-        - start_date
-        - end_date
-        - period
-        - operation
+    WHAT DATA MEANS:
+    (1) only_my: filter by authorized user
+    (2) operation: optinally filter by transaction type
+    (3) currency_id: optionally filter by Currency ID
+    (4) cost_category_id: optionally filter by Cost Category ID
+    (5) start_date: optionally specify Start Date
+    (6) end_date: optionally specify End Date (default to Today)
+    (7) period: optionally specify Period (instead of Start/End Dates)
     """
+
+    only_mine: bool = False
+
+    # TODO: Change to list[OperationType]
+    operation: OperationType | None = None
 
     currency_id: int | None = None
     cost_category_id: int | None = None
     start_date: date | None = None
     end_date: date | None = None
     period: AnalyticsPeriod | None = None
-    operation: OperationType | None = None
+    pattern: str | None = None
 
     @model_validator(mode="after")
-    def validate_dates_range(self):
+    def validate_dates_range(self) -> Self:
         dates_range_specified: bool = bool(self.start_date and self.end_date)
 
         if dates_range_specified and self.period:

@@ -42,11 +42,11 @@ class UserConfiguration(PublicData):
         description="A number of paginated items in transactions analytics",
     )
 
-    monobank_api_key_is_set: bool = Field(
+    monobank_integration_active: bool = Field(
         default=False,
         description=(
             "Monobank API Key is not exposed. "
-            "You can only see that it is set"
+            "You can only see that it is available to use."
         ),
     )
 
@@ -61,10 +61,10 @@ class UserConfiguration(PublicData):
     @classmethod
     def _(cls, instance: domain.users.UserConfiguration):
         return cls(
-            monobank_api_key_is_set=(
+            **instance.model_dump(),
+            monobank_integration_active=(
                 True if instance.monobank_api_key else False
             ),
-            **instance.model_dump(),
         )
 
     @field_validator("notify_cost_threshold", mode="after")

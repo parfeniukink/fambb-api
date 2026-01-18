@@ -62,10 +62,17 @@ class CostShortcut(PublicData):
             currency=Currency.model_validate(instance.currency),
             category=CostCategory.model_validate(instance.category),
             ui=CostShortcutUI(
-                position_index=instance.ui_position_index,
+                position_index=instance.ui_position_index or 0,
             ),
         )
 
 
 class CostShortcutApply(PublicData):
     value: float
+
+
+class ReorderPositionsRequestBody(PublicData):
+    """Request Body to reposition cost shortcuts."""
+
+    id: int
+    ui_position_index: int

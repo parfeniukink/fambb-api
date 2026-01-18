@@ -75,6 +75,10 @@ class LoggingSettings(BaseModel):
     compression: str = "zip"
 
 
+class MonobankSettings(BaseModel):
+    webhook_secret: str = "webhook"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="FBB__",
@@ -82,12 +86,15 @@ class Settings(BaseSettings):
         env_file=".env",
         extra="ignore",
     )
-
     debug: bool = False
-    cors: CORSSettings = CORSSettings()
     logging: LoggingSettings = LoggingSettings()
+    cors: CORSSettings = CORSSettings()
     database: DatabaseSettings = DatabaseSettings()
     cache: CacheSettings = CacheSettings()
+
+    monobank: MonobankSettings = MonobankSettings()
+
+    pytest_logging: str = "off"
 
     # INTEGRATIONS
     sentry_dsn: str | None = None

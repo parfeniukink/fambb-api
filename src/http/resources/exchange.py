@@ -14,9 +14,12 @@ from src.infrastructure import (
 
 from ..contracts import Exchange, ExchangeCreateBody
 
-router = APIRouter(prefix="/exchange", tags=["Transactions", "Exchange"])
+router = APIRouter(
+    prefix="/transactions/exchange", tags=["Transactions", "Exchange"]
+)
 
 
+# WARNING: deprecated
 @router.get("")
 async def exchanges(
     user: domain.users.User = Depends(op.authorize),

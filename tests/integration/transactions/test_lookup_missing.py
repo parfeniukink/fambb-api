@@ -10,25 +10,25 @@ from src.infrastructure import database
 from src.integrations import monobank
 from tests.utils import read_json
 
-BASE_URL: Final = "/transactions/integrations/monobank"
+BASE_URL: Final = "/transactions/lookup-missing"
 
 
 @pytest.mark.use_db
-async def test_monobank_sync_UNAUTHORIZED(anonymous):
-    response: httpx.Response = await anonymous.post(f"{BASE_URL}/sync")
+async def test_lookup_missing_UNAUTHORIZED(anonymous):
+    response: httpx.Response = await anonymous.post(BASE_URL)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.use_db
-async def test_monobank_sync_NO_API_KEY(client: httpx.AsyncClient):
-    response: httpx.Response = await client.post(f"{BASE_URL}/sync")
-
-    assert response.status_code == status.HTTP_501_NOT_IMPLEMENTED
+async def test_lookup_missing_NO_API_KEY_IN_SETTINGS(
+    client: httpx.AsyncClient,
+):
+    response: httpx.Response = await client.post(BASE_URL)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.use_db
 @respx.mock
-@pytest.mark.skip("Currently Monobank API is not used in the application")
 async def test_monobank_sync(john, client: httpx.AsyncClient):
     mock_response_personal_info = read_json(
         "response/monobank_personal_info.json"

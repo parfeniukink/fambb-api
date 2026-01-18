@@ -12,9 +12,11 @@ async def user_retrieve(id_: int) -> User:
 
 
 async def user_update(user: User, **values: Any) -> User:
-    async with database.transaction():
-        await UserRepository().update_user(user.id, **values)
+    repo = UserRepository()
 
-    db_instance = await UserRepository().user_by_id(user.id)
+    async with database.transaction():
+        await repo.update_user(user.id, **values)
+
+    db_instance = await repo.user_by_id(user.id)
 
     return User.from_instance(db_instance)

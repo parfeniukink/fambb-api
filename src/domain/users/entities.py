@@ -17,8 +17,8 @@ class UserConfiguration(InternalData):
     show_equity: bool = False
     default_currency: Currency | None = None
     default_cost_category: CostCategory | None = None
-    cost_snippets: tuple[str, ...] | None = None
-    income_snippets: tuple[str, ...] | None = None
+    cost_snippets: list[str] | None = None
+    income_snippets: list[str] | None = None
 
     last_notification: str | None = None
     notify_cost_threshold: int | None = None
@@ -50,16 +50,8 @@ class User(InternalData):
             token=instance.token,
             configuration=UserConfiguration(
                 show_equity=instance.show_equity,
-                cost_snippets=(
-                    tuple(instance.cost_snippets)
-                    if instance.cost_snippets
-                    else None
-                ),
-                income_snippets=(
-                    tuple(instance.income_snippets)
-                    if instance.income_snippets
-                    else None
-                ),
+                cost_snippets=instance.cost_snippets,
+                income_snippets=instance.income_snippets,
                 default_currency=(
                     Currency.from_instance(instance.default_currency)
                     if instance.default_currency

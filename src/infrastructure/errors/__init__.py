@@ -4,6 +4,7 @@ __all__ = (
     "BaseError",
     "DatabaseError",
     "NotFoundError",
+    "UnprocessableRequestError",
     "base_error_handler",
     "database_error_handler",
     "fastapi_http_exception_handler",
@@ -19,6 +20,7 @@ from .exceptions import (
     BaseError,
     DatabaseError,
     NotFoundError,
+    UnprocessableRequestError,
 )
 from .handlers import (
     base_error_handler,

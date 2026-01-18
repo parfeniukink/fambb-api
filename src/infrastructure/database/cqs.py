@@ -17,6 +17,7 @@ from contextlib import asynccontextmanager
 from contextvars import ContextVar
 
 from loguru import logger
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure import errors
@@ -30,12 +31,31 @@ CTX_CQS_COMMAND_SESSION: ContextVar[AsyncSession | None] = ContextVar(
 
 @asynccontextmanager
 async def transaction():
+    """This context manager automatically dispatches the error by semantic
+    analysis. Database errors are converted into REST errors.
+    """
+
     session: AsyncSession = session_factoy()
     CTX_CQS_COMMAND_SESSION.set(session)
 
     try:
         async with session.begin():
             yield session
+    except IntegrityError as error:
+        # Convert database errors into REST Responses
+        _error = str(error)
+        if "duplicate key value violates unique constraint" in _error:
+            logger.debug(f"Database Duplication Error: {_error}")
+            raise errors.UnprocessableRequestError(
+                "Some of the fields must be unique in database"
+            ) from error
+        elif "ForeignKeyViolationError" in _error:
+            logger.debug(f"Database Foreign Key Violation Error: {_error}")
+            raise errors.BadRequestError("Invalid input") from error
+        else:
+            logger.error(f"Unhandled database error: {_error}")
+            raise
+
     except errors.NotFoundError as error:
         logger.error(error)
         raise error

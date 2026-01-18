@@ -8,6 +8,7 @@ from sqlalchemy import (
     Result,
     Select,
     String,
+    bindparam,
     delete,
     desc,
     func,
@@ -18,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import aliased, joinedload
 
 from src.domain.equity import Currency
+from src.domain.users import User
 from src.infrastructure import database, dates, errors
 
 from .entities import CostCategory
@@ -44,6 +46,7 @@ class TransactionRepository(database.Repository):
     async def transactions(  # noqa: C901 (too complex function)
         self,
         /,
+        user: User,
         filter: TransactionsFilter = TransactionsFilter(),
         **pagination_kwargs,
     ) -> tuple[tuple[Transaction, ...], int]:
@@ -117,6 +120,16 @@ class TransactionRepository(database.Repository):
         )
 
         # add currency filter if specified
+        if filter.only_mine is True:
+            cost_query = cost_query.where(database.Cost.user_id == user.id)
+            income_query = income_query.where(
+                database.Income.user_id == user.id
+            )
+            exchange_query = exchange_query.where(
+                database.Exchange.user_id == user.id
+            )
+
+        # add currency filter if specified
         if filter.currency_id is not None:
             cost_query = cost_query.where(
                 database.Cost.currency_id == filter.currency_id
@@ -131,8 +144,8 @@ class TransactionRepository(database.Repository):
         # add timesatmp filter if specified
         if filter.period or (filter.start_date and filter.end_date):
             if filter.period == "current-month":
-                _start_date: date = dates.get_first_date_of_current_month()
-                _end_date: date = date.today()
+                _start_date = dates.get_first_date_of_current_month()
+                _end_date = date.today()
             elif filter.period == "previous-month":
                 _start_date, _end_date = dates.get_previous_month_range()
             elif filter.start_date and filter.end_date:
@@ -155,6 +168,17 @@ class TransactionRepository(database.Repository):
             cost_query = cost_query.where(
                 database.Cost.category_id == filter.cost_category_id
             )
+
+        if filter.pattern is not None:
+            if filter.operation == "cost":
+                cost_query = cost_query.where(
+                    database.Cost.name.ilike(filter.pattern)
+                )
+
+            elif filter.operation == "cost":
+                income_query = income_query.where(
+                    database.Income.name.ilike(filter.pattern)
+                )
 
         # combine all the queries using UNION ALL
         # apply operation filter if needed
@@ -514,6 +538,96 @@ class TransactionRepository(database.Repository):
                     )
 
         return item
+
+    async def cost_shortcut_update_positions(
+        self, user_id: int, values: list[dict[str, int]]
+    ) -> None:
+        """Update items in database.
+
+        ARGS
+        (1) user_id. For permissions
+        (2) values.
+            ex: [{
+                    'id': 1,
+                    'ui_position_index': 8,
+                },
+                {
+                    'id': 2,
+                    'ui_position_index': 7,
+                }],
+            Where 1 and 2 are cost shortcuts ids, and 8, 7 are
+            postigion indexes
+
+
+        VALIDATION ( `values` )
+        (1) Position indexes could be only integers of 1..N
+        (2) No duplicates and no 'missing' integers between 1 and N
+        """
+
+        ids = [v["id"] for v in values]
+        positions = [v["ui_position_index"] for v in values]
+
+        n = len(positions)
+        if sorted(positions) != list(range(n)):
+            raise ValueError(
+                f"Position indices must be the consecutive sequence 1..{n}, got: {positions}"
+            )
+        if len(set(positions)) != n:
+            raise ValueError("Position indices must be unique")
+        if len(set(ids)) != n:
+            raise ValueError("ID list contains duplicates")
+
+        # Check user ownership
+        q = select(database.CostShortcut.id).where(
+            (database.CostShortcut.id.in_(ids))
+            & (database.CostShortcut.user_id == user_id)
+        )
+        result = await self.command.session.execute(q)
+        found_ids = {row[0] for row in result.all()}
+        missing = set(ids) - found_ids
+        if missing:
+            raise ValueError(
+                f"Shortcuts not found or not owned by user: {missing}"
+            )
+
+        # Update each record with a separate update query.
+        # PERF: Optimize with bulk update and `Session.bulk_update_mappings()`
+        for value in values:
+            stmt = (
+                update(database.CostShortcut)
+                .where(
+                    database.CostShortcut.id == value["id"],
+                    database.CostShortcut.user_id == user_id,
+                )
+                .values(ui_position_index=value["ui_position_index"])
+            )
+            await self.command.session.execute(stmt)
+
+    async def rebuild_ui_positions(self, user_id: int) -> None:
+        # Get all shortcuts for user, ordered by current position (and id for stability)
+        query = (
+            select(database.CostShortcut)
+            .where(database.CostShortcut.user_id == user_id)
+            .order_by(
+                database.CostShortcut.ui_position_index,
+                database.CostShortcut.id,
+            )
+        )
+        result = await self.command.session.execute(query)
+        shortcuts = result.scalars().all()
+
+        # Assign new consecutive positions
+        for new_index, shortcut in enumerate(shortcuts, start=1):
+            if shortcut.ui_position_index != new_index:
+                stmt = (
+                    update(database.CostShortcut)
+                    .where(
+                        database.CostShortcut.id == shortcut.id,
+                        database.CostShortcut.user_id == user_id,
+                    )
+                    .values(ui_position_index=new_index)
+                )
+                await self.command.session.execute(stmt)
 
     # ==================================================
     # analytics section

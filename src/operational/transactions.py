@@ -5,6 +5,7 @@ from typing import cast
 
 from src import domain
 from src.infrastructure import IncomeSource, database, errors
+from src.integrations import monobank
 
 
 # ==================================================
@@ -428,7 +429,6 @@ async def add_cost_shortcut(
     currency_id: int,
     category_id: int,
 ) -> database.CostShortcut:
-    """ """
     async with database.transaction() as session:
         repo = domain.transactions.TransactionRepository()
 
@@ -480,14 +480,19 @@ async def get_cost_shortcuts(
     return items
 
 
-async def delete_cost_shortcut(_: domain.users.User, shortcut_id: int) -> None:
+async def delete_cost_shortcut(
+    user: domain.users.User, shortcut_id: int
+) -> None:
+    """Delete Cost Shortcut Command.
 
-    # todo: add restriction by user ownership
-
+    FLOW
+    (1) Delete item from the database
+    (2) Recalculate positions
+    """
     async with database.transaction():
-        await domain.transactions.TransactionRepository().delete(
-            database.CostShortcut, candidate_id=shortcut_id
-        )
+        repo = domain.transactions.TransactionRepository()
+        await repo.delete(database.CostShortcut, candidate_id=shortcut_id)
+        await repo.rebuild_ui_positions(user.id)
 
 
 async def apply_cost_shortcut(
@@ -516,37 +521,32 @@ async def apply_cost_shortcut(
 
 
 # ==================================================
-# INTEGRATIONS SECTION
+# DEBUG TRANSACTIONS SECTION
 # ==================================================
-async def sync_transactions_from_monobank(user: domain.users.User) -> None:
-    """
-    FLOW:
-        1. Check if Monobank API Key exists in the database for the User
-        2. try to Load Last Transactions from the Monobank API
-        3. Exclude a set of Existing Transactions (using LLM)
-        4. Store Transactions in the internal database
-
-    NOTES
-        - Currency Exchange type of Transaction can not be synchronized
-        - this logic is ran from `asyncio.create_task` so user is notified
-            from the 'Notifications Queue' but NOT from the Response
-    """
-
+async def lookup_missing_transactions(
+    user: domain.users.User, start_date: date, end_date: date
+):
+    # (1) get monobank transactions
     if user.configuration.monobank_api_key is None:
-        raise errors.BadRequestError(
-            "Please set the Monobank API key for such operation"
-        )
+        raise errors.UnprocessableRequestError("No API Keys were found")
 
-    # mono_transactions: monobank.MonobankTransactionsResponse = (
-    #     await monobank.fetch_last_transactions(
-    #         user.configuration.monobank_api_key
-    #     )
-    # )
+    transactions: list[monobank.Transaction] = await monobank.get_transactions(
+        api_key=user.configuration.monobank_api_key,
+        start=start_date,
+        end=end_date,
+    )
 
-    # internal_transactions = (
-    #     domain.transactions.TransactionRepository().transactions(
-    #         filter=domain.transactions.TransactionsFilter()
-    #     )
-    # )
+    # Get simified Monobank transactions
+    _ = [
+        {
+            "currency_code": tx.currency_code,
+            "description": tx.description or "",
+            "amount": abs(tx.amount),  # positive value
+        }
+        for tx in transactions
+    ]
 
-    raise NotImplementedError("Monobank is not integrated yet")
+    # Placeholder: you will implement the db comparison logic yourself
+    # missed = await op.find_missed_costs(user.id, simplified)
+
+    return {"missed": {}}
