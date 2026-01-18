@@ -8,7 +8,6 @@ from sqlalchemy import (
     Result,
     Select,
     String,
-    bindparam,
     delete,
     desc,
     func,
@@ -570,7 +569,8 @@ class TransactionRepository(database.Repository):
         n = len(positions)
         if sorted(positions) != list(range(n)):
             raise ValueError(
-                f"Position indices must be the consecutive sequence 1..{n}, got: {positions}"
+                "Position indices must be the consecutive "
+                f"sequence 1..{n}, got: {positions}"
             )
         if len(set(positions)) != n:
             raise ValueError("Position indices must be unique")
@@ -604,7 +604,8 @@ class TransactionRepository(database.Repository):
             await self.command.session.execute(stmt)
 
     async def rebuild_ui_positions(self, user_id: int) -> None:
-        # Get all shortcuts for user, ordered by current position (and id for stability)
+        # Get all shortcuts for user,
+        # ordered by current position (and id for stability)
         query = (
             select(database.CostShortcut)
             .where(database.CostShortcut.user_id == user_id)

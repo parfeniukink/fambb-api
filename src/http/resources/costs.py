@@ -146,7 +146,7 @@ async def update_cost_shortcuts(
     """Bulk update cost shortcuts by id"""
 
     async with database.transaction():
-        await domain.transactions.TransactionRepository().cost_shortcut_update_positions(  # noqa: F501
+        await domain.transactions.TransactionRepository().cost_shortcut_update_positions(  # noqa: E501
             user_id=user.id,
             values=[item.model_dump() for item in items],
         )
