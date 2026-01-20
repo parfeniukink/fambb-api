@@ -17,4 +17,4 @@ Dockerfile
 docker-compose.yaml
 Makefile
 scripts/
-README.md
+*.md

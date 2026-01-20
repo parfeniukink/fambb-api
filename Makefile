@@ -49,7 +49,7 @@ infra:
 # -------------------------------------------------------------------------
 .PHONY: run
 run:
-	uvicorn src.main:app --reload --port 8001
+	uvicorn src.main:app --reload
 
 .PHONY: run.prod
 run.prod:
