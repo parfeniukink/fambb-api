@@ -15,22 +15,25 @@ from src.infrastructure import database
 # ==================================================
 # tests for not authorized
 # ==================================================
+@pytest.mark.use_db
 async def test_exchange_fetch_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.get("/exchange")
+    response = await anonymous.get("/transactions/exchange")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest.mark.use_db
 async def test_exchange_add_anonymous(
     anonymous: httpx.AsyncClient,
 ):
-    response = await anonymous.post("/exchange", json={})
+    response = await anonymous.post("/transactions/exchange", json={})
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest.mark.use_db
 async def test_exchange_delete_anonymous(
     anonymous: httpx.AsyncClient,
 ):
-    response = await anonymous.delete("/exchange/1")
+    response = await anonymous.delete("/transactions/exchange/1")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -43,11 +46,11 @@ async def test_exchange_fetch(client: httpx.AsyncClient, exchange_factory):
 
     items: list[database.Exchange] = await exchange_factory(n=15)
 
-    response1: httpx.Response = await client.get("/exchange")
+    response1: httpx.Response = await client.get("/transactions/exchange")
     response1_data = response1.json()
 
     response2: httpx.Response = await client.get(
-        "/exchange", params={"context": response1_data["context"]}
+        "/transactions/exchange", params={"context": response1_data["context"]}
     )
     response2_data = response2.json()
 
@@ -70,7 +73,7 @@ async def test_exchange_fetch(client: httpx.AsyncClient, exchange_factory):
 @pytest.mark.use_db
 async def test_exchange_add(client: httpx.AsyncClient, currencies):
     response = await client.post(
-        "/exchange",
+        "/transactions/exchange",
         json={
             "fromCurrencyId": 1,
             "fromValue": 10.00,
@@ -101,7 +104,7 @@ async def test_exchange_delete(
     client: httpx.AsyncClient, currencies, exchange_factory
 ):
     item, *_ = await exchange_factory(n=1)
-    response = await client.delete(f"/exchange/{item.id}")
+    response = await client.delete(f"/transactions/exchange/{item.id}")
 
     currency_from, currency_to = await asyncio.gather(
         domain.equity.EquityRepository().currency(id_=1),
@@ -133,7 +136,7 @@ async def test_exchange_delete(
 async def test_exchange_add_unprocessable(
     client: httpx.AsyncClient, payload: dict
 ):
-    response = await client.post("/exchange", json=payload)
+    response = await client.post("/transactions/exchange", json=payload)
 
     total = await domain.transactions.TransactionRepository().count(
         database.Exchange

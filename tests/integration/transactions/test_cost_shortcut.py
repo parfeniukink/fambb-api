@@ -13,22 +13,25 @@ from src.infrastructure import database
 # ==================================================
 # tests for not authorized
 # ==================================================
+@pytest.mark.use_db
 async def test_cost_shortcut_create_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.post("/costs/shortcuts", json={})
+    response = await anonymous.post("/transactions/costs/shortcuts", json={})
     assert (
         response.status_code == status.HTTP_401_UNAUTHORIZED
     ), response.json()
 
 
+@pytest.mark.use_db
 async def test_cost_shortcut_fetch_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.get("/costs/shortcuts")
+    response = await anonymous.get("/transactions/costs/shortcuts")
     assert (
         response.status_code == status.HTTP_401_UNAUTHORIZED
     ), response.json()
 
 
+@pytest.mark.use_db
 async def test_cost_shortcut_delete_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.delete("/costs/shortcuts/1")
+    response = await anonymous.delete("/transactions/costs/shortcuts/1")
     assert (
         response.status_code == status.HTTP_401_UNAUTHORIZED
     ), response.json()
@@ -58,7 +61,7 @@ async def test_cost_shortcut_delete_anonymous(anonymous: httpx.AsyncClient):
 async def test_cost_shortcut_create(
     client: httpx.AsyncClient, cost_categories, currencies, payload
 ):
-    response = await client.post("/costs/shortcuts", json=payload)
+    response = await client.post("/transactions/costs/shortcuts", json=payload)
     total = await domain.transactions.TransactionRepository().count(
         database.CostShortcut
     )
@@ -82,8 +85,8 @@ async def test_cost_shortcut_create_multiple(
 
     payload = {"name": "Water", "categoryId": 1, "currencyId": 2}
 
-    await client.post("/costs/shortcuts", json=payload)
-    response = await client.post("/costs/shortcuts", json=payload)
+    await client.post("/transactions/costs/shortcuts", json=payload)
+    response = await client.post("/transactions/costs/shortcuts", json=payload)
     total = await domain.transactions.TransactionRepository().count(
         database.CostShortcut
     )
@@ -98,7 +101,7 @@ async def test_cost_shortcuts_fetch(
     client: httpx.AsyncClient, cost_shortcut_factory
 ):
     items = await cost_shortcut_factory(n=5)
-    response = await client.get("/costs/shortcuts")
+    response = await client.get("/transactions/costs/shortcuts")
 
     total = await domain.transactions.TransactionRepository().count(
         database.CostShortcut
@@ -114,7 +117,9 @@ async def test_cost_shortcuts_delete(
 ):
     items = await cost_shortcut_factory(n=5)
 
-    response = await client.delete(f"/costs/shortcuts/{items[0].id}")
+    response = await client.delete(
+        f"/transactions/costs/shortcuts/{items[0].id}"
+    )
 
     total = await domain.transactions.TransactionRepository().count(
         database.CostShortcut
@@ -131,7 +136,7 @@ async def test_cost_shortcuts_apply(
     item, *_ = await cost_shortcut_factory(n=1, value=10000)  # 100.00
     repository = domain.transactions.TransactionRepository()
 
-    response = await client.post(f"/costs/shortcuts/{item.id}")
+    response = await client.post(f"/transactions/costs/shortcuts/{item.id}")
     raw_response = response.json()["result"]
 
     total_costs = await repository.count(database.Cost)
@@ -160,7 +165,7 @@ async def test_cost_shortcuts_apply_no_value(
     item, *_ = await cost_shortcut_factory(n=1)  # no value is specified
     repository = domain.transactions.TransactionRepository()
 
-    response = await client.post(f"/costs/shortcuts/{item.id}")
+    response = await client.post(f"/transactions/costs/shortcuts/{item.id}")
 
     total_costs = await repository.count(database.Cost)
 

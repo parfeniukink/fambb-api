@@ -17,23 +17,33 @@ from src.infrastructure import database
 # ==================================================
 # tests for not authorized
 # ==================================================
+@pytest.mark.use_db
 async def test_cost_categories_fetch_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.get("/costs/categories")
+    response = await anonymous.get("/transactions/costs/categories")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest.mark.use_db
 async def test_cost_categories_create_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.post("/costs/categories", json={"name": "..."})
+    response = await anonymous.post(
+        "/transactions/costs/categories", json={"name": "..."}
+    )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest.mark.use_db
 async def test_cost_update_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.patch("/costs/1", json={"name": "..."})
+    response = await anonymous.patch(
+        "/transactions/costs/1", json={"name": "..."}
+    )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest.mark.use_db
 async def test_cost_delete_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.patch("/costs/1", json={"name": "..."})
+    response = await anonymous.patch(
+        "/transactions/costs/1", json={"name": "..."}
+    )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -44,7 +54,7 @@ async def test_cost_delete_anonymous(anonymous: httpx.AsyncClient):
 async def test_cost_categories_fetch(
     client: httpx.AsyncClient, cost_categories
 ):
-    response = await client.get("/costs/categories")
+    response = await client.get("/transactions/costs/categories")
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["result"]) == len(cost_categories)
@@ -55,7 +65,7 @@ async def test_cost_category_creation(
     client: httpx.AsyncClient, cost_categories
 ):
     response = await client.post(
-        "/costs/categories", json={"name": "Another yet category"}
+        "/transactions/costs/categories", json={"name": "Another yet category"}
     )
 
     total = await domain.transactions.TransactionRepository().count(
@@ -72,10 +82,10 @@ async def test_costs_fetch(client: httpx.AsyncClient, cost_factory):
 
     costs: list[database.Cost] = await cost_factory(n=15)
 
-    response1: httpx.Response = await client.get("/costs")
+    response1: httpx.Response = await client.get("/transactions/costs")
     response1_data = response1.json()
     response2: httpx.Response = await client.get(
-        "/costs", params={"context": response1_data["context"]}
+        "/transactions/costs", params={"context": response1_data["context"]}
     )
     response2_data = response2.json()
 
@@ -99,7 +109,7 @@ async def test_cost_add(
     client: httpx.AsyncClient, cost_categories, currencies
 ):
     response: httpx.Response = await client.post(
-        "/costs",
+        "/transactions/costs",
         json={
             "name": "PS5",
             "value": 100,  # value is not in cents
@@ -134,7 +144,8 @@ async def test_cost_update_safe(
         timestamp=cost.timestamp - timedelta(days=3),
     )
     response = await client.patch(
-        f"/costs/{cost.id}", json=json.loads(body.json(exclude_unset=True))
+        f"/transactions/costs/{cost.id}",
+        json=json.loads(body.json(exclude_unset=True)),
     )
 
     currency: database.Currency = (
@@ -158,7 +169,7 @@ async def test_cost_update_only_value_increased(
     cost, *_ = await cost_factory(n=1)
     new_value = cost.value + 10000
     response = await client.patch(
-        f"/costs/{cost.id}", json={"value": new_value / 100}
+        f"/transactions/costs/{cost.id}", json={"value": new_value / 100}
     )
 
     currency: database.Currency = (
@@ -180,7 +191,7 @@ async def test_cost_update_only_currency(
     cost, *_ = await cost_factory(n=1)
     new_currency_id = 2
     response = await client.patch(
-        f"/costs/{cost.id}", json={"currency_id": new_currency_id}
+        f"/transactions/costs/{cost.id}", json={"currency_id": new_currency_id}
     )
 
     src_currency, dst_currency = await asyncio.gather(
@@ -211,7 +222,9 @@ async def test_cost_update_currency_and_value(
 
     cost, *_ = await cost_factory(n=1)
     payload = {"value": cost.value / 100 + 100.00, "currency_id": 2}
-    response = await client.patch(f"/costs/{cost.id}", json=payload)
+    response = await client.patch(
+        f"/transactions/costs/{cost.id}", json=payload
+    )
 
     src_currency, dst_currency = await asyncio.gather(
         domain.equity.EquityRepository().currency(id_=cost.currency_id),
@@ -241,7 +254,7 @@ async def test_cost_delete(
     3. check database state
     """
     cost, *_ = await cost_factory(n=1)
-    response = await client.delete(f"/costs/{cost.id}")
+    response = await client.delete(f"/transactions/costs/{cost.id}")
 
     await asyncio.sleep(0.1)
 
@@ -274,7 +287,9 @@ async def test_cost_delete(
 async def test_cost_category_creation_unprocessable(
     client: httpx.AsyncClient, payload, error_type
 ):
-    response = await client.post("/costs/categories", json=payload)
+    response = await client.post(
+        "/transactions/costs/categories", json=payload
+    )
 
     total = await domain.transactions.TransactionRepository().count(
         database.CostCategory
@@ -317,7 +332,7 @@ async def test_cost_category_creation_unprocessable(
 )
 @pytest.mark.use_db
 async def test_cost_creation_unprocessable(client: httpx.AsyncClient, payload):
-    response = await client.post("/costs", json=payload)
+    response = await client.post("/transactions/costs", json=payload)
 
     total = await domain.transactions.TransactionRepository().count(
         database.Cost

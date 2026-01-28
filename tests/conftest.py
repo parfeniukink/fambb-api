@@ -7,7 +7,7 @@ import asyncpg
 import httpx
 import pytest
 import respx
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from httpx import ASGITransport, AsyncClient
 from loguru import logger
@@ -16,8 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.sql import text
 
 from src import domain, http
+from src import operational as op
 from src.config import settings
 from src.infrastructure import Cache, database, errors, factories
+from src.operational.authentication import http_bearer
 from tests.mock import Cache as MockedCache
 
 
@@ -45,8 +47,10 @@ def pytest_configure() -> None:
 # application fixtures
 # =====================================================================
 @pytest.fixture
-def app() -> FastAPI:
-    return factories.asgi_app(
+def app(john: domain.users.User, marry: domain.users.User) -> FastAPI:
+    """Create FastAPI app with dependency overrides for testing."""
+
+    app = factories.asgi_app(
         debug=settings.debug,
         rest_routers=(
             http.analytics_router,
@@ -68,6 +72,40 @@ def app() -> FastAPI:
         },
     )
 
+    # Store valid user IDs for validation
+    valid_user_ids = {john.id, marry.id}
+
+    async def mock_authorize(creds=Depends(http_bearer)) -> domain.users.User:
+        """Mock authorize that returns user based on token.
+
+        Fetches user from database with joined default_currency
+        and default_cost_category, matching real authorization behavior.
+        """
+        if creds is None:
+            raise errors.AuthenticationError(
+                "Authorization HTTP header is not specified"
+            )
+
+        # Extract user_id from token (in tests, token IS the user_id)
+        try:
+            user_id = int(creds.credentials)
+        except (ValueError, AttributeError):
+            raise errors.AuthenticationError("Invalid token")
+
+        # Validate user exists in test context
+        if user_id not in valid_user_ids:
+            raise errors.AuthenticationError("User not found")
+
+        # Fetch user from database with joined relationships
+        # matches real authorize behavior in src/operational/authentication.py
+        user = await domain.users.UserRepository().user_by_id(user_id)
+        return domain.users.User.from_instance(user)
+
+    # Override the authorize dependency using FastAPI's mechanism
+    app.dependency_overrides[op.authorize] = mock_authorize
+
+    return app
+
 
 @pytest.fixture
 async def john() -> domain.users.User:
@@ -75,9 +113,7 @@ async def john() -> domain.users.User:
 
     async with database.transaction() as session:
         user = await domain.users.UserRepository().add_user(
-            candidate=database.User(
-                name="john", token="41d917c7-464f-4056-b2de-1a6e2fbfd9e7"
-            )
+            candidate=database.User(name="john")
         )
         await session.flush()  # get user id
 
@@ -90,9 +126,7 @@ async def marry() -> domain.users.User:
 
     async with database.transaction() as session:
         user = await domain.users.UserRepository().add_user(
-            candidate=database.User(
-                name="marry", token="fda4b8f6-4bf3-43e2-b3a2-7c3905ee0af1"
-            )
+            candidate=database.User(name="marry")
         )
         await session.flush()  # get user id
 
@@ -115,7 +149,7 @@ async def client(
 ) -> AsyncGenerator[AsyncClient, None]:
     """return the default 'John' authorized client"""
 
-    headers = {"Authorization": f"Bearer {john.token}"}
+    headers = {"Authorization": f"Bearer {john.id}"}
 
     async with httpx.AsyncClient(
         transport=ASGITransport(app=app),
@@ -132,7 +166,7 @@ async def client_marry(
 ) -> AsyncGenerator[AsyncClient, None]:
     """return authorized client 'Marry'"""
 
-    headers = {"Authorization": f"Bearer {marry.token}"}
+    headers = {"Authorization": f"Bearer {marry.id}"}
 
     async with httpx.AsyncClient(
         transport=ASGITransport(app=app),

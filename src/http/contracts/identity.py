@@ -10,6 +10,29 @@ from .transactions import CostCategory
 
 
 # ─────────────────────────────────────────────────────────
+# AUTH
+# ─────────────────────────────────────────────────────────
+class GetTokensRequestBody(PublicData):
+    """Login request body."""
+
+    username: str = Field(..., min_length=1, max_length=255)
+    password: str = Field(..., min_length=1, max_length=255)
+
+
+class RefreshRequestBody(PublicData):
+    """Token refresh request body."""
+
+    refresh_token: str
+
+
+class TokenPairResponse(PublicData):
+    """Token pair response."""
+
+    access_token: str
+    refresh_token: str
+
+
+# ─────────────────────────────────────────────────────────
 # USER
 # ─────────────────────────────────────────────────────────
 class UserConfiguration(PublicData):
@@ -146,30 +169,3 @@ class User(PublicData):
                 instance.configuration
             ),
         )
-
-
-# ─────────────────────────────────────────────────────────
-# AUTHORIZATION
-# ─────────────────────────────────────────────────────────
-class AuthorizeRequestBody(PublicData):
-    """claim for access token with user credentials.
-
-    NOTES
-    -----
-    simplified flow is used to authorize the user.
-    login will be used.
-
-
-    FUTURE CHANGES
-    -----
-    use JWT with login/password
-    """
-
-    token: str = Field(description="User's unique token")
-
-
-class Identity(PublicData):
-    access_token: str = Field(
-        description="Currently just a unique token of the user"
-    )
-    user: User

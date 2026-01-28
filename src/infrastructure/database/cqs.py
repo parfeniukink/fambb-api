@@ -15,6 +15,7 @@ IMPORTANT: the CQS is a lowes level to access the data from the database.
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
+from typing import Self
 
 from loguru import logger
 from sqlalchemy.exc import IntegrityError
@@ -22,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure import errors
 
-from .session import engine_factory, session_factoy
+from .session import session_factoy
 
 CTX_CQS_COMMAND_SESSION: ContextVar[AsyncSession | None] = ContextVar(
     "cqs command session", default=None
@@ -30,7 +31,7 @@ CTX_CQS_COMMAND_SESSION: ContextVar[AsyncSession | None] = ContextVar(
 
 
 @asynccontextmanager
-async def transaction():
+async def transaction() -> AsyncGenerator[AsyncSession, None]:
     """This context manager automatically dispatches the error by semantic
     analysis. Database errors are converted into REST errors.
     """
@@ -44,6 +45,7 @@ async def transaction():
     except IntegrityError as error:
         # Convert database errors into REST Responses
         _error = str(error)
+
         if "duplicate key value violates unique constraint" in _error:
             logger.debug(f"Database Duplication Error: {_error}")
             raise errors.UnprocessableRequestError(
@@ -62,9 +64,6 @@ async def transaction():
     except Exception as error:
         logger.error(error)
         raise errors.DatabaseError(str(error)) from error
-    finally:
-        # clean the connections pool
-        await engine_factory().dispose()
 
 
 class Command:
@@ -81,7 +80,7 @@ class Command:
         ```
     """
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, owner) -> Self:
         if not (session := CTX_CQS_COMMAND_SESSION.get()):
             raise ValueError(
                 "Transaction is not set. Use `async with transaction()`"
@@ -99,7 +98,7 @@ class Command:
 
 
 class Query:
-    def __get__(self, instance, owner):
+    def __get__(self, instance, owner) -> Self:
         return self
 
     @property

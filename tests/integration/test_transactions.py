@@ -8,6 +8,7 @@ from fastapi import status
 from src.infrastructure import database
 
 
+@pytest.mark.use_db
 async def test_transactions_fetch_anonymous(anonymous: httpx.AsyncClient):
     response = await anonymous.get("/transactions")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

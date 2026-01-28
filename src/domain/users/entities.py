@@ -1,9 +1,3 @@
-"""
-notes:
-    ``src.domain.equity`` and ``src.domain.transactions`` are not used
-    from 'Bounded Context' due to the MVP simplicity.
-"""
-
 import functools
 
 from src.domain.equity import Currency
@@ -31,7 +25,6 @@ class User(InternalData):
 
     id: int
     name: str
-    token: str
     configuration: UserConfiguration
 
     @functools.singledispatchmethod
@@ -47,7 +40,6 @@ class User(InternalData):
         return cls(
             id=instance.id,
             name=instance.name,
-            token=instance.token,
             configuration=UserConfiguration(
                 show_equity=instance.show_equity,
                 cost_snippets=instance.cost_snippets,

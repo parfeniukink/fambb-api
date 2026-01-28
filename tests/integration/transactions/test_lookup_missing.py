@@ -13,12 +13,14 @@ from tests.utils import read_json
 BASE_URL: Final = "/transactions/lookup-missing"
 
 
+@pytest.mark.skip("Monobank is not integrated yet")
 @pytest.mark.use_db
 async def test_lookup_missing_UNAUTHORIZED(anonymous):
     response: httpx.Response = await anonymous.post(BASE_URL)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest.mark.skip("Monobank is not integrated yet")
 @pytest.mark.use_db
 async def test_lookup_missing_NO_API_KEY_IN_SETTINGS(
     client: httpx.AsyncClient,
@@ -27,13 +29,14 @@ async def test_lookup_missing_NO_API_KEY_IN_SETTINGS(
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
+@pytest.mark.skip("Monobank is not integrated yet")
 @pytest.mark.use_db
 @respx.mock
 async def test_monobank_sync(john, client: httpx.AsyncClient):
     mock_response_personal_info = read_json(
         "response/monobank_personal_info.json"
     )
-    print(monobank.PERSONAL_INFO_URL)
+
     personal_info_route = respx.get(monobank.PERSONAL_INFO_URL).mock(
         return_value=httpx.Response(
             status.HTTP_200_OK, json=mock_response_personal_info

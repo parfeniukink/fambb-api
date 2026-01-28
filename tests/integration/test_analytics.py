@@ -14,10 +14,11 @@ from tests.integration.conftest import (
 )
 
 
+@pytest.mark.use_db
 async def test_transaction_basic_analytics_fetch_anonymous(
     anonymous: httpx.AsyncClient,
 ):
-    response = await anonymous.get("/analytics/basic")
+    response = await anonymous.get("/analytics/transactions/basic")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -157,7 +158,7 @@ async def test_basic_analytics_fetch(
 
     # perform the request
     response: httpx.Response = await client.get(
-        "/analytics/basic",
+        "/analytics/transactions/basic",
         params={
             "startDate": yesterday.strftime("%Y-%m-%d"),
             "endDate": today.strftime("%Y-%m-%d"),

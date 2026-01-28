@@ -2,13 +2,14 @@
 PRESENTATION TIER.
 
 what HTTP-resources groups we have:
-1. users - related to actions what John does to clients
-2. costs - allows clients to manage their 'cost' transactions.
+1. auth - JWT authentication (login, refresh, logout)
+2. users - related to actions what John does to clients
+3. costs - allows clients to manage their 'cost' transactions.
     the MOST FREQUENTLY USED REQUEST for John.
-3. incomes - allows clients to manage their 'income' transactions.
-4. exchange - allows clients to manage their 'currency exchanges' trns-ns.
+4. incomes - allows clients to manage their 'income' transactions.
+5. exchange - allows clients to manage their 'currency exchanges' trns-ns.
     when clients exchange money from one currency to another
-5. analytics - allows clients to claim analytics based on the trns-ns.
+6. analytics - allows clients to claim analytics based on the trns-ns.
     this group is also about getting information about the EQUITY.
 """
 

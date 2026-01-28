@@ -37,6 +37,9 @@ from loguru import logger
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.loguru import LoguruIntegration
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from src import http
 from src.config import settings
@@ -57,6 +60,7 @@ exception_handlers = (
         RequestValidationError: errors.unprocessable_entity_error_handler,
         HTTPException: errors.fastapi_http_exception_handler,
         NotImplementedError: errors.not_implemented_error_handler,
+        RateLimitExceeded: errors.rate_limit_exceeded_handler,
         errors.BaseError: errors.base_error_handler,
         Exception: errors.unhandled_error_handler,
     }
@@ -114,3 +118,5 @@ app: FastAPI = factories.asgi_app(
     exception_handlers=exception_handlers,
     lifespan=hooks.lifespan_event,
 )
+
+app.state.limiter = Limiter(key_func=get_remote_address)

@@ -31,9 +31,13 @@ async def test_user_NOTIFIED_about_big_cost(
     )
 
     add_cost_response: httpx.Response = await client_marry.post(
-        "/costs",
+        "/transactions/costs",
         json={"name": "PS5", "value": 200, "currencyId": 1, "categoryId": 1},
     )
+
+    assert (
+        add_cost_response.status_code == status.HTTP_201_CREATED
+    ), add_cost_response.json()
 
     await asyncio.sleep(0.1)
     cache_len_after_creating_cost = len(
@@ -42,9 +46,6 @@ async def test_user_NOTIFIED_about_big_cost(
 
     notifications_response = await client.get("/notifications")
 
-    assert (
-        add_cost_response.status_code == status.HTTP_201_CREATED
-    ), add_cost_response.json()
     assert (
         notifications_response.status_code == status.HTTP_200_OK
     ), notifications_response.json()
@@ -68,7 +69,7 @@ async def test_user_NOT_NOTIFIED_about_big_cost(
     )
 
     add_cost_response: httpx.Response = await client_marry.post(
-        "/costs",
+        "/transactions/costs",
         json={"name": "PS5", "value": 200, "currencyId": 1, "categoryId": 1},
     )
 
@@ -117,7 +118,7 @@ async def test_user_notified_about_big_cost_after_update(
         )
 
     add_cost_response: httpx.Response = await client_marry.patch(
-        f"/costs/{cost.id}", json={"value": 300}
+        f"/transactions/costs/{cost.id}", json={"value": 300}
     )
 
     await asyncio.sleep(0.1)
@@ -149,7 +150,7 @@ async def test_user_notified_about_income(
     """
 
     add_cost_response: httpx.Response = await client_marry.post(
-        "/incomes",
+        "/transactions/incomes",
         json={"name": "jb", "value": 20, "currencyId": 1, "source": "revenue"},
     )
 

@@ -38,12 +38,16 @@ src/
 │   ├── resources/    # API endpoints (routers)
 │   └── contracts/    # Request/response Pydantic schemas
 ├── operational/      # Application tier (use cases, orchestration)
+│   ├── authentication.py  # Login, token refresh, logout operations
+│   └── authorization.py   # Request authorization (JWT + legacy token)
 ├── domain/           # Business model tier
+│   ├── auth/         # JWT token entities and refresh token repository
 │   ├── transactions/ # Costs, Incomes, Exchanges, CostShortcuts
 │   ├── equity/       # Currency and equity management
 │   ├── users/        # User entities and repository
 │   └── notifications/
 ├── infrastructure/   # Infrastructure tier
+│   ├── security.py   # Password hashing (Argon2), JWT creation/validation
 │   └── database/
 │       ├── tables.py     # SQLAlchemy ORM models
 │       ├── cqs.py        # Command/Query separation (transaction context)
@@ -69,9 +73,46 @@ items = await repository.costs(user_id=1, offset=0, limit=10)
 
 **Data Flow**: HTTP Resources → Operational (orchestration) → Domain (repositories) → Infrastructure (database)
 
+## Authentication
+
+JWT-based authentication with persistent refresh tokens. Supports backward compatibility with legacy token auth.
+
+**Endpoints** (`/auth`):
+- `POST /auth/login` - Authenticate with username/password, returns token pair
+- `POST /auth/refresh` - Exchange refresh token for new access token (refresh token reused)
+- `POST /auth/logout` - Revoke refresh token
+
+**Token Types**:
+- Access token: Short-lived (15 min default), used in `Authorization: Bearer <token>` header
+- Refresh token: Long-lived (7 days default), stored hashed in database, remains valid until expiration or logout
+
+**Security**:
+- Passwords hashed with Argon2 (OWASP recommended)
+- Refresh tokens stored as SHA256 hashes
+- Rate limiting on login (5/min, 20/hour) and refresh (10/min) endpoints
+
+**Authorization** (`src/operational/authorization.py`):
+```python
+# FastAPI dependency injection - auto-detects JWT vs legacy token
+from src.operational.authorization import authorize
+
+@router.get("/protected")
+async def protected_route(user: domain.User = Depends(authorize)):
+    ...
+```
+
 ## Configuration
 
 Environment variables prefixed with `FBB__` (nested: `FBB__DATABASE__HOST`). See `src/config/__init__.py` for all settings.
+
+**JWT Settings** (`FBB__JWT__*`):
+- `SECRET_KEY` - JWT signing key (change in production)
+- `ACCESS_TOKEN_EXPIRE_MINUTES` - Access token lifetime (default: 15)
+- `REFRESH_TOKEN_EXPIRE_DAYS` - Refresh token lifetime (default: 7)
+
+**Rate Limit Settings** (`FBB__RATE_LIMIT__*`):
+- `LOGIN_PER_MINUTE` / `LOGIN_PER_HOUR` - Login endpoint limits
+- `REFRESH_PER_MINUTE` - Token refresh endpoint limit
 
 ## Testing
 

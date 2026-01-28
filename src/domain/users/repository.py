@@ -42,14 +42,15 @@ class UserRepository(database.Repository):
 
         return user
 
-    async def user_by_token(self, token: str) -> database.User:
-        """search by ``token``."""
+    # TODO: convert to `user(**filters)`
+    async def user_by_name(self, name: str) -> database.User:
+        """search by ``name`` for login lookup."""
 
         async with self.query.session as session:
             async with session.begin():
                 results: Result = await session.execute(
                     select(database.User)
-                    .where(database.User.token == token)
+                    .where(database.User.name == name)
                     .options(
                         joinedload(database.User.default_currency),
                         joinedload(database.User.default_cost_category),

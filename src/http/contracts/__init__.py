@@ -9,8 +9,9 @@ from .analytics import (
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
 from .identity import (
-    AuthorizeRequestBody,
-    Identity,
+    GetTokensRequestBody,
+    RefreshRequestBody,
+    TokenPairResponse,
     User,
     UserConfiguration,
     UserConfigurationPartialUpdateRequestBody,

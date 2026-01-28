@@ -15,7 +15,6 @@ __all__ = (
     "add_income",
     "apply_cost_shortcut",
     "authorize",
-    "authorize_with_token",
     "currency_exchange",
     "delete_cost",
     "delete_cost_shortcut",
@@ -25,10 +24,12 @@ __all__ = (
     "get_costs",
     "get_currency_exchanges",
     "get_incomes",
+    "get_tokens_pair",
     "lookup_missing_transactions",
     "notify_about_big_cost",
     "notify_about_income",
     "notify_about_worker",
+    "refresh_tokens",
     "transactions_basic_analytics",
     "transactions_chart_analytics",
     "update_cost",
@@ -43,7 +44,7 @@ from .analytics import (
     transactions_basic_analytics,
     transactions_chart_analytics,
 )
-from .authorization import authorize, authorize_with_token
+from .authentication import authorize, get_tokens_pair, refresh_tokens
 from .notifications import (
     notify_about_big_cost,
     notify_about_income,

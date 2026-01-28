@@ -79,6 +79,19 @@ class MonobankSettings(BaseModel):
     webhook_secret: str = "webhook"
 
 
+class AuthSettings(BaseModel):
+    secret_key: str = "CHANGE_ME_IN_PRODUCTION"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 7
+
+
+class RateLimitSettings(BaseModel):
+    login_per_minute: int = 5
+    login_per_hour: int = 20
+    refresh_per_minute: int = 10
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="FBB__",
@@ -93,6 +106,8 @@ class Settings(BaseSettings):
     cache: CacheSettings = CacheSettings()
 
     monobank: MonobankSettings = MonobankSettings()
+    auth: AuthSettings = AuthSettings()
+    rate_limit: RateLimitSettings = RateLimitSettings()
 
     pytest_logging: str = "off"
 

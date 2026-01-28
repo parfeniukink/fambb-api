@@ -1,52 +1,57 @@
-# ************************************************
-# ********** Project Metadata **********
-# ************************************************
+# ─────────────────────────────────────────────────────────
+# pyproject.toml file is used for storing project metadata 
+# according to the PEP 621 [https://peps.python.org/pep-0621]
+# ─────────────────────────────────────────────────────────
+
 [project]
-name = "family_budget_bot"
+name = "family-budget-bot"
 version = "0.1.0"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [ { name = "Dmytro Parfeniuk" } ]
 requires-python = ">=3.12.0,<4.0"
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
 dependencies = [
-    "SQLAlchemy[asyncio,mypy]~=2.0.41",  # async ORM (includes mypy extension)
-    "aiomcache~=0.8.2",  # async memcached client
-    "alembic~=1.16.2",  # migrations tool
-    "arq~=0.26.3",  # async job queues in python on redis
-    "asyncpg~=0.30.0",  # async PostgreSQL driver
-    "fastapi~=0.115.14",  # web framework
-    "gunicorn~=23.0.0",  # application web server (better workers experience)
-    "httpx~=0.28.1",  # http client
-    "loguru~=0.7.3",  # better logging experience
-    "pydantic-ai~=0.3.5",  # LLM Client
-    "pydantic-settings~=2.10.0",  # better settings experience
-    "pydantic~=2.11.0",  # data validation
-    "sentry-sdk[fastapi]~=2.32.0",  #  issues monitoring, profiling
-    "uvicorn[standard]~=0.35.0",  # async application web server
+    "aiomcache~=0.8.2",                 # async memcached client
+    "alembic~=1.16.2",                  # migrations tool
+    "argon2-cffi~=23.1.0",              # password hashing (OWASP recommended)
+    "arq~=0.26.3",                      # async job queues in python on redis
+    "asyncpg~=0.30.0",                  # async PostgreSQL driver
+    "fastapi~=0.115.14",                # web framework
+    "gunicorn~=23.0.0",                 # application web server (better workers experience)
+    "httpx~=0.28.1",                    # http client
+    "loguru~=0.7.3",                    # better logging experience
+    "pydantic~=2.11.0",                 # data validation
+    "pydantic-ai~=0.3.5",               # LLM Client
+    "pydantic-settings~=2.10.0",        # better settings experience
+    "pyjwt~=2.9.0",                     # JWT encoding/decoding
+    "sentry-sdk[fastapi]~=2.32.0",      #  issues monitoring, profiling
+    "slowapi~=0.1.9",                   # rate limiting for FastAPI
+    "sqlalchemy[asyncio,mypy]~=2.0.41", # async ORM (includes mypy extension)
+    "uvicorn[standard]~=0.35.0",        # async application web server
 ]
 
-[project.optional-dependencies]
-dev = [
-    "asyncpg-stubs~=0.30.2",  # additional stubs
-    "black~=24.8.0",  # formatting
-    "flake8~=7.1.1",  # linter
-    "isort~=5.13.2",  # another formatting (imports sort)
-    "mypy~=1.16.1",  # type checking
-    "polyfactory~=2.22",  # fake data
-    "pytest-asyncio~=1.0.0",  # async testing better experience
-    "pytest-mock~=3.14.1",  # better mocking experience
-    "pytest-xdist[psutil]~=3.6.1",  # run tests in separate processes
-    "pytest~=8.4.1",  # testing framework
-    "respx~=0.22.0",  # mock httpx requests and http core libraries
-    "ipdb~=0.13.13",  # debugger 
+optional-dependencies.dev = [
+    "asyncpg-stubs~=0.30.2",       # additional stubs
+    "black~=24.8.0",               # formatting
+    "flake8~=7.1.1",               # linter
+    "ipdb~=0.13.13",               # debugger 
+    "isort~=5.13.2",               # another formatting (imports sort)
+    "mypy~=1.16.1",                # type checking
+    "polyfactory~=2.22",           # fake data
+    "pytest~=8.4.1",               # testing framework
+    "pytest-asyncio~=1.0.0",       # async testing better experience
+    "pytest-mock~=3.14.1",         # better mocking experience
+    "pytest-xdist[psutil]~=3.6.1", # run tests in separate processes
+    "respx~=0.22.0",               # mock httpx requests and http core libraries
 ]
-
-
-# ************************************************
-# ********** Code Quality Tools **********
-# ************************************************
 
 [tool.black]
-target-version = ['py312']
+target-version = [ 'py312' ]
 line-length = 79
 exclude = '''
 (
@@ -62,7 +67,6 @@ exclude = '''
 )
 '''
 
-
 [tool.isort]
 profile = "black"
 line_length = 79
@@ -71,32 +75,10 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 skip = 'venv'
-src_paths = ["src", "tests"]
-
-
-[tool.mypy]
-plugins = [
-    "pydantic.mypy",
-    "sqlalchemy.ext.mypy.plugin"
-]
-files = ["src", "tests"]
-python_version = '3.12'
-warn_redundant_casts = true
-warn_unused_ignores = true
-show_error_codes = true
-namespace_packages = true
-exclude = ["venv", "migrations"]
-
-# Silence "type import errors" as our 3rd-party libs does not have types
-# Check: https://mypy.readthedocs.io/en/latest/config_file.html#import-discovery
-follow_imports = 'silent'
-
-# [[tool.mypy.overrides]]
-# ignore_missing_imports=true
-
+src_paths = [ "src", "tests" ]
 
 [tool.pytest.ini_options]
-addopts = '-sqx'
+addopts = '-sq'
 cache_dir = '/tmp'
 asyncio_mode = 'auto'
 python_files = 'test_*.py'
@@ -107,15 +89,30 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 markers = [
-    "use_db: recreate database tables for this test from the scratch"
+    "use_db: recreate database tables for this test from the scratch",
 ]
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 
+[tool.mypy]
+plugins = [
+    "pydantic.mypy",
+    "sqlalchemy.ext.mypy.plugin",
+]
+files = [ "src", "tests" ]
+python_version = '3.12'
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+namespace_packages = true
+exclude = [ "venv", "migrations" ]
 
-# ************************************************
-# ********** Dependencies management **********
-# ************************************************
+# Silence "type import errors" as our 3rd-party libs does not have types
+# Check: https://mypy.readthedocs.io/en/latest/config_file.html#import-discovery
+follow_imports = 'silent'
+
+# [[tool.mypy.overrides]]
+# ignore_missing_imports=true
 
 [tool.pip-tools]
 generate_hashes = true

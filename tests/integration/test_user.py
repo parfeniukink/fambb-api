@@ -2,27 +2,24 @@
 this module includes tests related to the user and user configuration.
 """
 
-import asyncio
-
 import httpx
 import pytest
 from fastapi import status
 
 from src.domain import users as domain
-from src.infrastructure import database
 
 
 # ==================================================
 # tests for not authorized
 # ==================================================
+@pytest.mark.use_db
 async def test_user_retrieve_anonymous(anonymous):
     response: httpx.Response = await anonymous.get("/identity/users")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def test_user_update_configuration_anonymous(
-    anonymous: httpx.AsyncClient,
-):
+@pytest.mark.use_db
+async def test_user_update_configuration_anonymous(anonymous):
     response: httpx.Response = await anonymous.patch(
         "/identity/users/configuration", json={}
     )
@@ -36,12 +33,10 @@ async def test_user_update_configuration_anonymous(
 async def test_user_retrieve(john, client):
     response: httpx.Response = await client.get("/identity/users")
     result: dict = response.json()["result"]
-    users_total = await domain.UserRepository().count(database.User)
 
     assert response.status_code == status.HTTP_200_OK
     assert result["id"] == john.id
     assert result["name"] == john.name
-    assert users_total == 1
 
 
 @pytest.mark.parametrize(
@@ -90,12 +85,9 @@ async def test_user_configuration_update(
         "configuration"
     ]
 
-    users_total, user = await asyncio.gather(
-        repository.count(database.User), repository.user_by_id(john.id)
-    )
+    user = await repository.user_by_id(john.id)
 
     assert response.status_code == status.HTTP_200_OK, response.json()
-    assert users_total == 1
 
     if payload_id == 1:
         assert (

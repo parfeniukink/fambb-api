@@ -1,7 +1,6 @@
 import asyncio
 import random
 import string
-import uuid
 
 import pytest
 
@@ -13,10 +12,7 @@ from src.infrastructure import database, errors
 async def test_database_transactions_separate_success():
     async with database.transaction() as session:
         first_user = await domain.users.UserRepository().add_user(
-            candidate=database.User(
-                name=random.choice(string.ascii_letters),
-                token=str(uuid.uuid4()),
-            )
+            candidate=database.User(name=random.choice(string.ascii_letters))
         )
 
         await session.flush()  # to get first_user's id
@@ -25,10 +21,7 @@ async def test_database_transactions_separate_success():
         ), "user id is not populated after flushing"
 
         await domain.users.UserRepository().add_user(
-            candidate=database.User(
-                name=random.choice(string.ascii_letters),
-                token=str(uuid.uuid4()),
-            )
+            candidate=database.User(name=random.choice(string.ascii_letters))
         )
 
     users_total: int = await domain.users.UserRepository().count(database.User)
@@ -42,8 +35,7 @@ async def test_database_transactions_gathered_success():
         tasks = [
             domain.users.UserRepository().add_user(
                 candidate=database.User(
-                    name=random.choice(string.ascii_letters),
-                    token=str(uuid.uuid4()),
+                    name=random.choice(string.ascii_letters)
                 )
             )
             for _ in range(2)
@@ -69,7 +61,6 @@ async def test_database_transactions_rollback():
             await domain.users.UserRepository().add_user(
                 candidate=database.User(
                     name="john",
-                    token="41d917c7-464f-4056-b2de-1a6e2fbfd9e7",
                 )
             )
 
@@ -79,11 +70,9 @@ async def test_database_transactions_rollback():
         await domain.users.UserRepository().add_user(
             candidate=database.User(
                 name="john",
-                token="ae9abc17-6b22-4bc0-a127-8b7ba91e99dc",
             )
         )
 
     john = await domain.users.UserRepository().user_by_id(1)
 
     assert john.name == "john"
-    assert john.token == "ae9abc17-6b22-4bc0-a127-8b7ba91e99dc"

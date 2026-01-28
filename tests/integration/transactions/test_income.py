@@ -16,15 +16,17 @@ from src.infrastructure import database
 # ==================================================
 # tests for not authorized
 # ==================================================
+@pytest.mark.use_db
 async def test_income_fetch_anonymous(anonymous: httpx.AsyncClient):
-    response = await anonymous.get("/incomes")
+    response = await anonymous.get("/transactions/incomes")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest.mark.use_db
 async def test_income_create_anonymous(
     anonymous: httpx.AsyncClient,
 ):
-    response = await anonymous.post("/incomes", json={})
+    response = await anonymous.post("/transactions/incomes", json={})
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -37,10 +39,10 @@ async def test_incomes_fetch(client: httpx.AsyncClient, income_factory):
 
     incomes: list[database.Income] = await income_factory(n=15)
 
-    response1: httpx.Response = await client.get("/incomes")
+    response1: httpx.Response = await client.get("/transactions/incomes")
     response1_data = response1.json()
     response2: httpx.Response = await client.get(
-        "/incomes", params={"context": response1_data["context"]}
+        "/transactions/incomes", params={"context": response1_data["context"]}
     )
     response2_data = response2.json()
 
@@ -63,7 +65,7 @@ async def test_incomes_fetch(client: httpx.AsyncClient, income_factory):
 @pytest.mark.use_db
 async def test_income_add(client: httpx.AsyncClient, currencies):
     response = await client.post(
-        "/incomes",
+        "/transactions/incomes",
         json={
             "name": "office job",
             "value": 100.0,  # not in cents
@@ -98,7 +100,7 @@ async def test_income_update_safe(
     )
 
     response = await client.patch(
-        f"/incomes/{income.id}", json=body.json_body()
+        f"/transactions/incomes/{income.id}", json=body.json_body()
     )
 
     currency: database.Currency = (
@@ -122,7 +124,7 @@ async def test_income_update_only_value_increased(
     income, *_ = await income_factory(n=1)
     new_value = domain.transactions.pretty_money(income.value) + 100
     response = await client.patch(
-        f"/incomes/{income.id}", json={"value": new_value}
+        f"/transactions/incomes/{income.id}", json={"value": new_value}
     )
 
     currency: database.Currency = (
@@ -144,7 +146,8 @@ async def test_income_update_only_currency(
     income, *_ = await income_factory(n=1)
     new_currency_id = 2
     response = await client.patch(
-        f"/incomes/{income.id}", json={"currency_id": new_currency_id}
+        f"/transactions/incomes/{income.id}",
+        json={"currency_id": new_currency_id},
     )
 
     src_currency, dst_currency = await asyncio.gather(
@@ -171,7 +174,9 @@ async def test_income_update_currency_and_value(
         "currency_id": 2,
         "value": domain.transactions.pretty_money(income.value) + 100,
     }
-    response = await client.patch(f"/incomes/{income.id}", json=payload)
+    response = await client.patch(
+        f"/transactions/incomes/{income.id}", json=payload
+    )
 
     src_currency, dst_currency = await asyncio.gather(
         domain.equity.EquityRepository().currency(id_=income.currency_id),
@@ -204,7 +209,7 @@ async def test_income_update_currency_and_value(
 async def test_income_add_unprocessable(
     client: httpx.AsyncClient, payload: dict
 ):
-    response = await client.post("/incomes", json=payload)
+    response = await client.post("/transactions/incomes", json=payload)
 
     total = await domain.transactions.TransactionRepository().count(
         database.Income

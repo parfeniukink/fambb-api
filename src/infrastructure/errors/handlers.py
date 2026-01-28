@@ -13,6 +13,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
+from slowapi.errors import RateLimitExceeded
 from starlette import status
 from starlette.requests import Request
 
@@ -157,3 +158,9 @@ def unhandled_error_handler(_: Request, error: Exception) -> JSONResponse:
         response.model_dump(by_alias=True),
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
+
+
+async def rate_limit_exceeded_handler(
+    request: Request, exc: RateLimitExceeded
+) -> JSONResponse:
+    return JSONResponse(None, status_code=429)
