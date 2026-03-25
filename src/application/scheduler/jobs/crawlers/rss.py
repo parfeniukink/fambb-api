@@ -37,7 +37,7 @@ async def _parse_feed(params: RssParams) -> list[ArticleCandidate]:
         candidates.append(
             ArticleCandidate(
                 title=title[:500],
-                description=description[:5000],
+                content=description[:5000],
                 url=link[:2048],
             )
         )

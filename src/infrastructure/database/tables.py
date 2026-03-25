@@ -23,6 +23,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     MetaData,
     String,
     UniqueConstraint,
@@ -621,6 +622,71 @@ class Job(Base, DefaultColumnsMixin):
     )
 
 
+class CashBalance(Base, DefaultColumnsMixin):
+    """table includes 'cash_balances'.
+
+    System-wide manual cash tracking per currency.
+    Balance and step are stored in cents.
+
+    params:
+        ``currency_id`` - tracked currency
+        ``balance`` - current balance in cents (>= 0)
+        ``step`` - increment/decrement step in cents (> 0)
+        ``created_at`` - creation timestamp
+        ``updated_at`` - last update timestamp
+    """
+
+    __tablename__ = "cash_balances"
+
+    currency_id: Mapped[int] = mapped_column(
+        ForeignKey("currencies.id", ondelete="RESTRICT")
+    )
+    balance: Mapped[int] = mapped_column(default=0, server_default="0")
+    step: Mapped[int]
+
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # joined tables
+    currency: Mapped[Currency] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[currency_id]
+    )
+
+    __table_args__ = (UniqueConstraint("currency_id"),)
+
+    @validates("balance")
+    def validate_non_negative_balance(self, _, address) -> int:
+        if not isinstance(address, int):
+            raise TypeError(
+                f"Received value is not valid integer. "
+                f"Type: {type(address)}"
+            )
+
+        if address < 0:
+            raise ValueError("Cash balance must be >= 0")
+        else:
+            return address
+
+    @validates("step")
+    def validate_positive_step(self, _, address) -> int:
+        if not isinstance(address, int):
+            raise TypeError(
+                f"Received value is not valid integer. "
+                f"Type: {type(address)}"
+            )
+
+        if address <= 0:
+            raise ValueError("Cash step must be > 0")
+        else:
+            return address
+
+
 class AnalyticsAI(Base):
     """Append-only AI pipeline run analytics."""
 
@@ -641,4 +707,106 @@ class AnalyticsAI(Base):
         TIMESTAMP(timezone=True),
         server_default=func.now(),
         index=True,
+    )
+
+
+class Asset(Base, DefaultColumnsMixin):
+    """table includes 'assets'.
+
+    System-wide asset tracking (crypto, real estate, vehicles, etc.).
+
+    params:
+        ``name`` - asset name (e.g. 'BTC', 'Apartment')
+        ``created_at`` - creation timestamp
+        ``updated_at`` - last update timestamp
+    """
+
+    __tablename__ = "assets"
+
+    name: Mapped[str]
+
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # joined tables
+    fields: "Mapped[list[AssetField]]" = relationship(
+        "AssetField",
+        back_populates="asset",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+    documents: "Mapped[list[AssetDocument]]" = relationship(
+        "AssetDocument",
+        back_populates="asset",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+
+
+class AssetField(Base, DefaultColumnsMixin):
+    """table includes 'asset_fields'.
+
+    Freeform key-value metadata for an asset.
+
+    params:
+        ``asset_id`` - parent asset
+        ``key`` - field name
+        ``value`` - field value
+        ``created_at`` - creation timestamp
+    """
+
+    __tablename__ = "asset_fields"
+
+    asset_id: Mapped[int] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE")
+    )
+    key: Mapped[str]
+    value: Mapped[str]
+
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=func.now()
+    )
+
+    # joined tables
+    asset: Mapped[Asset] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[asset_id]
+    )
+
+
+class AssetDocument(Base, DefaultColumnsMixin):
+    """table includes 'asset_documents'.
+
+    Binary document attachments for an asset stored in
+    the database (bytea).
+
+    params:
+        ``asset_id`` - parent asset
+        ``filename`` - original file name
+        ``content_type`` - MIME type
+        ``data`` - binary content
+        ``created_at`` - creation timestamp
+    """
+
+    __tablename__ = "asset_documents"
+
+    asset_id: Mapped[int] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE")
+    )
+    filename: Mapped[str]
+    content_type: Mapped[str]
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=func.now()
+    )
+
+    # joined tables
+    asset: Mapped[Asset] = relationship(
+        viewonly=True, lazy="select", foreign_keys=[asset_id]
     )

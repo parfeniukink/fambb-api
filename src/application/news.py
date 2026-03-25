@@ -4,10 +4,12 @@ from typing import Literal
 from loguru import logger
 
 from src.application.agents.news import (
+    FilterContext,
+    GroupingContext,
     ManualAddContext,
-    NewsIngestionContext,
+    grouping_agent,
     manual_add_agent,
-    news_agent,
+    news_filter_agent,
 )
 from src.application.agents.perception import (
     AnalysisContext,
@@ -16,11 +18,12 @@ from src.application.agents.perception import (
 )
 from src.application.scheduler import submit
 from src.domain.news import PreferenceRules
-from src.domain.news.value_objects import ArticleCandidate
-from src.infrastructure import repositories
+from src.domain.news.value_objects import ArticleCandidate, CandidateGroup
+from src.infrastructure import database, repositories
+from src.infrastructure.cache import Cache
 from src.infrastructure.tracing import get_tracer, pipeline_tracer
 
-_MAX_BATCH_SIZE = 100
+_CACHE_TTL = 604800  # 1 week in seconds
 
 # NOTE: Maps the UI analysis mode to the database column
 # that stores the result.
@@ -43,8 +46,8 @@ async def extend_article(
 
     NOTES
     (1) Works in 2 modes:
-        - 🔬: specialized context (dig into that field specifically)
-        - 🔭: broad context (where topic could be included into)
+        - microscope: specialized context
+        - telescope: broad context
     """
 
     news_repo = repositories.News()
@@ -114,158 +117,263 @@ async def add_manual_article(url: str, user_id: int) -> None:
     )
 
 
+# ── Pipeline: Level 1 — Cache dedup ──
+
+
+async def _filter_cached(
+    candidates: list[ArticleCandidate],
+) -> list[ArticleCandidate]:
+    """Check each candidate URL against memcached.
+    Cache surviving URLs immediately. TTL = 1 week."""
+
+    async with Cache() as cache:
+        survivors: list[ArticleCandidate] = []
+        urls_to_cache: list[str] = []
+
+        for c in candidates:
+            try:
+                await cache.get("news_seen", c.url)
+                # Cache hit — already seen, skip
+                continue
+            except Exception:
+                # Cache miss — new URL
+                survivors.append(c)
+                urls_to_cache.append(c.url)
+
+        # Cache surviving URLs immediately
+        for url in urls_to_cache:
+            try:
+                await cache.set(
+                    "news_seen",
+                    url,
+                    {"seen": True},
+                    exptime=_CACHE_TTL,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to cache URL {url[:60]}: {e}")
+
+    return survivors
+
+
+# ── Pipeline: Level 2 — Filter (cheap LLM) ──
+
+
+async def _filter_articles(
+    candidates: list[ArticleCandidate],
+    source_name: str,
+    filter_prompt: str,
+    preference_profile: str,
+) -> list[ArticleCandidate]:
+    """Use cheap LLM to filter irrelevant candidates."""
+
+    news_repo = repositories.News()
+
+    today_items = await news_repo.today_news_items()
+    existing_titles = (
+        "\n".join(f"- {item.title}" for item in today_items) or "None yet."
+    )
+
+    rules = PreferenceRules.from_stored(preference_profile)
+    skip_rules = "\n".join(f"- {s}" for s in rules.skip) or "None yet."
+    high_priority_rules = (
+        "\n".join(f"- {b}" for b in rules.high_priority) or "None yet."
+    )
+
+    parts: list[str] = []
+    for i, c in enumerate(candidates):
+        parts.append(f'Article {i}: "{c.title}"\n' f"{c.short_description}")
+    user_message = (
+        f"Filter these candidates from "
+        f'"{source_name}":\n\n' + "\n\n".join(parts)
+    )
+
+    context = FilterContext(
+        filter_prompt=filter_prompt or "No specific filter.",
+        high_priority_rules=high_priority_rules,
+        skip_rules=skip_rules,
+        existing_titles=existing_titles,
+    )
+
+    result = await news_filter_agent.run(user_message, deps=context)
+
+    return [
+        candidates[i]
+        for i in result.output.keep_indices
+        if 0 <= i < len(candidates)
+    ]
+
+
+# ── Pipeline: Level 3 — Grouping agent (capable LLM) ──
+
+
+async def _group_articles(
+    candidates: list[ArticleCandidate],
+) -> list[CandidateGroup]:
+    """Use capable LLM to process articles one-by-one
+    and build groups."""
+
+    context = GroupingContext(articles=candidates, groups=[])
+
+    parts: list[str] = []
+    for i, c in enumerate(candidates):
+        parts.append(
+            f'[{i}] "{c.title}"\n' f"URL: {c.url}\n" f"Content:\n{c.content}"
+        )
+    user_message = (
+        f"Process these {len(candidates)} articles:\n\n"
+        + "\n\n---\n\n".join(parts)
+    )
+
+    await grouping_agent.run(user_message, deps=context)
+
+    return context.groups
+
+
+# ── Pipeline: Save ──
+
+
+async def _save_groups(
+    groups: list[CandidateGroup],
+    source_name: str,
+) -> None:
+    """Persist each group as a NewsItem."""
+
+    repo = repositories.News()
+
+    for group in groups:
+        try:
+            item = database.NewsItem(
+                title=group.title,
+                description=group.inference,
+                sources=[source_name],
+                article_urls=group.article_urls,
+            )
+            await repo.add_news_item(item)
+            logger.debug(f"Saved: '{group.title[:60]}'")
+        except Exception as e:
+            logger.error(f"Failed to save '{group.title[:60]}': {e}")
+
+    await repo.flush()
+
+
+# ── Main pipeline ──
+
+
 async def ingest_articles(  # noqa: C901
     candidates: list[ArticleCandidate], source_name: str, user_id: int
 ) -> str | None:
-    """Dedup candidates, then let the news agent process the
-    batch. Returns None on success, error string on failure.
+    """Multi-stage news ingestion pipeline.
 
-    NOTE: This function is used by each scheduler that is related
-          to the News aggregation.
+    Level 1: cache dedup (code only, memcached)
+    Level 2: cheap LLM filter
+    Level 3: grouping agent (tool-driven)
+    Save: persist groups as NewsItems
 
+    Returns None on success, error string on failure.
     """
 
-    # (1) Skip candidates whose URL was already seen (cache)
-    news_repo = repositories.News()
     tracer = get_tracer()
-    seen_urls = await news_repo.cached_seen_urls()
-
-    candidates_without_duplicates = [
-        c for c in candidates if c.url not in seen_urls
-    ]
 
     if tracer:
         tracer.set_meta("candidates", len(candidates))
+
+    # ── Level 1: Cache dedup ──
+    t0 = perf_counter()
+    survivors = await _filter_cached(candidates)
+
+    if tracer:
         tracer.set_meta(
             "cache_dedup",
-            -(len(candidates) - len(candidates_without_duplicates)),
+            -(len(candidates) - len(survivors)),
         )
+        tracer.record("cache_dedup", perf_counter() - t0)
 
-    if not candidates_without_duplicates:
-        logger.info(f"'{source_name}': all entries already exist")
+    if not survivors:
+        logger.info(f"'{source_name}': all entries already cached")
         return None
 
-    # 2. Load user preferences (needed for deleted-title filter)
+    logger.info(
+        f"'{source_name}': {len(survivors)} survived "
+        f"cache dedup (from {len(candidates)})"
+    )
+
+    # Load user preferences
     user = await repositories.User().user_by_id(user_id)
     filter_prompt = user.configuration.news_filter_prompt or ""
     preference_profile = user.configuration.news_preference_profile or ""
 
-    # 3. Filter out previously deleted articles
-    rules = PreferenceRules.from_stored(preference_profile)
-    deleted_norm = {_normalize(d["title"]) for d in rules.recently_deleted}
-    before = len(candidates_without_duplicates)
-    candidates_without_duplicates = [
-        c
-        for c in candidates_without_duplicates
-        if _normalize(c.title) not in deleted_norm
-    ]
-    if before != len(candidates_without_duplicates):
-        logger.info(
-            f"'{source_name}': filtered "
-            f"{before - len(candidates_without_duplicates)} "
-            f"previously deleted articles"
+    # ── Level 2: Cheap LLM filter ──
+    try:
+        t1 = perf_counter()
+        survivors = await _filter_articles(
+            survivors,
+            source_name,
+            filter_prompt,
+            preference_profile,
         )
+        if tracer:
+            tracer.record("news_filter", perf_counter() - t1)
+    except Exception as e:
+        logger.warning(
+            f"Filter agent error for '{source_name}': "
+            f"{e} — passing all candidates through"
+        )
+        if tracer:
+            tracer.record("news_filter", perf_counter() - t1, error=True)
 
     if tracer:
-        tracer.set_meta(
-            "deleted_filter",
-            -(before - len(candidates_without_duplicates)),
-        )
+        tracer.set_meta("after_news_filter", len(survivors))
 
-    if not candidates_without_duplicates:
-        logger.info(f"'{source_name}': all entries filtered")
+    if not survivors:
+        logger.info(f"'{source_name}': no articles after filtering")
         return None
 
-    # 4. Within-batch title dedup (collapse same-title entries)
-    before_dedup = len(candidates_without_duplicates)
-    seen: dict[str, ArticleCandidate] = {}
-    for c in candidates_without_duplicates:
-        key = _normalize(c.title)
-        if key in seen:
-            seen[key].extra_urls.append(c.url)
-        else:
-            seen[key] = c
-    candidates_without_duplicates = list(seen.values())
+    logger.info(f"'{source_name}': {len(survivors)} survived " f"filtering")
+
+    # ── Level 3: Grouping agent ──
+    try:
+        t2 = perf_counter()
+        groups = await _group_articles(survivors)
+        if tracer:
+            tracer.record("news_grouper", perf_counter() - t2)
+    except Exception as e:
+        logger.error(
+            f"Grouping agent error for '{source_name}': "
+            f"{e} — falling back to individual articles"
+        )
+        if tracer:
+            tracer.record(
+                "grouping",
+                perf_counter() - t2,
+                error=True,
+            )
+        groups = [
+            CandidateGroup(
+                title=a.title,
+                inference=a.short_description,
+                article_urls=a.all_urls,
+            )
+            for a in survivors
+        ]
 
     if tracer:
-        tracer.set_meta(
-            "batch_dedup",
-            -(before_dedup - len(candidates_without_duplicates)),
-        )
-        tracer.set_meta("\u2192 to_agent", len(candidates_without_duplicates))
+        tracer.set_meta("groups", len(groups))
 
-    logger.info(
-        f"'{source_name}': "
-        f"processing {len(candidates_without_duplicates)} articles"
-    )
+    if not groups:
+        logger.info(f"'{source_name}': no groups produced")
+        return None
 
-    # 5–7. Process in batches of _MAX_BATCH_SIZE
+    # ── Save ──
     try:
-        total = len(candidates_without_duplicates)
-        for batch_idx in range(0, total, _MAX_BATCH_SIZE):
-            end = batch_idx + _MAX_BATCH_SIZE
-            batch = candidates_without_duplicates[batch_idx:end]
-            batch_num = batch_idx // _MAX_BATCH_SIZE + 1
+        t3 = perf_counter()
+        await _save_groups(groups, source_name)
+        if tracer:
+            tracer.record("save", perf_counter() - t3)
+    except Exception as e:
+        logger.error(f"Save error for '{source_name}': {e}")
+        if tracer:
+            tracer.record("save", perf_counter() - t3, error=True)
+        return str(e)[:1000]
 
-            # Reload today's articles each batch (prior batch may
-            # have added new ones)
-            today_items = await news_repo.today_news_items()
-            existing_articles = [
-                {
-                    "id": item.id,
-                    "title": item.title,
-                    "article_urls": item.article_urls or [],
-                }
-                for item in today_items
-            ]
-
-            # Format only this batch
-            parts: list[str] = []
-            for i, c in enumerate(batch, 1):
-                urls = c.all_urls
-                if len(urls) == 1:
-                    url_line = f"URL: {urls[0]}"
-                else:
-                    url_line = "URLs: " + ", ".join(urls)
-                parts.append(
-                    f"## Article {i}\n"
-                    f"Title: {c.title}\n"
-                    f"Description: {c.description}\n"
-                    f"{url_line}"
-                )
-            user_message = (
-                f"Process these candidate articles from "
-                f'"{source_name}":\n\n' + "\n\n".join(parts)
-            )
-
-            context = NewsIngestionContext(
-                source_name=source_name,
-                filter_prompt=filter_prompt,
-                preference_profile=preference_profile,
-                existing_articles=existing_articles,
-            )
-
-            t0 = perf_counter()
-            try:
-                await news_agent.run(user_message, deps=context)
-            except Exception as e:
-                if tracer:
-                    tracer.record(
-                        "orchestrator",
-                        perf_counter() - t0,
-                        error=True,
-                    )
-                logger.error(
-                    f"News agent error for '{source_name}' "
-                    f"(batch {batch_num}): {e}"
-                )
-                return str(e)[:1000]
-
-            if tracer:
-                tracer.record("orchestrator", perf_counter() - t0)
-    finally:
-        # Cache all candidate URLs as "seen" (saved or filtered)
-        all_urls = [c.url for c in candidates]
-        await news_repo.cache_seen_urls(all_urls)
-
+    logger.info(f"'{source_name}': saved {len(groups)} articles")
     return None

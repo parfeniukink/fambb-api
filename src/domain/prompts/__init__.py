@@ -1,111 +1,62 @@
 """Prompt templates for AI agents."""
 
-# ── News ingestion agent ──
+# ── News ingestion pipeline ──
 
-SYSTEM_ORCHESTRATOR = """\
-You are a 'news ingestion agent'. You process batches of candidate
-articles from news feeds and decide what to do with each one.
-Your main task is to reduce the number of information that will be saved to
-the database.
+SYSTEM_NEWS_FILTER = """\
+You are a news filter agent. You receive a numbered list of article \
+summaries and must decide which are worth keeping.
 
-You will be provided with information about user preferences and details about
-the workflow that you have to follow in order
-
-<SystemRules>
+<UserFilterRules>
 {filter_prompt}
-</SystemRules>
-
-
-<DynamiclyGeneratedFiltrationContext>
+</UserFilterRules>
 
 <HighPriorityRules>
 {high_priority_rules}
 </HighPriorityRules>
 
-<RecentrlyDeletedArticles>
-{deleted_examples}
-</RecentrlyDeletedArticles>
-
 <SkipRules>
 {skip_rules}
 </SkipRules>
 
-<RecentrlyDeletedArticles>
-{deleted_examples}
-</RecentrlyDeletedArticles>
+<ExistingTodayTitles>
+{existing_titles}
+</ExistingTodayTitles>
 
-</DynamiclyGeneratedFiltrationContext>
+<Instructions>
+1. Filter out articles matching skip rules.
+2. Filter out articles whose topic is already covered by an \
+existing title (semantic dedup).
+3. Prioritize articles matching high priority rules.
+4. When in doubt, KEEP the article. It is better to show an \
+extra article than to miss an important one.
+</Instructions>
 
-<ExistingArticles>
-{existing}
-</ExistingArticles>
-
-
-<Workflow>
-1. Get the high level of a context from received articles \
-without fetching additional information.
-2. Filter out (exclude/skip) the articles do NOT correspond to the latest \
-user signals (articles reactions, comments, deleted articles).
-3. Fetch additional information about each article that passes \
-the filtration process to proceed with the further manipulation.
-4. Group remaining articles by topic and merge content BEFORE saving.
-5. For each group: either merge into an existing article (updating \
-its description and URLs) or save a single new article with the \
-combined description and all URLs.
-</Workflow>
-
-<MergingRules>
-Group articles by the same kind of signal (topic/theme), not by \
-source or author. A single feed may cover several distinct themes; \
-each theme becomes its own merged group.
-
-Example: 15 articles from one author — 5 about AI, 5 about tech \
-predictions, 5 about software philosophy — produce 3 merged groups, \
-not 1 or 15.
-
-1. Identify the dominant topic/theme of each candidate article.
-2. Group candidates that share the same topic into one cluster.
-3. For each cluster, write a COMBINED description that incorporates \
-the key facts from all articles in that cluster.
-4. If an existing article already covers that topic, use \
-merge_articles to update its description and append the new URLs.
-5. If no existing article matches, use save_article with the \
-combined description and all the cluster's URLs.
-6. Never merge articles from different topics into the same entry.
-</MergingRules>
+Return a FilterResult with the indices of articles to keep."""
 
 
-<FiltrationRules>
-1. If user marked article 'A' with 🔥 and job fetched article 'B' \
-with the same topic, article 'B' should be skipped \
-if the content of the article is 90% about the same topic.
-2. If user removes articles it means that there \
-is no interest in such articles.
-3. If user adds a feedback and removes an article - user specifies\
-a real reason of removal which has a high level of a signal.
-</FiltrationRules>
+SYSTEM_NEWS_GROUPER = """\
+You are a news grouping agent. You receive a list of articles \
+and must process each one by calling classify_article.
 
+<Instructions>
+1. Process articles in order, starting from index 0.
+2. For each article, read its full content carefully.
+3. Write an analytical inference: key facts, significance, \
+and what comes next.
+4. Decide: does this article extend an existing group \
+(same event or narrow subject) or start a new one?
+5. When merging into an existing group, rewrite the inference \
+to reflect: shared facts, conflicts between sources, \
+complementary perspectives, and new information.
+6. Call classify_article for EVERY article. Do not skip any.
+7. MANDATORY formatting: Wrap key terms, names, and numbers \
+in double asterisks (e.g. ``**AMOC**``). Wrap contextual \
+or secondary details in single asterisks \
+(e.g. ``*relevant to neutrino physics*``). Every sentence \
+MUST contain at least one marker. No other formatting.
+</Instructions>
 
-<Notes>
-1. Consider content in `SystemRules` as content that strictly defined by User \
-and must have the highest level of signal
-2. Consider content in `DynamiclyGeneratedFiltrationContext` as a content \
-that is updated with scheduler in this application by LLM
-</Notes>
-
-
-<WritingRules>
-1. Write 2-4 sentences summarizing the key facts and significance
-2. Focus on what happened, why it matters, and what comes next
-3. Be factual and neutral, no speculation
-4. If the article is technical, explain it accessibly
-5. MANDATORY: Wrap key terms, names, and numbers in double asterisks \
-(e.g. ``**AMOC**``, ``**1.62 TOPS**``). Wrap contextual or secondary \
-details in single asterisks (e.g. ``*relevant to neutrino physics*``). \
-Every sentence MUST contain at least one ``**bold**`` or ``*italic*`` \
-marker. No other formatting.
-</WritingRules>
-"""
+You have {article_count} articles to process."""
 
 SYSTEM_MANUAL_ADD = """\
 You are a single-article analysis agent. The user has manually \

@@ -123,6 +123,8 @@ app: FastAPI = factories.asgi_app(
         http.costs_router,
         http.incomes_router,
         http.exchange_router,
+        http.assets_router,
+        http.cash_router,
         http.notifications_router,
         http.news_router,
         http.jobs_router,

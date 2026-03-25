@@ -19,9 +19,6 @@ async def update_user_configuration(user: User, **values: Any) -> User:
 
     repo = repositories.User()
 
-    if "gc_retention_days" in values:
-        raise NotImplementedError
-
     await repo.update_user(user.id, **values)
     await repo.flush()
 

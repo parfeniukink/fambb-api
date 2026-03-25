@@ -14,6 +14,16 @@ what HTTP-resources groups we have:
 """
 
 from .contracts import (
+    Asset,
+    AssetCreateBody,
+    AssetDocument,
+    AssetField,
+    AssetFieldCreateBody,
+    AssetFieldUpdateBody,
+    AssetUpdateBody,
+    CashBalance,
+    CashBalanceCreateBody,
+    CashBalanceUpdateBody,
     Cost,
     CostCategory,
     CostCategoryCreateBody,
@@ -42,6 +52,8 @@ from .contracts import (
     UserCreateRequestBody,
 )
 from .resources.analytics import router as analytics_router
+from .resources.assets import router as assets_router
+from .resources.cash import router as cash_router
 from .resources.costs import router as costs_router
 from .resources.currencies import router as currencies_router
 from .resources.exchange import router as exchange_router

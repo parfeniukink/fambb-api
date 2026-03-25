@@ -11,73 +11,76 @@ from src.infrastructure.tracing import pipeline_tracer
 
 class WebCrawlerBase(ABC):
     source_name: str
-    url: str
+    feed_url: str
 
+    @staticmethod
     @abstractmethod
-    def parse(self, html: str) -> list[ArticleCandidate]:
-        """Extract candidates from the page HTML."""
+    def parse_feed(html: str) -> list[ArticleCandidate]:
+        """Extract candidates from the feed HTML."""
 
+    @staticmethod
     @abstractmethod
-    def parse_article(self, html: str) -> str:
+    def parse_article(html: str) -> str:
         """Extract full article text from an article page."""
-
-    async def fetch_html(self) -> str:
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.get(self.url)
-            resp.raise_for_status()
-            return resp.text
 
     @staticmethod
     def make_candidate(
-        title: str, url: str, description: str = ""
+        title: str,
+        url: str,
+        content: str = "",
     ) -> ArticleCandidate:
         return ArticleCandidate(
             title=title[:500],
-            description=description[:5000],
+            content=content[:5000],
             url=url[:2048],
         )
 
-    async def enrich_candidates(
-        self, candidates: list[ArticleCandidate]
-    ) -> list[ArticleCandidate]:
-        """Fetch each candidate's URL and replace description
-        with full article text."""
+    @staticmethod
+    async def _fetch(url: str) -> str:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            return resp.text
+
+    @classmethod
+    async def _fetch_all_content(
+        cls, candidates: list[ArticleCandidate]
+    ) -> None:
+        """Fetch and parse full content for all candidates."""
 
         async with httpx.AsyncClient(timeout=30) as client:
             for candidate in candidates:
                 try:
                     resp = await client.get(candidate.url)
                     resp.raise_for_status()
-                    body = self.parse_article(resp.text)
+                    body = cls.parse_article(resp.text)
                     if body:
-                        candidate.description = body[:5000]
+                        candidate.content = body[:5000]
                 except Exception as e:
                     logger.warning(
-                        f"Web '{self.source_name}': "
-                        f"failed to fetch article "
-                        f"{candidate.url}: {e}"
+                        f"'{cls.source_name}': failed to "
+                        f"fetch {candidate.url}: {e}"
                     )
-        return candidates
 
-    async def execute(self, context: JobContext) -> None:
-        """Common handler: fetch -> parse -> enrich -> ingest."""
+    @classmethod
+    async def execute(cls, context: JobContext) -> None:
+        """Fetch feed -> parse -> fetch content -> ingest."""
 
         async with pipeline_tracer(
-            f"web:{self.source_name}",
+            f"web:{cls.source_name}",
             user_id=context.user_id,
         ):
-            html = await self.fetch_html()
-            candidates = self.parse(html)
+            html = await cls._fetch(cls.feed_url)
+            candidates = cls.parse_feed(html)
             if not candidates:
                 logger.info(
-                    f"Web '{self.source_name}': "
-                    f"no articles from {self.url}"
+                    f"'{cls.source_name}': no articles " f"from {cls.feed_url}"
                 )
                 return
-            candidates = await self.enrich_candidates(candidates)
+            await cls._fetch_all_content(candidates)
             error = await ingest_articles(
                 candidates,
-                self.source_name,
+                cls.source_name,
                 context.user_id,
             )
             if error:

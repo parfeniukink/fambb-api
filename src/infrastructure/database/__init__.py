@@ -1,6 +1,10 @@
 __all__ = (
     "AnalyticsAI",
+    "Asset",
+    "AssetDocument",
+    "AssetField",
     "Base",
+    "CashBalance",
     "Cost",
     "CostCategory",
     "CostShortcut",
@@ -22,7 +26,11 @@ from .cqs import transaction
 from .dal import DataAccessLayer
 from .tables import (
     AnalyticsAI,
+    Asset,
+    AssetDocument,
+    AssetField,
     Base,
+    CashBalance,
     Cost,
     CostCategory,
     CostShortcut,

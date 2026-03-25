@@ -15,7 +15,8 @@ def get_model(
 
 # NOTE: referenced by src/infrastructure/agents, not by domain
 AGENT_MODELS: dict[str, str] = {
-    "orchestrator": "gpt-4.1-mini",
+    "news_filter": "gpt-4.1-mini",
+    "news_grouper": "gpt-4.1-mini",
     "manual_add": "gpt-4.1-mini",
     "microscope": "o4-mini",
     "telescope": "o4-mini",

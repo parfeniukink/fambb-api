@@ -9,6 +9,16 @@ from .analytics import (
     TransactionAnalyticsResponse,
     TransactionBasicAnalytics,
 )
+from .assets import (
+    Asset,
+    AssetCreateBody,
+    AssetDocument,
+    AssetField,
+    AssetFieldCreateBody,
+    AssetFieldUpdateBody,
+    AssetUpdateBody,
+)
+from .cash import CashBalance, CashBalanceCreateBody, CashBalanceUpdateBody
 from .currency import Currency, CurrencyCreateBody
 from .equity import Equity
 from .identity import (

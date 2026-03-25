@@ -54,6 +54,8 @@ def app(john: domain.users.User, marry: domain.users.User) -> FastAPI:
         debug=settings.debug,
         rest_routers=(
             http.analytics_router,
+            http.assets_router,
+            http.cash_router,
             http.costs_router,
             http.currencies_router,
             http.exchange_router,

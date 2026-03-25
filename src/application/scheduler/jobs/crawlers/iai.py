@@ -16,9 +16,10 @@ class IaiTvParams(BaseModel):
 
 class IaiTvCrawler(WebCrawlerBase):
     source_name = "iai.tv"
-    url = "https://iai.tv/articles-proxy"
+    feed_url = "https://iai.tv/articles-proxy"
 
-    def _extract_from_widget(self, widget: dict) -> list[ArticleCandidate]:
+    @staticmethod
+    def _extract_from_widget(widget: dict) -> list[ArticleCandidate]:
         sprops = widget.get("Sprops")
         if not isinstance(sprops, list):
             return []
@@ -37,10 +38,10 @@ class IaiTvCrawler(WebCrawlerBase):
 
             url = link if link.startswith("http") else f"https://iai.tv{link}"
             candidates.append(
-                self.make_candidate(
+                WebCrawlerBase.make_candidate(
                     title=title,
                     url=url,
-                    description=item.get("Subtitle", ""),
+                    content=item.get("Subtitle", ""),
                 )
             )
         return candidates
@@ -62,7 +63,8 @@ class IaiTvCrawler(WebCrawlerBase):
                     return body_soup.get_text(separator=" ", strip=True)
         return ""
 
-    def _extract_body_from_js_vars(self, soup: BeautifulSoup) -> str:
+    @staticmethod
+    def _extract_body_from_js_vars(soup: BeautifulSoup) -> str:
         """Try to extract article body from JS_VARS JSON."""
 
         for tag in soup.find_all("script"):
@@ -82,20 +84,20 @@ class IaiTvCrawler(WebCrawlerBase):
             except Exception:
                 continue
 
-            body = self._body_from_widgets(widgets)
+            body = IaiTvCrawler._body_from_widgets(widgets)
 
             if body:
                 return body
 
         return ""
 
-    def parse_article(self, html: str) -> str:
-        """Extract full article text from an IAI.tv article
-        page."""
+    @staticmethod
+    def parse_article(html: str) -> str:
+        """Extract full article text from an IAI.tv article page."""
 
         soup = BeautifulSoup(html, "html.parser")
 
-        body = self._extract_body_from_js_vars(soup)
+        body = IaiTvCrawler._extract_body_from_js_vars(soup)
         if body:
             return body
 
@@ -112,7 +114,8 @@ class IaiTvCrawler(WebCrawlerBase):
 
         return ""
 
-    def parse(self, html: str) -> list[ArticleCandidate]:
+    @staticmethod
+    def parse_feed(html: str) -> list[ArticleCandidate]:
         soup = BeautifulSoup(html, "html.parser")
         articles: list[ArticleCandidate] = []
 
@@ -147,18 +150,15 @@ class IaiTvCrawler(WebCrawlerBase):
 
             # (3) Extract articles from each widget
             for widget in _widgets:
-                articles.extend(self._extract_from_widget(widget))
+                articles.extend(IaiTvCrawler._extract_from_widget(widget))
 
         return articles
 
 
-_crawler = IaiTvCrawler()
-
-
-@register_job_type(label="crawler", name="IAI.tv Articles")
+@register_job_type(label="iai_crawler", name="IAI.tv Articles")
 async def fetch_iai(params: IaiTvParams, context: JobContext) -> None:
     """Crawls iai.tv for philosophy and ideas articles.
     New articles are filtered by your preferences and
     deduplicated before saving."""
 
-    await _crawler.execute(context)
+    await IaiTvCrawler.execute(context)

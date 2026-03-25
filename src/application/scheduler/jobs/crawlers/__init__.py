@@ -1,4 +1,4 @@
-__all__ = ("iai", "rss")
+__all__ = ("iai", "rss", "santafe")
 
 
-from . import iai, rss
+from . import iai, rss, santafe

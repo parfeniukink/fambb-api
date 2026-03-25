@@ -1,284 +1,246 @@
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+from polyfactory.factories import DataclassFactory
+
 from src.application.news import _normalize
-from src.domain.news.value_objects import ArticleCandidate
-
-# ── _normalize (sync, pure) ──
+from src.domain.news.value_objects import ArticleCandidate, FilterResult
 
 
-def test_normalize_basic():
-    assert _normalize("Hello World") == "hello world"
+@pytest.mark.parametrize(
+    "input_,expected",
+    [
+        ("Hello World", "hello world"),
+        ("  foo   bar  ", "foo bar"),
+        ("", ""),
+        ("already normal", "already normal"),
+    ],
+)
+def test_normalize(input_: str, expected: str):
+    assert _normalize(input_) == expected
 
 
-def test_normalize_collapses_whitespace():
-    assert _normalize("  foo   bar  ") == "foo bar"
-
-
-def test_normalize_empty_string():
-    assert _normalize("") == ""
-
-
-def test_normalize_already_normal():
-    assert _normalize("already normal") == "already normal"
-
-
-# ── helpers ──
-
-
-def _candidate(
-    title: str = "Article",
-    description: str = "desc",
-    url: str = "http://x",
-) -> ArticleCandidate:
-    return ArticleCandidate(title=title, description=description, url=url)
+class ArticleCandidateFactory(DataclassFactory):
+    __model__ = ArticleCandidate
 
 
 # ── ingest_articles ──
 
 
-async def test_ingest_articles_skips_all_duplicates():
-    """All candidates match existing titles → no agent call."""
+async def test_ingest_all_cached_returns_none():
+    """All candidates cached → returns None, no filter call."""
+
+    candidate = ArticleCandidateFactory.build()
 
     with (
-        patch("src.application.news.repositories") as mock_repos,
-        patch("src.application.news.news_agent") as mock_agent,
+        patch(
+            "src.application.news._filter_cached",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+        patch("src.application.news.news_filter_agent") as mock_filter,
     ):
-        news_repo = AsyncMock()
-        news_repo.cached_seen_urls.return_value = {"http://x"}
-        mock_repos.News.return_value = news_repo
-
         from src.application.news import ingest_articles
 
         result = await ingest_articles(
-            candidates=[_candidate(title="Existing Article")],
+            candidates=[candidate],
             source_name="test",
             user_id=1,
         )
 
     assert result is None
-    mock_agent.run.assert_not_called()
+    mock_filter.run.assert_not_called()
 
 
-async def test_ingest_articles_calls_agent():
-    """New candidates → agent is called with correct context."""
+async def test_ingest_filter_keeps_articles():
+    """Filter returns indices → only those proceed."""
+
+    keep = ArticleCandidateFactory.build(title="Keep", url="http://a")
+    drop = ArticleCandidateFactory.build(title="Drop", url="http://b")
+
+    mock_repos = MagicMock()
+    news_repo = AsyncMock()
+    news_repo.today_news_items.return_value = []
+    mock_repos.News.return_value = news_repo
+    user = MagicMock()
+    user.configuration.news_filter_prompt = ""
+    user.configuration.news_preference_profile = ""
+    user_repo = AsyncMock()
+    user_repo.user_by_id.return_value = user
+    mock_repos.User.return_value = user_repo
+
+    filter_result = MagicMock()
+    filter_result.output = FilterResult(keep_indices=[0])
 
     with (
-        patch("src.application.news.repositories") as mock_repos,
-        patch("src.application.news.news_agent") as mock_agent,
+        patch(
+            "src.application.news._filter_cached",
+            new_callable=AsyncMock,
+            side_effect=lambda c: c,
+        ),
+        patch("src.application.news.repositories", mock_repos),
+        patch("src.application.news.news_filter_agent") as mock_filter,
+        patch("src.application.news.grouping_agent") as mock_grouper,
     ):
-        news_repo = AsyncMock()
-        news_repo.recent_titles.return_value = []
-        news_repo.today_news_items.return_value = []
-        mock_repos.News.return_value = news_repo
-
-        user = MagicMock()
-        user.configuration.news_filter_prompt = "keep tech"
-        user.configuration.news_preference_profile = "likes AI"
-        user_repo = AsyncMock()
-        user_repo.user_by_id.return_value = user
-        mock_repos.User.return_value = user_repo
-
-        mock_agent.run = AsyncMock(return_value=MagicMock(output="Done"))
+        mock_filter.run = AsyncMock(return_value=filter_result)
+        mock_grouper.run = AsyncMock()
 
         from src.application.news import ingest_articles
 
         result = await ingest_articles(
-            candidates=[
-                _candidate(title="New Article", url="http://new"),
-            ],
-            source_name="test-feed",
-            user_id=1,
-        )
-
-    assert result is None
-    mock_agent.run.assert_awaited_once()
-
-    # Verify context passed to agent
-    call_kwargs = mock_agent.run.call_args.kwargs
-    ctx = call_kwargs["deps"]
-    assert ctx.source_name == "test-feed"
-    assert ctx.filter_prompt == "keep tech"
-    assert ctx.preference_profile == "likes AI"
-
-
-async def test_ingest_deduplicates_within_batch():
-    """Two candidates with identical title are collapsed into one."""
-
-    with (
-        patch("src.application.news.repositories") as mock_repos,
-        patch("src.application.news.news_agent") as mock_agent,
-    ):
-        news_repo = AsyncMock()
-        news_repo.recent_titles.return_value = []
-        news_repo.today_news_items.return_value = []
-        mock_repos.News.return_value = news_repo
-
-        user = MagicMock()
-        user.configuration.news_filter_prompt = ""
-        user.configuration.news_preference_profile = ""
-        user_repo = AsyncMock()
-        user_repo.user_by_id.return_value = user
-        mock_repos.User.return_value = user_repo
-
-        mock_agent.run = AsyncMock(return_value=MagicMock(output="Done"))
-
-        from src.application.news import ingest_articles
-
-        result = await ingest_articles(
-            candidates=[
-                _candidate(
-                    title="Python 3.14.2 released",
-                    description="First desc",
-                    url="http://a",
-                ),
-                _candidate(
-                    title="Python 3.14.2 released",
-                    description="Second desc",
-                    url="http://b",
-                ),
-            ],
+            candidates=[keep, drop],
             source_name="test",
             user_id=1,
         )
 
     assert result is None
-    mock_agent.run.assert_awaited_once()
-
-    user_message = mock_agent.run.call_args.args[0]
-    assert "## Article 1" in user_message
-    assert "## Article 2" not in user_message
-    assert "http://a" in user_message
-    assert "http://b" in user_message
-    assert "URLs:" in user_message
+    mock_filter.run.assert_awaited_once()
+    mock_grouper.run.assert_awaited_once()
+    user_msg = mock_grouper.run.call_args.args[0]
+    assert "Keep" in user_msg
+    assert "Drop" not in user_msg
 
 
-async def test_ingest_filters_deleted_titles():
-    """Candidates matching deleted titles are filtered out
-    before reaching the agent."""
+async def test_ingest_filter_error_passes_all_through():
+    """Filter agent failure → all candidates pass through."""
 
-    profile = json.dumps(
-        {
-            "skip": [],
-            "high_priority": [],
-            "recently_deleted": [
-                {"title": "Python 3.14.0a1 Released", "feedback": ""},
-            ],
-        }
+    a = ArticleCandidateFactory.build(title="A", url="http://a")
+    b = ArticleCandidateFactory.build(title="B", url="http://b")
+
+    mock_repos = MagicMock()
+    news_repo = AsyncMock()
+    news_repo.today_news_items.return_value = []
+    mock_repos.News.return_value = news_repo
+    user = MagicMock()
+    user.configuration.news_filter_prompt = ""
+    user.configuration.news_preference_profile = ""
+    user_repo = AsyncMock()
+    user_repo.user_by_id.return_value = user
+    mock_repos.User.return_value = user_repo
+
+    with (
+        patch(
+            "src.application.news._filter_cached",
+            new_callable=AsyncMock,
+            side_effect=lambda c: c,
+        ),
+        patch("src.application.news.repositories", mock_repos),
+        patch("src.application.news.news_filter_agent") as mock_filter,
+        patch("src.application.news.grouping_agent") as mock_grouper,
+    ):
+        mock_filter.run = AsyncMock(side_effect=RuntimeError("LLM down"))
+        mock_grouper.run = AsyncMock()
+
+        from src.application.news import ingest_articles
+
+        result = await ingest_articles(
+            candidates=[a, b],
+            source_name="test",
+            user_id=1,
+        )
+
+    assert result is None
+    user_msg = mock_grouper.run.call_args.args[0]
+    assert "A" in user_msg
+    assert "B" in user_msg
+
+
+async def test_ingest_grouping_error_falls_back():
+    """Grouping agent failure → each article becomes its
+    own group and is saved."""
+
+    candidate = ArticleCandidateFactory.build(
+        title="Fallback Article",
+        content="Some content here",
+        url="http://a",
+        extra_urls=[],
     )
 
+    mock_repos = MagicMock()
+    news_repo = AsyncMock()
+    news_repo.today_news_items.return_value = []
+    mock_repos.News.return_value = news_repo
+    user = MagicMock()
+    user.configuration.news_filter_prompt = ""
+    user.configuration.news_preference_profile = ""
+    user_repo = AsyncMock()
+    user_repo.user_by_id.return_value = user
+    mock_repos.User.return_value = user_repo
+
+    filter_result = MagicMock()
+    filter_result.output = FilterResult(keep_indices=[0])
+
     with (
-        patch("src.application.news.repositories") as mock_repos,
-        patch("src.application.news.news_agent") as mock_agent,
+        patch(
+            "src.application.news._filter_cached",
+            new_callable=AsyncMock,
+            side_effect=lambda c: c,
+        ),
+        patch("src.application.news.repositories", mock_repos),
+        patch("src.application.news.news_filter_agent") as mock_filter,
+        patch("src.application.news.grouping_agent") as mock_grouper,
+        patch(
+            "src.application.news._save_groups",
+            new_callable=AsyncMock,
+        ) as mock_save,
     ):
-        news_repo = AsyncMock()
-        news_repo.recent_titles.return_value = []
-        news_repo.today_news_items.return_value = []
-        mock_repos.News.return_value = news_repo
-
-        user = MagicMock()
-        user.configuration.news_filter_prompt = ""
-        user.configuration.news_preference_profile = profile
-        user_repo = AsyncMock()
-        user_repo.user_by_id.return_value = user
-        mock_repos.User.return_value = user_repo
-
-        mock_agent.run = AsyncMock(return_value=MagicMock(output="Done"))
+        mock_filter.run = AsyncMock(return_value=filter_result)
+        mock_grouper.run = AsyncMock(side_effect=RuntimeError("LLM down"))
 
         from src.application.news import ingest_articles
 
         result = await ingest_articles(
-            candidates=[
-                _candidate(
-                    title="Python 3.14.0a1 Released",
-                    description="Alpha release",
-                    url="http://a",
-                ),
-                _candidate(
-                    title="New AI Framework Launched",
-                    description="A new framework",
-                    url="http://b",
-                ),
-            ],
+            candidates=[candidate],
             source_name="test",
             user_id=1,
         )
 
     assert result is None
-    mock_agent.run.assert_awaited_once()
-    # Only the non-deleted article should reach the agent
-    user_message = mock_agent.run.call_args.args[0]
-    assert "New AI Framework" in user_message
-    assert "Python 3.14.0a1" not in user_message
+    mock_save.assert_awaited_once()
+    groups = mock_save.call_args.args[0]
+    assert len(groups) == 1
+    assert groups[0].title == "Fallback Article"
+    assert groups[0].article_urls == ["http://a"]
 
 
-async def test_ingest_all_deleted_skips_agent():
-    """All candidates match deleted titles → no agent call."""
+async def test_ingest_no_survivors_after_filter():
+    """Filter drops everything → returns None, no grouping."""
 
-    profile = json.dumps(
-        {
-            "skip": [],
-            "high_priority": [],
-            "recently_deleted": [
-                {"title": "Old Article", "feedback": "not relevant"},
-            ],
-        }
-    )
+    candidate = ArticleCandidateFactory.build()
+
+    mock_repos = MagicMock()
+    news_repo = AsyncMock()
+    news_repo.today_news_items.return_value = []
+    mock_repos.News.return_value = news_repo
+    user = MagicMock()
+    user.configuration.news_filter_prompt = ""
+    user.configuration.news_preference_profile = ""
+    user_repo = AsyncMock()
+    user_repo.user_by_id.return_value = user
+    mock_repos.User.return_value = user_repo
+
+    filter_result = MagicMock()
+    filter_result.output = FilterResult(keep_indices=[])
 
     with (
-        patch("src.application.news.repositories") as mock_repos,
-        patch("src.application.news.news_agent") as mock_agent,
+        patch(
+            "src.application.news._filter_cached",
+            new_callable=AsyncMock,
+            side_effect=lambda c: c,
+        ),
+        patch("src.application.news.repositories", mock_repos),
+        patch("src.application.news.news_filter_agent") as mock_filter,
+        patch("src.application.news.grouping_agent") as mock_grouper,
     ):
-        news_repo = AsyncMock()
-        news_repo.recent_titles.return_value = []
-        mock_repos.News.return_value = news_repo
-
-        user = MagicMock()
-        user.configuration.news_filter_prompt = ""
-        user.configuration.news_preference_profile = profile
-        user_repo = AsyncMock()
-        user_repo.user_by_id.return_value = user
-        mock_repos.User.return_value = user_repo
+        mock_filter.run = AsyncMock(return_value=filter_result)
 
         from src.application.news import ingest_articles
 
         result = await ingest_articles(
-            candidates=[_candidate(title="Old Article")],
+            candidates=[candidate],
             source_name="test",
             user_id=1,
         )
 
     assert result is None
-    mock_agent.run.assert_not_called()
-
-
-async def test_ingest_articles_agent_error_returns_message():
-    """Agent failure → returns error string."""
-
-    with (
-        patch("src.application.news.repositories") as mock_repos,
-        patch("src.application.news.news_agent") as mock_agent,
-    ):
-        news_repo = AsyncMock()
-        news_repo.recent_titles.return_value = []
-        news_repo.today_news_items.return_value = []
-        mock_repos.News.return_value = news_repo
-        user = MagicMock()
-        user.configuration.news_filter_prompt = ""
-        user.configuration.news_preference_profile = ""
-        user_repo = AsyncMock()
-        user_repo.user_by_id.return_value = user
-        mock_repos.User.return_value = user_repo
-
-        mock_agent.run = AsyncMock(side_effect=RuntimeError("LLM down"))
-
-        from src.application.news import ingest_articles
-
-        result = await ingest_articles(
-            candidates=[_candidate()],
-            source_name="test",
-            user_id=1,
-        )
-
-    assert result is not None
-    assert "LLM down" in result
+    mock_grouper.run.assert_not_called()

@@ -2,16 +2,16 @@
 
 # $/1M tokens (as of March 2026)
 MODEL_PRICING: dict[str, dict[str, float]] = {
+    "gpt-4.1-nano": {"input": 0.10, "output": 0.40},
     "gpt-4.1-mini": {"input": 0.40, "output": 1.60},
     "gpt-4.1": {"input": 2.00, "output": 8.00},
     "o4-mini": {"input": 1.10, "output": 4.40},
 }
 
-# Estimated tokens per call
+# Estimated tokens per call (keyed by AGENT_MODELS key)
 AGENT_TOKEN_ESTIMATES: dict[str, dict[str, int]] = {
-    "orchestrator": {"input": 3000, "output": 1500},
-    "save": {"input": 0, "output": 0},
-    "merge": {"input": 0, "output": 0},
+    "news_filter": {"input": 2000, "output": 500},
+    "news_grouper": {"input": 3000, "output": 1500},
     "preference": {"input": 2500, "output": 300},
     "microscope": {"input": 770, "output": 800},
     "telescope": {"input": 770, "output": 800},

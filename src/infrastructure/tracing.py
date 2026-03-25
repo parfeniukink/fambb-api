@@ -23,8 +23,8 @@ try:
 except ImportError:
     sentry_sdk = None  # type: ignore[assignment]
 
-from src.domain.analytics.pricing import estimate_pipeline_cost
 from src.infrastructure.agents import AGENT_MODELS
+from src.infrastructure.analytics.pricing import estimate_pipeline_cost
 from src.infrastructure.repositories import AnalyticsAI
 
 _trace_id: ContextVar[str | None] = ContextVar("_trace_id", default=None)

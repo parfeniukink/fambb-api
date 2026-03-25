@@ -1,5 +1,7 @@
 __all__ = (
     "ArticleCandidate",
+    "CandidateGroup",
+    "FilterResult",
     "NewsItem",
     "NewsReaction",
     "PreferenceRules",
@@ -8,4 +10,4 @@ __all__ = (
 
 from .entities import NewsItem, PreferenceRules
 from .signals import SIGNAL_WEIGHTS, NewsReaction
-from .value_objects import ArticleCandidate
+from .value_objects import ArticleCandidate, CandidateGroup, FilterResult
