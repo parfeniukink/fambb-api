@@ -147,7 +147,9 @@ async def test_transactions_fetch_filter_by_pattern_income(
     response_match: httpx.Response = await client.get(url_match)
     response_match_data: dict = response_match.json()
 
-    assert response_match.status_code == status.HTTP_200_OK, response_match_data
+    assert (
+        response_match.status_code == status.HTTP_200_OK
+    ), response_match_data
     assert len(response_match_data["result"]) == 5, response_match_data
 
 
@@ -160,7 +162,8 @@ async def test_transactions_fetch_filter_by_min_value(
 ):
     """minValue filter should exclude transactions below the threshold."""
 
-    # Create costs: 3 small (500 cents = 5.00) and 2 large (50000 cents = 500.00)
+    # Create costs: 3 small (500 cents = 5.00)
+    # and 2 large (50000 cents = 500.00)
     await cost_factory(n=3, timestamp=today, value=500)
     await cost_factory(n=2, timestamp=today, value=50000)
     # Create incomes: 2 small and 3 large
@@ -197,10 +200,7 @@ async def test_transactions_fetch_filter_by_min_value_and_operation(
 
     assert response.status_code == status.HTTP_200_OK, response_data
     assert len(response_data["result"]) == 2, response_data
-    assert all(
-        item["operation"] == "cost"
-        for item in response_data["result"]
-    )
+    assert all(item["operation"] == "cost" for item in response_data["result"])
 
 
 @pytest.mark.use_db
@@ -221,6 +221,5 @@ async def test_transactions_fetch_filter_by_min_value_and_exchange(
     assert response.status_code == status.HTTP_200_OK, response_data
     assert len(response_data["result"]) == 5, response_data
     assert all(
-        item["operation"] == "exchange"
-        for item in response_data["result"]
+        item["operation"] == "exchange" for item in response_data["result"]
     )

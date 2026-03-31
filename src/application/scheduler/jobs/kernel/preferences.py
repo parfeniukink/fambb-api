@@ -38,9 +38,11 @@ async def _load_deleted_signals(user_id: int) -> list[dict]:
                         else "deleted_bare"
                     ),
                     "weight": SIGNAL_WEIGHTS[
-                        "deleted_with_feedback"
-                        if d.get("human_feedback")
-                        else "deleted_bare"
+                        (
+                            "deleted_with_feedback"
+                            if d.get("human_feedback")
+                            else "deleted_bare"
+                        )
                     ],
                 }
                 for d in deleted

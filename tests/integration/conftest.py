@@ -105,8 +105,7 @@ async def cost_factory(
             build_kwargs["name"] = name
 
         candidates = (
-            CostCandidateFactory.build(**build_kwargs)
-            for _ in range(n)
+            CostCandidateFactory.build(**build_kwargs) for _ in range(n)
         )
 
         repo = repositories.Cost()
@@ -153,8 +152,7 @@ async def income_factory(
             build_kwargs["name"] = name
 
         candidates = (
-            IncomeCandidateFactory.build(**build_kwargs)
-            for _ in range(n)
+            IncomeCandidateFactory.build(**build_kwargs) for _ in range(n)
         )
 
         repo = repositories.Income()

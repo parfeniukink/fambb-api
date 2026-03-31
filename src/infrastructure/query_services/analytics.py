@@ -163,9 +163,7 @@ class TransactionsAnalyticsService(database.DataAccessLayer):
 
         if filter.min_value is not None:
             min_cents = as_cents(filter.min_value)
-            cost_query = cost_query.where(
-                database.Cost.value >= min_cents
-            )
+            cost_query = cost_query.where(database.Cost.value >= min_cents)
             income_query = income_query.where(
                 database.Income.value >= min_cents
             )
