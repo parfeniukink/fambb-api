@@ -53,7 +53,8 @@ async def _preference_prompt(ctx: RunContext[PreferenceContext]) -> str:
             f"weight={r.get('weight', 0)}",
         ]
         if r.get("deleted"):
-            parts.append("DELETED")
+            signal = r.get("signal_type", "deleted_bare")
+            parts.append(signal.upper())
         lines.append(" ".join(parts))
     reactions_text = chr(10).join(lines) or "No reactions yet."
 

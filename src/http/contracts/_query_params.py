@@ -64,6 +64,17 @@ def get_transactions_detail_filter(
         str | None,
         Query(description="the lookup pattern in lowercase"),
     ] = None,
+    min_value: Annotated[
+        float | None,
+        Query(
+            description=(
+                "Minimum transaction value in human-readable"
+                " format (e.g. 100 = 100 UAH). Filters"
+                " transactions >= this value."
+            ),
+            alias="minValue",
+        ),
+    ] = None,
 ) -> TransactionsFilter:
     """FastAPI HTTP GET query params.
 
@@ -87,4 +98,5 @@ def get_transactions_detail_filter(
         operation=operation,
         pattern=pattern,
         only_mine=only_mine,
+        min_value=min_value,
     )

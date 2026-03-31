@@ -59,6 +59,7 @@ class TransactionsFilter(InternalData):
     (5) start_date: optionally specify Start Date
     (6) end_date: optionally specify End Date (default to Today)
     (7) period: optionally specify Period (instead of Start/End Dates)
+    (8) min_value: optionally specify minimum value (human-readable)
     """
 
     only_mine: bool = False
@@ -72,6 +73,7 @@ class TransactionsFilter(InternalData):
     end_date: date | None = None
     period: AnalyticsPeriod | None = None
     pattern: str | None = None
+    min_value: float | None = None
 
     @model_validator(mode="after")
     def validate_dates_range(self) -> Self:

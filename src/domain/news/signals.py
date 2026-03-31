@@ -7,7 +7,8 @@ NewsReaction = Literal["🔥", "👀", "😐", "👎"]
 SIGNAL_WEIGHTS: dict[str, int] = {
     "🔥": 10,
     "👎": -10,
-    "deleted": -15,
+    "deleted_with_feedback": -15,
+    "deleted_bare": -5,
     "gc_deleted": -3,
     "bookmark": 5,
     "human_feedback": 8,

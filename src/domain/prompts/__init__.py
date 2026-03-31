@@ -26,9 +26,13 @@ summaries and must decide which are worth keeping.
 1. Filter out articles matching skip rules.
 2. Filter out articles whose topic is already covered by an \
 existing title (semantic dedup).
-3. Prioritize articles matching high priority rules.
-4. When in doubt, KEEP the article. It is better to show an \
-extra article than to miss an important one.
+3. Assess article depth: reject clickbait, surface-level \
+announcements without analysis, and rehashed coverage \
+that adds no new insight. Use the UserFilterRules as your \
+quality baseline.
+4. Prioritize articles matching high priority rules.
+5. When in doubt about TOPIC relevance, KEEP the article. \
+When in doubt about QUALITY, DROP the article.
 </Instructions>
 
 Return a FilterResult with the indices of articles to keep."""
@@ -54,6 +58,10 @@ in double asterisks (e.g. ``**AMOC**``). Wrap contextual \
 or secondary details in single asterisks \
 (e.g. ``*relevant to neutrino physics*``). Every sentence \
 MUST contain at least one marker. No other formatting.
+8. Write ALL article titles and inferences in Ukrainian. \
+Source articles are in English — translate the output, \
+do not transliterate. Keep proper nouns, technical terms, \
+and acronyms in their original form (e.g. **AMOC**, **LLM**).
 </Instructions>
 
 You have {article_count} articles to process."""
@@ -86,6 +94,10 @@ contextual or secondary details in single asterisks \
 (e.g. ``*relevant to neutrino physics*``). Every sentence \
 MUST contain at least one ``**bold**`` or ``*italic*`` \
 marker. No other formatting.
+6. Write the title and description in Ukrainian. Source \
+content is in English — translate the output, do not \
+transliterate. Keep proper nouns, technical terms, and \
+acronyms in their original form (e.g. ``**AMOC**``, ``**LLM**``).
 </WritingRules>"""
 
 
@@ -184,7 +196,11 @@ filtering rules. Your job is to produce an UPDATED set of rules.
 - human_feedback (8): very high - user took time to write
 - eyes (1): low positive - just viewed
 - neutral (0): neutral
-- deleted (-15): strongest negative - user removed the article
+- deleted_with_feedback (-15): strongest negative - user \
+explained what's wrong. Extract rules from their words.
+- deleted_bare (-5): weak temporal signal - "not interesting \
+right now". Does NOT mean the topic itself is unwanted.
+- gc_deleted (-3): garbage collection - weakest negative
 </SignalWeights>
 
 <Reconciliation>
@@ -201,6 +217,17 @@ covered by existing rules.
 - The user's cognitive filter represents their explicit \
 intent. Generated rules must NEVER contradict it. If the filter \
 says "I only want X", treat everything else as skip-worthy.
+- Bare deletions (deleted_bare) are TEMPORAL signals. They \
+mean "this presentation was not valuable right now", NOT \
+"I dislike this topic". NEVER promote bare deletions alone \
+into skip rules, even if many accumulate on the same topic.
+- Only deletions WITH feedback (deleted_with_feedback) can \
+drive new skip rules. When creating rules from feedback \
+deletions, include the QUALITY qualifier the user implied \
+(e.g. "shallow AI announcements" not "AI articles").
+- If bare deletions cluster on a topic that also has positive \
+signals (fire, bookmark) elsewhere, this CONFIRMS the topic \
+is wanted - the user is filtering on quality, not topic.
 </Reconciliation>
 
 <RecentlyDeletedHandling>
@@ -210,9 +237,12 @@ incoming news, so it MUST be kept populated. Your job:
 - ALWAYS include every NEW deleted article (marked DELETED in \
 the reactions) in the recently_deleted output. NON-NEGOTIABLE.
 - KEEP all existing recently_deleted entries less than ~30 days old.
-- When multiple deleted articles form a clear category pattern, \
-ALSO promote that pattern to a skip rule — but still keep the \
-individual entries in recently_deleted until they age out.
+- When multiple FEEDBACK deletions (deleted_with_feedback) form \
+a clear category pattern, ALSO promote that pattern to a skip \
+rule using the quality qualifier from the user's words - but \
+still keep the individual entries until they age out.
+- Bare deletions (deleted_bare) go into recently_deleted for \
+semantic dedup but NEVER escalate into skip rules on their own.
 - ONLY remove entries older than ~30 days.
 </RecentlyDeletedHandling>
 
@@ -244,4 +274,9 @@ domain belongs in the skip list.
 with (positive signals: fire, bookmark, positive feedback).
 - Each entry should be a broad category description (up to 10 \
 words) that covers all variants of that topic.
+- NEVER generate skip or high_priority rules that duplicate \
+what the user already wrote in <UserCognitiveFilter>. Those \
+rules are already applied by the filter agent. Your job is \
+to discover NEW patterns from user behavior, not restate \
+their explicit preferences.
 </Rules>"""

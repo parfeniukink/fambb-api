@@ -115,3 +115,112 @@ async def test_transactions_fetch_filter_by_period_and_operation(
     assert response.status_code == status.HTTP_200_OK, response_data
     assert len(response_data["result"]) == 5, response_data
     assert response_data["left"] == 0, response_data
+
+
+@pytest.mark.use_db
+async def test_transactions_fetch_filter_by_pattern_income(
+    client: httpx.AsyncClient,
+    today: date,
+    cost_factory,
+    income_factory,
+):
+    """Pattern filter should match income names when operation=income.
+
+    Uses a non-matching pattern to verify the filter is actually applied.
+    Without the bug fix, the pattern filter is dead code for incomes,
+    so all 5 incomes would be returned even with a non-matching pattern.
+    """
+
+    await cost_factory(n=3, timestamp=today)
+    await income_factory(n=5, timestamp=today)
+
+    # Use a pattern that does NOT match "test_income"
+    url = "/transactions?operation=income&pattern=nonexistent"
+    response: httpx.Response = await client.get(url)
+    response_data: dict = response.json()
+
+    assert response.status_code == status.HTTP_200_OK, response_data
+    assert len(response_data["result"]) == 0, response_data
+
+    # Positive match: pattern that matches income names should return results
+    url_match = "/transactions?operation=income&pattern=test_income"
+    response_match: httpx.Response = await client.get(url_match)
+    response_match_data: dict = response_match.json()
+
+    assert response_match.status_code == status.HTTP_200_OK, response_match_data
+    assert len(response_match_data["result"]) == 5, response_match_data
+
+
+@pytest.mark.use_db
+async def test_transactions_fetch_filter_by_min_value(
+    client: httpx.AsyncClient,
+    today: date,
+    cost_factory,
+    income_factory,
+):
+    """minValue filter should exclude transactions below the threshold."""
+
+    # Create costs: 3 small (500 cents = 5.00) and 2 large (50000 cents = 500.00)
+    await cost_factory(n=3, timestamp=today, value=500)
+    await cost_factory(n=2, timestamp=today, value=50000)
+    # Create incomes: 2 small and 3 large
+    await income_factory(n=2, timestamp=today, value=500)
+    await income_factory(n=3, timestamp=today, value=50000)
+
+    # Filter for transactions >= 100.00 (10000 cents)
+    url = "/transactions?minValue=100"
+    response: httpx.Response = await client.get(url)
+    response_data: dict = response.json()
+
+    assert response.status_code == status.HTTP_200_OK, response_data
+    # Should return 2 large costs + 3 large incomes = 5
+    assert len(response_data["result"]) == 5, response_data
+
+
+@pytest.mark.use_db
+async def test_transactions_fetch_filter_by_min_value_and_operation(
+    client: httpx.AsyncClient,
+    today: date,
+    cost_factory,
+    income_factory,
+):
+    """minValue combined with operation should filter both dimensions."""
+
+    await cost_factory(n=3, timestamp=today, value=500)
+    await cost_factory(n=2, timestamp=today, value=50000)
+    await income_factory(n=5, timestamp=today, value=50000)
+
+    # Filter for costs >= 100.00
+    url = "/transactions?minValue=100&operation=cost"
+    response: httpx.Response = await client.get(url)
+    response_data: dict = response.json()
+
+    assert response.status_code == status.HTTP_200_OK, response_data
+    assert len(response_data["result"]) == 2, response_data
+    assert all(
+        item["operation"] == "cost"
+        for item in response_data["result"]
+    )
+
+
+@pytest.mark.use_db
+async def test_transactions_fetch_filter_by_min_value_and_exchange(
+    client: httpx.AsyncClient,
+    today: date,
+    exchange_factory,
+):
+    """minValue filter should apply to exchanges using from_value."""
+
+    await exchange_factory(n=5)
+
+    # Use minValue=0.01 to include all exchanges (from_value is always > 0)
+    url = "/transactions?minValue=0.01&operation=exchange"
+    response: httpx.Response = await client.get(url)
+    response_data: dict = response.json()
+
+    assert response.status_code == status.HTTP_200_OK, response_data
+    assert len(response_data["result"]) == 5, response_data
+    assert all(
+        item["operation"] == "exchange"
+        for item in response_data["result"]
+    )

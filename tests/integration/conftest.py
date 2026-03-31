@@ -89,15 +89,23 @@ async def cost_factory(
         timestamp: datetime | None = None,
         category_id: int | None = None,
         currency_id: int | None = None,
+        value: int | None = None,
+        name: str | None = None,
     ) -> list[database.Cost]:
+        build_kwargs: dict = dict(
+            id=None,
+            user_id=john.id,
+            currency_id=currency_id or default_currency.id,
+            category_id=category_id or default_category.id,
+            timestamp=timestamp,
+        )
+        if value is not None:
+            build_kwargs["value"] = value
+        if name is not None:
+            build_kwargs["name"] = name
+
         candidates = (
-            CostCandidateFactory.build(
-                id=None,
-                user_id=john.id,
-                currency_id=currency_id or default_currency.id,
-                category_id=category_id or default_category.id,
-                timestamp=timestamp,
-            )
+            CostCandidateFactory.build(**build_kwargs)
             for _ in range(n)
         )
 
@@ -129,15 +137,23 @@ async def income_factory(
     async def inner(
         n: int = 1,
         timestamp: datetime | None = None,
+        value: int | None = None,
+        name: str | None = None,
     ) -> list[database.Income]:
+        build_kwargs: dict = dict(
+            id=None,
+            user_id=john.id,
+            currency_id=currency.id,
+            source=source,
+            timestamp=timestamp,
+        )
+        if value is not None:
+            build_kwargs["value"] = value
+        if name is not None:
+            build_kwargs["name"] = name
+
         candidates = (
-            IncomeCandidateFactory.build(
-                id=None,
-                user_id=john.id,
-                currency_id=currency.id,
-                source=source,
-                timestamp=timestamp,
-            )
+            IncomeCandidateFactory.build(**build_kwargs)
             for _ in range(n)
         )
 

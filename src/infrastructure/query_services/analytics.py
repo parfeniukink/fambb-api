@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from src.domain.equity import Currency
+from src.domain.transactions.data_transformation import as_cents
 from src.domain.transactions.value_objects import (
     CostsByCategory,
     IncomesBySource,
@@ -152,15 +153,25 @@ class TransactionsAnalyticsService(database.DataAccessLayer):
             )
 
         if filter.pattern is not None:
-            if filter.operation == "cost":
-                cost_query = cost_query.where(
-                    database.Cost.name.ilike(filter.pattern)
-                )
+            like_pattern = f"%{filter.pattern}%"
+            cost_query = cost_query.where(
+                database.Cost.name.ilike(like_pattern)
+            )
+            income_query = income_query.where(
+                database.Income.name.ilike(like_pattern)
+            )
 
-            elif filter.operation == "cost":
-                income_query = income_query.where(
-                    database.Income.name.ilike(filter.pattern)
-                )
+        if filter.min_value is not None:
+            min_cents = as_cents(filter.min_value)
+            cost_query = cost_query.where(
+                database.Cost.value >= min_cents
+            )
+            income_query = income_query.where(
+                database.Income.value >= min_cents
+            )
+            exchange_query = exchange_query.where(
+                database.Exchange.from_value >= min_cents
+            )
 
         # combine all the queries using UNION ALL
         # apply operation filter if needed
