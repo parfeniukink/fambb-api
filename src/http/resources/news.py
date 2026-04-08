@@ -1,9 +1,7 @@
-from contextlib import suppress
 from datetime import date, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Body, Depends, Query, status
-from loguru import logger
 
 from src import application as op
 from src import domain
@@ -15,8 +13,6 @@ from src.infrastructure import (
     get_offset_pagination_params,
     repositories,
 )
-from src.infrastructure.cache import Cache
-from src.infrastructure.errors import NotFoundError
 
 from ..contracts.news import (
     REACTION_OPTIONS,
@@ -36,14 +32,16 @@ router = APIRouter(prefix="/news", tags=["News"])
 
 @router.get("", status_code=status.HTTP_200_OK)
 async def news_items(
-    _=Depends(op.authorize),
+    user: domain.users.User = Depends(op.authorize),
     pagination: OffsetPagination = Depends(get_offset_pagination_params),
 ) -> ResponseMultiPaginated[NewsItem]:
     """Paginated news items."""
 
     repo = repositories.News()
     items, total = await repo.news_items(
-        offset=pagination.context, limit=pagination.limit
+        user_id=user.id,
+        offset=pagination.context,
+        limit=pagination.limit,
     )
 
     if items:
@@ -62,7 +60,7 @@ async def news_items(
 
 @router.get("/groups", status_code=status.HTTP_200_OK)
 async def news_groups(
-    _=Depends(op.authorize),
+    user: domain.users.User = Depends(op.authorize),
     start_date: Annotated[
         date | None,
         Query(
@@ -111,13 +109,14 @@ async def news_groups(
     repo = repositories.News()
 
     grouped = await repo.news_items_for_date_range(
-        start_date,
-        end_date,
+        user_id=user.id,
+        start_date=start_date,
+        end_date=end_date,
         bookmarked=bookmarked,
         reaction=reaction,
         commented=commented,
     )
-    earliest = await repo.earliest_news_date()
+    earliest = await repo.earliest_news_date(user_id=user.id)
 
     result: list[NewsGroup] = []
     for day in sorted(grouped.keys(), reverse=True):
@@ -188,38 +187,16 @@ async def news_item_delete(
     repo = repositories.News()
     item = await repo.get_news_item(id_=item_id)
 
-    # Cache dump for preference learning
-    dump = {
-        "title": item.title,
-        "description": item.description,
-        "human_feedback": item.human_feedback,
-        "sources": item.sources or [],
-    }
-    try:
-        async with Cache() as cache:
-            existing: list = []
-
-            # Try to override with existing in the Cache
-            with suppress(NotFoundError, ValueError):
-                raw = await cache.get("deleted_news", str(user.id))
-                if isinstance(raw, list):
-                    existing = raw
-
-            existing.append(dump)
-
-            await cache.set(
-                "deleted_news",
-                str(user.id),
-                existing,
-                exptime=86400,  # 24 hours
-            )
-    except Exception as error:
-        logger.error("Failed to cache deleted article signal")
-        logger.error(error)
-    else:
-        logger.info(
-            "Removed article is added to the cache " "for future analytics"
-        )
+    # Store deletion signal for preference learning
+    signal = database.DeletedSignal(
+        user_id=user.id,
+        title=item.title,
+        description=item.description,
+        human_feedback=item.human_feedback,
+        sources=item.sources or [],
+        source_type="user",
+    )
+    await repo.add_deleted_signal(signal)
 
     await repo.delete_news_item(id_=item_id)
     await repo.flush()

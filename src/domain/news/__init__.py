@@ -1,6 +1,8 @@
 __all__ = (
     "ArticleCandidate",
     "CandidateGroup",
+    "DeletedSignal",
+    "DeletedSignalSourceType",
     "FilterResult",
     "NewsItem",
     "NewsReaction",
@@ -8,6 +10,11 @@ __all__ = (
     "SIGNAL_WEIGHTS",
 )
 
-from .entities import NewsItem, PreferenceRules
+from .entities import (
+    DeletedSignal,
+    DeletedSignalSourceType,
+    NewsItem,
+    PreferenceRules,
+)
 from .signals import SIGNAL_WEIGHTS, NewsReaction
 from .value_objects import ArticleCandidate, CandidateGroup, FilterResult

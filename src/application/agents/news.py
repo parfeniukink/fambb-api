@@ -161,6 +161,7 @@ async def web_search(url: str) -> str:
 @dataclass
 class ManualAddContext:
     url: str
+    user_id: int
 
 
 manual_add_agent = Agent(
@@ -204,6 +205,7 @@ async def save_manual_article(
         description=description,
         sources=["manual"],
         article_urls=url_list,
+        user_id=ctx.deps.user_id,
     )
     await repo.add_news_item(item)
     await repo.flush()

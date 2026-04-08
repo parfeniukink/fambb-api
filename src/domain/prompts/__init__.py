@@ -228,23 +228,24 @@ deletions, include the QUALITY qualifier the user implied \
 - If bare deletions cluster on a topic that also has positive \
 signals (fire, bookmark) elsewhere, this CONFIRMS the topic \
 is wanted - the user is filtering on quality, not topic.
+- NEVER create a NEW high_priority rule from a topic that ONLY \
+has deletion signals. Deletions are negative — they can produce \
+skip rules (with feedback) or recently_deleted entries, but \
+NEVER high_priority rules. A topic needs at least one positive \
+signal (fire, bookmark, positive feedback) to become high_priority.
 </Reconciliation>
 
-<RecentlyDeletedHandling>
-CRITICAL: The recently_deleted list tracks concrete articles \
-the user removed. This list is used by other agents to filter \
-incoming news, so it MUST be kept populated. Your job:
-- ALWAYS include every NEW deleted article (marked DELETED in \
-the reactions) in the recently_deleted output. NON-NEGOTIABLE.
-- KEEP all existing recently_deleted entries less than ~30 days old.
+<RecentlyDeletedContext>
+The recently_deleted list is READ-ONLY context. It is managed \
+by the system, not by you. Do NOT output recently_deleted — \
+your output should only contain skip and high_priority rules. \
+Use the deleted articles as context when deciding rules: \
 - When multiple FEEDBACK deletions (deleted_with_feedback) form \
-a clear category pattern, ALSO promote that pattern to a skip \
-rule using the quality qualifier from the user's words - but \
-still keep the individual entries until they age out.
-- Bare deletions (deleted_bare) go into recently_deleted for \
-semantic dedup but NEVER escalate into skip rules on their own.
-- ONLY remove entries older than ~30 days.
-</RecentlyDeletedHandling>
+a clear category pattern, promote that pattern to a skip rule \
+using the quality qualifier from the user's words.
+- Bare deletions (deleted_bare) are for semantic dedup only — \
+NEVER escalate into skip rules on their own.
+</RecentlyDeletedContext>
 
 <Rules>
 CRITICAL: Human feedback text is the HIGHEST priority signal. \
@@ -279,4 +280,10 @@ what the user already wrote in <UserCognitiveFilter>. Those \
 rules are already applied by the filter agent. Your job is \
 to discover NEW patterns from user behavior, not restate \
 their explicit preferences.
+- Keep the output CONCISE. Do NOT remove existing rules unless \
+the user starts reacting with opposite interests (e.g. a topic \
+in high_priority now receives consistent negative signals). \
+Instead, GENERALIZE overlapping rules into broader categories. \
+Two rules "NASA missions" and "ESA launches" should become \
+one rule "space agency missions and launches".
 </Rules>"""

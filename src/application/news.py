@@ -97,10 +97,10 @@ async def add_manual_article(url: str, user_id: int) -> None:
     """Submit a manually added article for AI analysis."""
 
     repo = repositories.News()
-    if await repo.url_exists(url):
+    if await repo.url_exists(user_id, url):
         raise ValueError("Article already exists")
 
-    context = ManualAddContext(url=url)
+    context = ManualAddContext(url=url, user_id=user_id)
 
     async def _handler() -> None:
         async with pipeline_tracer("manual_add", user_id=user_id) as tracer:
@@ -122,6 +122,7 @@ async def add_manual_article(url: str, user_id: int) -> None:
 
 async def _filter_cached(
     candidates: list[ArticleCandidate],
+    user_id: int,
 ) -> list[ArticleCandidate]:
     """Check each candidate URL against memcached.
     Cache surviving URLs immediately. TTL = 1 week."""
@@ -131,14 +132,15 @@ async def _filter_cached(
         urls_to_cache: list[str] = []
 
         for c in candidates:
+            key = f"{user_id}:{c.url}"
             try:
-                await cache.get("news_seen", c.url)
+                await cache.get("news_seen", key)
                 # Cache hit — already seen, skip
                 continue
             except Exception:
                 # Cache miss — new URL
                 survivors.append(c)
-                urls_to_cache.append(c.url)
+                urls_to_cache.append(key)
 
         # Cache surviving URLs immediately
         for url in urls_to_cache:
@@ -163,12 +165,13 @@ async def _filter_articles(
     source_name: str,
     filter_prompt: str,
     preference_profile: str,
+    user_id: int,
 ) -> list[ArticleCandidate]:
     """Use cheap LLM to filter irrelevant candidates."""
 
     news_repo = repositories.News()
 
-    today_items = await news_repo.today_news_items()
+    today_items = await news_repo.today_news_items(user_id=user_id)
     existing_titles = (
         "\n".join(f"- {item.title}" for item in today_items) or "None yet."
     )
@@ -235,6 +238,7 @@ async def _group_articles(
 async def _save_groups(
     groups: list[CandidateGroup],
     source_name: str,
+    user_id: int,
 ) -> None:
     """Persist each group as a NewsItem."""
 
@@ -247,6 +251,7 @@ async def _save_groups(
                 description=group.inference,
                 sources=[source_name],
                 article_urls=group.article_urls,
+                user_id=user_id,
             )
             await repo.add_news_item(item)
             logger.debug(f"Saved: '{group.title[:60]}'")
@@ -279,7 +284,7 @@ async def ingest_articles(  # noqa: C901
 
     # ── Level 1: Cache dedup ──
     t0 = perf_counter()
-    survivors = await _filter_cached(candidates)
+    survivors = await _filter_cached(candidates, user_id)
 
     if tracer:
         tracer.set_meta(
@@ -310,6 +315,7 @@ async def ingest_articles(  # noqa: C901
             source_name,
             filter_prompt,
             preference_profile,
+            user_id,
         )
         if tracer:
             tracer.record("news_filter", perf_counter() - t1)
@@ -366,7 +372,7 @@ async def ingest_articles(  # noqa: C901
     # ── Save ──
     try:
         t3 = perf_counter()
-        await _save_groups(groups, source_name)
+        await _save_groups(groups, source_name, user_id)
         if tracer:
             tracer.record("save", perf_counter() - t3)
     except Exception as e:

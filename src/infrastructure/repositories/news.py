@@ -16,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.types import Date
 
 from src.infrastructure import database, errors
-from src.infrastructure.cache import Cache
 
 
 class News(database.DataAccessLayer):
@@ -26,14 +25,18 @@ class News(database.DataAccessLayer):
         super().__init__(session)
 
     async def news_items(
-        self, /, **kwargs
+        self, /, user_id: int, **kwargs
     ) -> tuple[tuple[database.NewsItem, ...], int]:
         """Paginated news items ordered by created_at DESC."""
 
-        query: Select = select(database.NewsItem).order_by(
-            desc(database.NewsItem.created_at)
+        query: Select = (
+            select(database.NewsItem)
+            .where(database.NewsItem.user_id == user_id)
+            .order_by(desc(database.NewsItem.created_at))
         )
-        count_query = select(func.count(database.NewsItem.id))
+        count_query = select(func.count(database.NewsItem.id)).where(
+            database.NewsItem.user_id == user_id
+        )
 
         query = self._add_pagination_filters(query, **kwargs)
 
@@ -47,7 +50,7 @@ class News(database.DataAccessLayer):
         return items, total
 
     async def distinct_news_days(
-        self, /, offset: int = 0, limit: int = 10
+        self, /, user_id: int, offset: int = 0, limit: int = 10
     ) -> list[date]:
         """Return distinct days that have news, newest first."""
 
@@ -55,6 +58,7 @@ class News(database.DataAccessLayer):
 
         query = (
             select(day_col)
+            .where(database.NewsItem.user_id == user_id)
             .distinct()
             .order_by(day_col.desc())
             .offset(offset)
@@ -66,7 +70,7 @@ class News(database.DataAccessLayer):
             return list(result.scalars().all())
 
     async def news_items_for_days(
-        self, days: list[date]
+        self, user_id: int, days: list[date]
     ) -> dict[date, list[database.NewsItem]]:
         """Return all news items for the given days, grouped."""
 
@@ -77,6 +81,7 @@ class News(database.DataAccessLayer):
 
         query = (
             select(database.NewsItem)
+            .where(database.NewsItem.user_id == user_id)
             .where(day_col.in_(days))
             .order_by(
                 day_col.desc(),
@@ -98,6 +103,7 @@ class News(database.DataAccessLayer):
 
     async def news_items_for_date_range(
         self,
+        user_id: int,
         start_date: date | None = None,
         end_date: date | None = None,
         *,
@@ -113,9 +119,13 @@ class News(database.DataAccessLayer):
 
         day_col = cast(database.NewsItem.created_at, Date)
 
-        query = select(database.NewsItem).order_by(
-            day_col.desc(),
-            database.NewsItem.created_at.desc(),
+        query = (
+            select(database.NewsItem)
+            .where(database.NewsItem.user_id == user_id)
+            .order_by(
+                day_col.desc(),
+                database.NewsItem.created_at.desc(),
+            )
         )
 
         if start_date is not None and end_date is not None:
@@ -141,29 +151,36 @@ class News(database.DataAccessLayer):
 
         return grouped
 
-    async def earliest_news_date(self) -> date | None:
+    async def earliest_news_date(self, user_id: int) -> date | None:
         """Return the earliest date that has news items."""
 
-        query = select(func.min(cast(database.NewsItem.created_at, Date)))
+        query = select(
+            func.min(cast(database.NewsItem.created_at, Date))
+        ).where(database.NewsItem.user_id == user_id)
 
         async with self._read_session() as session:
             result: Result = await session.execute(query)
             return result.scalar()
 
-    async def count_distinct_news_days(self) -> int:
+    async def count_distinct_news_days(self, user_id: int) -> int:
         """Total number of distinct days with news."""
 
         day_col = cast(database.NewsItem.created_at, Date).label("day")
 
         query = select(func.count()).select_from(
-            select(day_col).distinct().subquery()
+            select(day_col)
+            .where(database.NewsItem.user_id == user_id)
+            .distinct()
+            .subquery()
         )
 
         async with self._read_session() as session:
             result: Result = await session.execute(query)
             return result.scalar() or 0
 
-    async def existing_article_urls(self, limit: int = 200) -> set[str]:
+    async def existing_article_urls(
+        self, user_id: int, limit: int = 200
+    ) -> set[str]:
         """Return all article URLs from recent news items.
 
         Unnests the article_urls arrays and returns a flat
@@ -172,6 +189,7 @@ class News(database.DataAccessLayer):
 
         query = (
             select(func.unnest(database.NewsItem.article_urls))
+            .where(database.NewsItem.user_id == user_id)
             .order_by(desc(database.NewsItem.created_at))
             .limit(limit)
         )
@@ -326,13 +344,14 @@ class News(database.DataAccessLayer):
         )
         await self._write_session.execute(query)
 
-    async def today_news_items(self) -> list[database.NewsItem]:
+    async def today_news_items(self, user_id: int) -> list[database.NewsItem]:
         """Return all news items created today."""
 
         day_col = cast(database.NewsItem.created_at, Date)
 
         query = (
             select(database.NewsItem)
+            .where(database.NewsItem.user_id == user_id)
             .where(day_col == date.today())
             .order_by(database.NewsItem.created_at.desc())
         )
@@ -341,27 +360,7 @@ class News(database.DataAccessLayer):
             result: Result = await session.execute(query)
             return list(result.scalars().all())
 
-    async def stale_item_titles(
-        self, before_date: date, limit: int = 20
-    ) -> list[str]:
-        """Return titles of unreacted items that would be GC'd."""
-
-        day_col = cast(database.NewsItem.created_at, Date)
-        query = (
-            select(database.NewsItem.title)
-            .where(day_col < before_date)
-            .where(database.NewsItem.reaction.is_(None))
-            .where(database.NewsItem.bookmarked.is_(False))
-            .where(database.NewsItem.human_feedback.is_(None))
-            .order_by(database.NewsItem.created_at.desc())
-            .limit(limit)
-        )
-
-        async with self._read_session() as session:
-            result: Result = await session.execute(query)
-            return list(result.scalars().all())
-
-    async def delete_stale_items(self, before_date: date) -> int:
+    async def delete_stale_items(self, user_id: int, before_date: date) -> int:
         """Delete unreacted news items created before the given date.
 
         Returns the number of deleted items.
@@ -370,6 +369,7 @@ class News(database.DataAccessLayer):
         day_col = cast(database.NewsItem.created_at, Date)
         query = (
             delete(database.NewsItem)
+            .where(database.NewsItem.user_id == user_id)
             .where(day_col < before_date)
             .where(database.NewsItem.reaction.is_(None))
             .where(database.NewsItem.bookmarked.is_(False))
@@ -379,12 +379,15 @@ class News(database.DataAccessLayer):
         result = await self._write_session.execute(query)
         return len(result.all())
 
-    async def recent_reactions(self, since: date) -> list[database.NewsItem]:
+    async def recent_reactions(
+        self, user_id: int, since: date
+    ) -> list[database.NewsItem]:
         """Return items that need AI analysis since a given date."""
 
         day_col = func.date(database.NewsItem.created_at)
         query = (
             select(database.NewsItem)
+            .where(database.NewsItem.user_id == user_id)
             .where(database.NewsItem.needs_ai_analysis.is_(True))
             .where(day_col >= since)
             .order_by(desc(database.NewsItem.created_at))
@@ -407,36 +410,80 @@ class News(database.DataAccessLayer):
         )
         await self._write_session.execute(query)
 
-    async def cache_seen_urls(self, urls: list[str]) -> None:
-        """Cache URLs that have been analyzed (saved or filtered).
-        TTL = 3 days. Stored as a single list under 'seen_urls:global'.
-        """
-
-        async with Cache() as cache:
-            try:
-                existing: list[str] = await cache.get("seen_urls", "global")
-            except Exception:
-                existing = []
-            merged = list(dict.fromkeys(existing + urls))[-1000:]
-            await cache.set("seen_urls", "global", merged, exptime=259200)
-
-    async def cached_seen_urls(self) -> set[str]:
-        """Return the set of cached seen URLs."""
-
-        async with Cache() as cache:
-            try:
-                urls: list[str] = await cache.get("seen_urls", "global")
-                return set(urls)
-            except Exception:
-                return set()
-
-    async def url_exists(self, url: str) -> bool:
+    async def url_exists(self, user_id: int, url: str) -> bool:
         """Check if a URL already exists in any article."""
 
-        query = select(func.count()).where(
-            database.NewsItem.article_urls.contains([url])
+        query = (
+            select(func.count())
+            .where(database.NewsItem.user_id == user_id)
+            .where(database.NewsItem.article_urls.contains([url]))
         )
 
         async with self._read_session() as session:
             result: Result = await session.execute(query)
             return (result.scalar() or 0) > 0
+
+    async def add_deleted_signal(
+        self, signal: database.DeletedSignal
+    ) -> database.DeletedSignal:
+        """Insert a deleted signal for preference learning."""
+
+        self._write_session.add(signal)
+        return signal
+
+    async def add_deleted_signals(
+        self, signals: list[database.DeletedSignal]
+    ) -> None:
+        """Insert multiple deleted signals."""
+
+        self._write_session.add_all(signals)
+
+    async def get_deleted_signals(
+        self, user_id: int
+    ) -> list[database.DeletedSignal]:
+        """Return all unprocessed deleted signals for a user."""
+
+        query = (
+            select(database.DeletedSignal)
+            .where(database.DeletedSignal.user_id == user_id)
+            .order_by(database.DeletedSignal.created_at.desc())
+        )
+
+        async with self._read_session() as session:
+            result: Result = await session.execute(query)
+            return list(result.scalars().all())
+
+    async def delete_signals(self, ids: list[int]) -> None:
+        """Remove processed deleted signals."""
+
+        if not ids:
+            return
+
+        query = delete(database.DeletedSignal).where(
+            database.DeletedSignal.id.in_(ids)
+        )
+        await self._write_session.execute(query)
+
+    async def stale_items(
+        self,
+        user_id: int,
+        before_date: date,
+        limit: int = 50,
+    ) -> list[database.NewsItem]:
+        """Return unreacted items that would be GC'd."""
+
+        day_col = cast(database.NewsItem.created_at, Date)
+        query = (
+            select(database.NewsItem)
+            .where(database.NewsItem.user_id == user_id)
+            .where(day_col < before_date)
+            .where(database.NewsItem.reaction.is_(None))
+            .where(database.NewsItem.bookmarked.is_(False))
+            .where(database.NewsItem.human_feedback.is_(None))
+            .order_by(database.NewsItem.created_at.desc())
+            .limit(limit)
+        )
+
+        async with self._read_session() as session:
+            result: Result = await session.execute(query)
+            return list(result.scalars().all())

@@ -76,7 +76,7 @@ async def test_ingest_filter_keeps_articles():
         patch(
             "src.application.news._filter_cached",
             new_callable=AsyncMock,
-            side_effect=lambda c: c,
+            side_effect=lambda c, user_id: c,
         ),
         patch("src.application.news.repositories", mock_repos),
         patch("src.application.news.news_filter_agent") as mock_filter,
@@ -122,7 +122,7 @@ async def test_ingest_filter_error_passes_all_through():
         patch(
             "src.application.news._filter_cached",
             new_callable=AsyncMock,
-            side_effect=lambda c: c,
+            side_effect=lambda c, user_id: c,
         ),
         patch("src.application.news.repositories", mock_repos),
         patch("src.application.news.news_filter_agent") as mock_filter,
@@ -174,7 +174,7 @@ async def test_ingest_grouping_error_falls_back():
         patch(
             "src.application.news._filter_cached",
             new_callable=AsyncMock,
-            side_effect=lambda c: c,
+            side_effect=lambda c, user_id: c,
         ),
         patch("src.application.news.repositories", mock_repos),
         patch("src.application.news.news_filter_agent") as mock_filter,
@@ -226,7 +226,7 @@ async def test_ingest_no_survivors_after_filter():
         patch(
             "src.application.news._filter_cached",
             new_callable=AsyncMock,
-            side_effect=lambda c: c,
+            side_effect=lambda c, user_id: c,
         ),
         patch("src.application.news.repositories", mock_repos),
         patch("src.application.news.news_filter_agent") as mock_filter,

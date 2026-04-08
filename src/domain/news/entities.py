@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import Literal
 
 from src.domain.entities import InternalData
 
@@ -10,6 +11,20 @@ class NewsItem(InternalData):
     description: str
     sources: list[str]
     article_urls: list[str]
+    created_at: datetime
+
+
+DeletedSignalSourceType = Literal["user", "kernel"]
+
+
+class DeletedSignal(InternalData):
+    id: int
+    user_id: int
+    title: str
+    description: str | None = None
+    human_feedback: str | None = None
+    sources: list[str] | None = None
+    source_type: DeletedSignalSourceType
     created_at: datetime
 
 
@@ -26,7 +41,8 @@ class PreferenceRules(InternalData):
                 "skip": self.skip,
                 "high_priority": self.high_priority,
                 "recently_deleted": self.recently_deleted,
-            }
+            },
+            ensure_ascii=False,
         )
 
     @classmethod

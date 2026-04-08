@@ -533,6 +533,12 @@ class NewsItem(Base, DefaultColumnsMixin):
 
     __tablename__ = "news_items"
 
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        default=None,
+        index=True,
+    )
+
     title: Mapped[str] = mapped_column(String(500))
     sources: Mapped[list[str] | None] = mapped_column(
         postgresql.ARRAY(String, dimensions=1), default=None
@@ -567,6 +573,44 @@ class NewsItem(Base, DefaultColumnsMixin):
     # Utility
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), server_default=func.now(), index=True
+    )
+
+
+class DeletedSignal(Base, DefaultColumnsMixin):
+    """Deletion signals for preference learning.
+
+    Stores metadata of deleted news items (by user or kernel GC)
+    until the preference learner processes them.
+
+    params:
+        ``user_id`` - user who owned the deleted article
+        ``title`` - article title
+        ``description`` - article description (nullable)
+        ``human_feedback`` - user feedback at deletion time
+        ``sources`` - article source names (nullable)
+        ``source_type`` - "user" (explicit delete) or "kernel" (GC)
+        ``created_at`` - when the signal was created
+    """
+
+    __tablename__ = "deleted_signals"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(String(500))
+    description: Mapped[str | None] = mapped_column(String(5000), default=None)
+    human_feedback: Mapped[str | None] = mapped_column(
+        String(5000), default=None
+    )
+    sources: Mapped[list[str] | None] = mapped_column(
+        postgresql.ARRAY(String, dimensions=1), default=None
+    )
+    source_type: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        index=True,
     )
 
 
