@@ -1,7 +1,7 @@
-from sqlalchemy import Result, desc, select, update
+from sqlalchemy import Result, desc, exists, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure import database
+from src.infrastructure import database, errors
 
 
 class Currency(database.DataAccessLayer):
@@ -38,6 +38,33 @@ class Currency(database.DataAccessLayer):
 
         self._write_session.add(candidate)
         return candidate
+
+    async def delete_currency(self, currency_id: int) -> None:
+        """delete currency if not related to any transactions."""
+
+        query = select(
+            or_(
+                exists().where(database.Cost.currency_id == currency_id),
+                exists().where(database.Income.currency_id == currency_id),
+                exists().where(
+                    database.Exchange.from_currency_id == currency_id
+                ),
+                exists().where(
+                    database.Exchange.to_currency_id == currency_id
+                ),
+            )
+        )
+
+        async with self._read_session() as session:
+            result = await session.execute(query)
+            currency_used: bool = result.scalar_one()
+
+        if currency_used is True:
+            raise errors.BadRequestError(
+                message="You can't remove currencies that are in use"
+            )
+        else:
+            await self.delete(database.Currency, candidate_id=currency_id)
 
     async def decrease_equity(self, currency_id: int, value: int) -> None:
         """decrease the equity for a currency."""

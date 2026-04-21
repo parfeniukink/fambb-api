@@ -37,3 +37,12 @@ async def currency_create(
     await repo.flush()
 
     return Response[Currency](result=Currency.from_instance(instance))
+
+
+@router.delete("/{currency_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def currency_delete(currency_id: int, _=Depends(op.authorize)) -> None:
+    """Delete existing currency if does NOT have related transactions."""
+
+    repo = repositories.Currency()
+    await repo.delete_currency(currency_id=currency_id)
+    await repo.flush()

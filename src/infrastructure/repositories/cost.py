@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 
-from sqlalchemy import Result, Select, desc, select, update
+from sqlalchemy import Result, Select, desc, exists, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -31,6 +31,28 @@ class Cost(database.DataAccessLayer):
 
         self._write_session.add(candidate)
         return candidate
+
+    async def delete_cost_category(self, cost_category_id: int) -> None:
+        """delete cost category if not related to any Cost transaction."""
+
+        async with self._read_session() as session:
+            result = await session.execute(
+                select(
+                    exists().where(
+                        database.Cost.category_id == cost_category_id
+                    ),
+                )
+            )
+            currency_used: bool = result.scalar_one()
+
+        if currency_used is True:
+            raise errors.BadRequestError(
+                message="You can't remove cost categories that are in use"
+            )
+        else:
+            await self.delete(
+                database.CostCategory, candidate_id=cost_category_id
+            )
 
     async def costs(self, /, **kwargs) -> AsyncGenerator[database.Cost, None]:
         """get all items from 'costs' table.

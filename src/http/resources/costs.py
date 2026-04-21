@@ -67,6 +67,19 @@ async def cost_category_create(
     return Response[CostCategory](result=CostCategory.model_validate(item))
 
 
+@router.delete(
+    "/categories/{cost_category_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def cost_category_delete(
+    cost_category_id: int, _=Depends(op.authorize)
+) -> None:
+    """Delete existing cost category if does NOT have related transactions."""
+
+    repo = repositories.Cost()
+    await repo.delete_cost_category(cost_category_id=cost_category_id)
+    await repo.flush()
+
+
 @router.post(
     "/shortcuts",
     status_code=status.HTTP_201_CREATED,
